@@ -1,15 +1,14 @@
 // File: src/fetch.ts
-import { ZipReader } from "https://deno.land/x/zipjs@v2.7.52/index.js";
+
+import { configure, ZipReader } from "https://deno.land/x/zipjs@v2.7.52/index.js";
 import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
 
-function getOSAndArch(): { os: string; arch: string } {
-  const os = Deno.build.os;
-  const arch = Deno.build.arch;
-  return { os, arch };
-}
+configure({
+  terminateWorkerTimeout: 0,
+});
 
-function getFileNames(): { archiveName: string; libraryName: string } {
-  const { os, arch } = getOSAndArch();
+export function getFileNames(): { archiveName: string; libraryName: string } {
+  const { os, arch } = Deno.build;
   let archiveName = "";
   let libraryName = "";
 
@@ -25,7 +24,7 @@ function getFileNames(): { archiveName: string; libraryName: string } {
   } else if (os === "windows") {
     if (arch === "x86_64") {
       archiveName = "libduckdb-windows-amd64.zip";
-    } else if (arch === "arm64") {
+    } else if (arch === "aarch64") {
       archiveName = "libduckdb-windows-arm64.zip";
     } else {
       throw new Error(`Unsupported architecture: ${arch} on Windows`);
@@ -41,9 +40,18 @@ function getFileNames(): { archiveName: string; libraryName: string } {
   return { archiveName, libraryName };
 }
 
-export async function libraryExists(path: string): Promise<boolean> {
+export const defaultDir = join(
+  import.meta.dirname ?? "",
+  "..",
+  "lib",
+  Deno.build.os,
+  Deno.build.arch
+)
+export const defaultPath = join(defaultDir, getFileNames().libraryName)
+
+export async function libraryExists(path?: string): Promise<boolean> {
   try {
-    await Deno.stat(path);
+    await Deno.stat(path ?? defaultPath);
     return true;
   } catch {
     return false;
@@ -70,18 +78,11 @@ export async function downloadLatestRelease(fileName: string): Promise<void> {
 
   const downloadUrl = asset.browser_download_url;
   const res = await fetch(downloadUrl);
-  const outputDirectoryPath = join(
-    import.meta.dirname ?? Deno.cwd(),
-    "lib",
-  )
-  await Deno.mkdir(outputDirectoryPath, { recursive: true })
+  await Deno.mkdir(defaultDir, { recursive: true })
 
   const zip = new ZipReader((await res.blob()).stream());
   for (const entry of await zip.getEntries()) {
-    const outputFilePath = join(
-      outputDirectoryPath,
-      entry.filename,
-    );
+    const outputFilePath = join(defaultDir, entry.filename);
     if (!entry.directory && entry.getData) {
       await entry.getData(
         await Deno.open(outputFilePath, { write: true, create: true }),
@@ -93,13 +94,10 @@ export async function downloadLatestRelease(fileName: string): Promise<void> {
 }
 
 export async function getDuckDBLibraryPath(): Promise<string> {
-  const { archiveName, libraryName } = getFileNames();
-  const libPath = join(import.meta.dirname ?? Deno.cwd(), "lib", libraryName);
-
-  if (!(await libraryExists(libPath))) {
-    console.debug(`${libPath} not found. Downloading ${archiveName}...`);
+  const { archiveName } = getFileNames();
+  if (!(await libraryExists(defaultPath))) {
+    console.debug(`${defaultPath} not found. Downloading ${archiveName}...`);
     await downloadLatestRelease(archiveName);
   }
-
-  return libPath;
+  return defaultPath;
 }

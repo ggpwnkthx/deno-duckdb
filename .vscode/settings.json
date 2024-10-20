@@ -1,0 +1,9 @@
+// .vscode/settings.json
+{
+  "deno.enable": true,
+  "deno.lint": true,
+  "deno.unstable": [],
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true
+}

@@ -8,52 +8,54 @@ function cstr(str: string): Deno.PointerValue {
 }
 
 export class DuckDB {
-  private dbHandle: Deno.UnsafePointer | null = null;
-  private connHandle: Deno.UnsafePointer | null = null;
+  private dbBuffer = new BigUint64Array(1);
+  private dbPointer: Deno.PointerValue = null;
+  private connBuffer = new BigUint64Array(1);
+  private connPointer: Deno.PointerValue = null;
 
   constructor(private path: string = ":memory:") {}
 
   open(): void {
-    const dbOutPtr = new BigUint64Array(1);
-    const pathPtr = cstr(this.path);
-
-    const result = lib.symbols.duckdb_open(pathPtr, dbOutPtr);
+    const result = lib.symbols.duckdb_open(cstr(this.path), this.dbBuffer);
     if (result !== duckdb_state.DuckDBSuccess) {
       throw new Error("Failed to open DuckDB database");
     }
 
-    this.dbHandle = Deno.UnsafePointer.create(dbOutPtr[0]);
-    if (!this.dbHandle) {
+    this.dbPointer = Deno.UnsafePointer.create(this.dbBuffer[0]);
+    if (!this.dbPointer) {
       throw new Error("Invalid database handle");
     }
+    console.debug(`Database '${this.path}' opened.`);
   }
 
   connect(): void {
-    if (!this.dbHandle) {
+    if (!this.dbPointer) {
       throw new Error("Database must be opened before connecting");
     }
 
-    const connOutPtr = new BigUint64Array(1);
-    const result = lib.symbols.duckdb_connect(this.dbHandle, connOutPtr);
+    const result = lib.symbols.duckdb_connect(this.dbPointer, this.connBuffer);
     if (result !== duckdb_state.DuckDBSuccess) {
       throw new Error("Failed to connect to DuckDB");
     }
 
-    this.connHandle = Deno.UnsafePointer.create(connOutPtr[0]);
-    if (!this.connHandle) {
+    this.connPointer = Deno.UnsafePointer.create(this.connBuffer[0]);
+    if (!this.connPointer) {
       throw new Error("Invalid connection handle");
     }
+    console.debug(`Database '${this.path}' connected.`);
   }
 
   close(): void {
-    if (this.connHandle) {
-      lib.symbols.duckdb_disconnect(this.connHandle);
-      this.connHandle = null;
+    if (this.connPointer) {
+      lib.symbols.duckdb_disconnect(this.connBuffer);
+      this.connPointer = null;
+      console.debug(`Database '${this.path}' disconnected.`);
     }
 
-    if (this.dbHandle) {
-      lib.symbols.duckdb_close(this.dbHandle);
-      this.dbHandle = null;
+    if (this.dbPointer) {
+      lib.symbols.duckdb_close(this.dbBuffer);
+      this.dbPointer = null;
+      console.debug(`Database '${this.path}' closed.`);
     }
   }
 

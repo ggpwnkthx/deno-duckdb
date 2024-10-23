@@ -1,66 +1,79 @@
 import lib from "./ffi/index.ts";
 import { duckdb_state } from "./ffi/types.ts";
 
-function cstr(str: string): Deno.PointerValue {
-  const encoder = new TextEncoder();
-  const strBuf = encoder.encode(str + "\0");
-  return Deno.UnsafePointer.of(strBuf);
-}
+// Define a type for the allocatePointerArray return value
+type BigUInt = {
+  buffer: BigUint64Array;
+  pointer: Deno.PointerValue;
+  get(index?: number): bigint;
+  set(value: bigint, index?: number): void;
+};
+type Database = BigUInt
+type Connection = BigUInt
 
 export class DuckDB {
-  private dbBuffer = new BigUint64Array(1);
-  private dbPointer: Deno.PointerValue = null;
-  private connBuffer = new BigUint64Array(1);
-  private connPointer: Deno.PointerValue = null;
-
-  constructor(private path: string = ":memory:") {}
-
-  open(): void {
-    const result = lib.symbols.duckdb_open(cstr(this.path), this.dbBuffer);
-    if (result !== duckdb_state.DuckDBSuccess) {
-      throw new Error("Failed to open DuckDB database");
-    }
-
-    this.dbPointer = Deno.UnsafePointer.create(this.dbBuffer[0]);
-    if (!this.dbPointer) {
-      throw new Error("Invalid database handle");
-    }
-    console.debug(`Database '${this.path}' opened.`);
+  private static allocateBigUInt(): BigUInt {
+    const buffer = new BigUint64Array(1);
+    const pointer = Deno.UnsafePointer.of(buffer);
+    return {
+      buffer,
+      pointer,
+      get(index = 0) {
+        return buffer[index];
+      },
+      set(value: bigint, index = 0) {
+        buffer[index] = value;
+      },
+    };
+  }
+  private static cstr(str: string): Deno.PointerValue {
+    const encoder = new TextEncoder();
+    const strBuf = encoder.encode(str + "\0");
+    return Deno.UnsafePointer.of(strBuf);
   }
 
-  connect(): void {
-    if (!this.dbPointer) {
-      throw new Error("Database must be opened before connecting");
+  static open(path: string) {
+    const db = DuckDB.allocateBigUInt()
+    const error = DuckDB.allocateBigUInt()
+    const state = lib.symbols.duckdb_open_ext(
+      DuckDB.cstr(path), 
+      db.pointer,
+      null,
+      error.pointer
+    );
+    if (state !== duckdb_state.DuckDBSuccess) {
+      if (error.pointer) {
+        const errorMessage = new Deno.UnsafePointerView(error.pointer).getCString();
+        lib.symbols.duckdb_free(error.pointer);
+        throw Error(errorMessage);
+      }
     }
-
-    const result = lib.symbols.duckdb_connect(this.dbPointer, this.connBuffer);
-    if (result !== duckdb_state.DuckDBSuccess) {
-      throw new Error("Failed to connect to DuckDB");
-    }
-
-    this.connPointer = Deno.UnsafePointer.create(this.connBuffer[0]);
-    if (!this.connPointer) {
-      throw new Error("Invalid connection handle");
-    }
-    console.debug(`Database '${this.path}' connected.`);
+    return db
   }
 
-  close(): void {
-    if (this.connPointer) {
-      lib.symbols.duckdb_disconnect(this.connBuffer);
-      this.connPointer = null;
-      console.debug(`Database '${this.path}' disconnected.`);
+  static connect(database: Database): Connection {
+    const conn = DuckDB.allocateBigUInt()
+    const state = lib.symbols.duckdb_connect(
+      database.get(), 
+      conn.pointer
+    );
+    if (state !== duckdb_state.DuckDBSuccess) {
+      throw Error("Failed to connect to DuckDB");
     }
+    return conn
+  }
 
-    if (this.dbPointer) {
-      lib.symbols.duckdb_close(this.dbBuffer);
-      this.dbPointer = null;
-      console.debug(`Database '${this.path}' closed.`);
-    }
+  static disconnect(connection: Connection): void {
+    lib.symbols.duckdb_disconnect(connection.pointer)
+  }
+
+  static close(database: Database): void {
+    lib.symbols.duckdb_close(database.pointer);
   }
 
   getLibraryVersion(): string {
-    const versionPtr = lib.symbols.duckdb_library_version() as Deno.PointerObject;
-    return Deno.UnsafePointerView.getCString(versionPtr);
+    const versionPtr = lib.symbols.duckdb_library_version();
+    if (versionPtr) return Deno.UnsafePointerView.getCString(versionPtr);
+    return "Unknown"
   }
 }

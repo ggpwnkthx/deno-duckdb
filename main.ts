@@ -1,9 +1,10 @@
-// main.ts
-
 import { DuckDB } from "./src/index.ts";
 
-const duckDB = new DuckDB();
-console.log("Library Version:", duckDB.getLibraryVersion());
-duckDB.open();
-duckDB.connect();
-duckDB.close();
+const db = DuckDB.open(":memory:")
+console.debug({db})
+const conn = DuckDB.connect(db)
+console.debug({conn})
+DuckDB.disconnect(conn)
+console.debug({conn})
+DuckDB.close(db)
+console.debug({db})

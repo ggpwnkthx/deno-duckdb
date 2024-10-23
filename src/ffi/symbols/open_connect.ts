@@ -10,11 +10,11 @@ export default {
    * Make sure to close the database using `duckdb_close` after usage.
    *
    * @param path Pointer to the database file path (`const char*`), or `nullptr`/`:memory:` for an in-memory DB.
-   * @param out_database Buffer (`BigUint64Array`) to receive the resulting database object (`duckdb_database*`).
+   * @param out_database Pointer (`BigUint64Array`) to receive the resulting database object (`duckdb_database*`).
    * @return `DuckDBSuccess` (`uint32_t`) on success, or `DuckDBError` on failure.
    */
   duckdb_open: {
-    parameters: ["pointer", "buffer"] as const, // const char* (path), duckdb_database*
+    parameters: ["pointer", "pointer"] as const, // const char* (path), duckdb_database*
     result: "u32" as const,                     // duckdb_state (uint32_t)
   },
 
@@ -25,13 +25,13 @@ export default {
    * The database should be closed with `duckdb_close`.
    *
    * @param path Pointer to the database file path (`const char*`), or `nullptr`/`:memory:` for an in-memory DB.
-   * @param out_database Buffer (`BigUint64Array`) to receive the resulting database object (`duckdb_database*`).
+   * @param out_database Pointer (`BigUint64Array`) to receive the resulting database object (`duckdb_database*`).
    * @param config Pointer to the configuration object (`duckdb_config`), or `null` for default configuration.
-   * @param out_error Buffer (`BigUint64Array`) to receive the error message (`char**`) if the operation fails.
+   * @param out_error Pointer (`BigUint64Array`) to receive the error message (`char**`) if the operation fails.
    * @return `DuckDBSuccess` (`uint32_t`) on success, or `DuckDBError` on failure.
    */
   duckdb_open_ext: {
-    parameters: ["pointer", "buffer", "pointer", "buffer"] as const, // const char* (path), duckdb_database*, duckdb_config, char**
+    parameters: ["pointer", "pointer", "pointer", "pointer"] as const, // const char* (path), duckdb_database*, duckdb_config, char**
     result: "u32" as const,                                          // duckdb_state (uint32_t)
   },
 
@@ -41,11 +41,11 @@ export default {
    * Failing to call this function (e.g., due to a crash) will not result in data corruption, but
    * it's still recommended to close the database properly.
    *
-   * @param database Buffer (`BigUint64Array`) containing the database object to close (`duckdb_database*`).
+   * @param database Pointer (`BigUint64Array`) containing the database object to close (`duckdb_database*`).
    * @return void
    */
   duckdb_close: {
-    parameters: ["buffer"] as const, // duckdb_database*
+    parameters: ["pointer"] as const, // duckdb_database*
     result: "void" as const,         // void
   },
 
@@ -55,11 +55,11 @@ export default {
    * Ensure to close the connection using `duckdb_disconnect` when no longer needed.
    *
    * @param database Pointer to the database object to connect to (`duckdb_database`).
-   * @param out_connection Buffer (`BigUint64Array`) to receive the resulting connection object (`duckdb_connection*`).
+   * @param out_connection Pointer (`BigUint64Array`) to receive the resulting connection object (`duckdb_connection*`).
    * @return `DuckDBSuccess` (`uint32_t`) on success, or `DuckDBError` on failure.
    */
   duckdb_connect: {
-    parameters: ["pointer", "buffer"] as const, // duckdb_database, duckdb_connection*
+    parameters: ["u64", "pointer"] as const, // duckdb_database, duckdb_connection*
     result: "u32" as const,                     // duckdb_state (uint32_t)
   },
 
@@ -93,11 +93,11 @@ export default {
    * associated with the connection. This should be called after you are done using
    * the connection.
    *
-   * @param connection Buffer (`BigUint64Array`) containing the connection object to close (`duckdb_connection*`).
+   * @param connection Pointer (`BigUint64Array`) containing the connection object to close (`duckdb_connection*`).
    * @return void
    */
   duckdb_disconnect: {
-    parameters: ["buffer"] as const, // duckdb_connection*
+    parameters: ["pointer"] as const, // duckdb_connection*
     result: "void" as const,         // void
   },
 

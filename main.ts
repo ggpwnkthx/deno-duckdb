@@ -1,5 +1,6 @@
 import { DuckDB } from "./src/index.ts";
 
+console.debug(DuckDB.version)
 const db = DuckDB.open(":memory:")
 console.debug({db})
 const conn = DuckDB.connect(db)

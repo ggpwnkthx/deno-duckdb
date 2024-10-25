@@ -59,7 +59,7 @@ export default {
    */
   duckdb_column_type: {
     parameters: ["pointer", "u64"] as const,                 // duckdb_result*, idx_t
-    result: "i32" as const,                                  // duckdb_type (int32_t)
+    result: "u32" as const,                                  // duckdb_type (int32_t)
   },
 
   /**
@@ -72,7 +72,7 @@ export default {
    */
   duckdb_result_statement_type: {
     parameters: ["u64"] as const,                        // duckdb_result
-    result: "i32" as const,                                  // duckdb_statement_type (int32_t)
+    result: "u32" as const,                                  // duckdb_statement_type (int32_t)
   },
 
   /**

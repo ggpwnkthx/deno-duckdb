@@ -16,6 +16,6 @@ export default {
    */
   duckdb_result_return_type: {
     parameters: ["u64"] as const,   // duckdb_result (result address)
-    result: "i32" as const,             // duckdb_result_type (int32_t)
+    result: "u32" as const,             // duckdb_result_type (int32_t)
   },
 };

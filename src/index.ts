@@ -1,66 +1,68 @@
 // File: src/index.ts
-import lib from "./ffi/index.ts";
-import { duckdb_state } from "./ffi/types.ts";
+import ffi from "./ffi/index.ts";
+import { duckdb_result_type, duckdb_state, duckdb_statement_type } from "./ffi/types.ts";
 
-class CPointer {
-  private _buffer: BigUint64Array;
-  constructor () { this._buffer = new BigUint64Array(1); }
-  public get buffer() { return this._buffer; }
-  public get pointer() { return Deno.UnsafePointer.of(this._buffer); }
-  public get address() { return this._buffer[0] }
+export function duckdb_open(path: string = ":memory:"): Deno.PointerObject<bigint> | void {
+  const pointer = Deno.UnsafePointer.of<bigint>(new Uint8Array(8))
+  const state = ffi.symbols.duckdb_open(
+    Deno.UnsafePointer.of(new TextEncoder().encode(path + "\0")),
+    pointer
+  )
+  console.debug(duckdb_state[state])
+  if (pointer) return pointer
 }
-type Database = CPointer
-type Connection = CPointer
 
-export class DuckDB {
-  private static cstr(str: string): Deno.PointerValue {
-    const encoder = new TextEncoder();
-    const strBuf = encoder.encode(str + "\0");
-    return Deno.UnsafePointer.of(strBuf);
-  }
+export function duckdb_close(database: Deno.PointerObject<bigint>) {
+  ffi.symbols.duckdb_close(database)
+}
 
-  static open(path: string) {
-    const db = new CPointer()
-    const error = new CPointer()
-    const state = lib.symbols.duckdb_open_ext(
-      DuckDB.cstr(path), 
-      db.pointer,
-      null,
-      error.pointer
-    );
-    if (state !== duckdb_state.DuckDBSuccess) {
-      if (error.pointer) {
-        const errorMessage = new Deno.UnsafePointerView(error.pointer).getCString();
-        lib.symbols.duckdb_free(error.pointer);
-        throw Error(errorMessage);
-      }
+export function duckdb_connect(database: Deno.PointerObject<bigint>): Deno.PointerObject<bigint> | void {
+  const pointer = Deno.UnsafePointer.of<bigint>(new Uint8Array(8))
+  const state = ffi.symbols.duckdb_connect(
+    new Deno.UnsafePointerView(database).getBigUint64(),
+    pointer
+  )
+  console.debug(duckdb_state[state])
+  if (pointer) return pointer
+}
+
+export function duckdb_disconnect(connection: Deno.PointerObject<bigint>) {
+  ffi.symbols.duckdb_disconnect(connection)
+}
+
+export function duckdb_query(connection: Deno.PointerObject<bigint>, query: string): Deno.PointerObject | void {
+  const result = Deno.UnsafePointer.of(new Uint8Array(48))
+  const state = ffi.symbols.duckdb_query(
+    new Deno.UnsafePointerView(connection).getBigUint64(),
+    Deno.UnsafePointer.of(new TextEncoder().encode(query + "\0")),
+    result
+  )
+  console.debug(duckdb_state[state])
+  if (state === duckdb_state.DuckDBError) {
+    const error = ffi.symbols.duckdb_result_error(result);
+    if (error) {
+      const errorMessage = new Deno.UnsafePointerView(error).getCString();
+      console.error(`Query Error: ${errorMessage}`);
     }
-    return db
-  }
+    ffi.symbols.duckdb_destroy_result(result);
 
-  static connect(database: Database): Connection {
-    const conn = new CPointer()
-    const state = lib.symbols.duckdb_connect(
-      database.address, 
-      conn.pointer
-    );
-    if (state !== duckdb_state.DuckDBSuccess) {
-      throw Error("Failed to connect to DuckDB");
-    }
-    return conn
+    return undefined;
   }
+  if (result) return result
+}
 
-  static disconnect(connection: Connection): void {
-    lib.symbols.duckdb_disconnect(connection.pointer)
-  }
+export function duckdb_result_statement_type(result: Deno.PointerObject): duckdb_statement_type {
+  return ffi.symbols.duckdb_result_statement_type(new Deno.UnsafePointerView(result).getBigUint64())
+}
 
-  static close(database: Database): void {
-    lib.symbols.duckdb_close(database.pointer);
-  }
+export function duckdb_result_return_type(result: Deno.PointerObject): duckdb_result_type {
+  return ffi.symbols.duckdb_result_return_type(new Deno.UnsafePointerView(result).getBigUint64())
+}
 
-  static get version(): string {
-    const pointer = lib.symbols.duckdb_library_version();
-    if (pointer) return Deno.UnsafePointerView.getCString(pointer);
-    return "Unknown"
-  }
+export function duckdb_fetch_chunk(result: Deno.PointerObject) {
+  return ffi.symbols.duckdb_fetch_chunk(new Deno.UnsafePointerView(result).getBigUint64())
+}
+
+export function duckdb_destroy_result(result: Deno.PointerObject) {
+  ffi.symbols.duckdb_destroy_result(result)
 }

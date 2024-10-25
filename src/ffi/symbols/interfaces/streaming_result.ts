@@ -14,11 +14,11 @@ export default {
    * The returned data chunk must be destroyed using `duckdb_destroy_data_chunk` after it is no longer needed
    * to free associated memory.
    * 
-   * @param result A pointer to the DuckDB result object (`duckdb_result`), from which to fetch the data chunk.
+   * @param result Address to the DuckDB result object (`duckdb_result`), from which to fetch the data chunk.
    * @return A pointer to the fetched data chunk (`duckdb_data_chunk`). If an error occurs during fetching, returns `NULL`.
    */
   duckdb_fetch_chunk: {
-    parameters: ["pointer"] as const,           // duckdb_result (result object)
+    parameters: ["u64"] as const,           // duckdb_result (result address)
     result: "pointer" as const,                 // duckdb_data_chunk (fetched data chunk)
   },
 };

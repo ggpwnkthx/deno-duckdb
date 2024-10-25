@@ -1,6 +1,6 @@
 // File: src/index.ts
 import ffi from "./ffi/index.ts";
-import { duckdb_result_type, duckdb_state, duckdb_statement_type } from "./ffi/types.ts";
+import { duckdb_error_type, duckdb_result_type, duckdb_state, duckdb_statement_type, duckdb_type } from "./ffi/types.ts";
 
 export function duckdb_open(path: string = ":memory:"): Deno.PointerObject<bigint> | void {
   const pointer = Deno.UnsafePointer.of<bigint>(new Uint8Array(8))
@@ -51,8 +51,45 @@ export function duckdb_query(connection: Deno.PointerObject<bigint>, query: stri
   if (result) return result
 }
 
+export function duckdb_destroy_result(result: Deno.PointerObject) {
+  ffi.symbols.duckdb_destroy_result(result)
+}
+
+export function duckdb_column_name(result: Deno.PointerObject, index: bigint): string | void {
+  const pointer = ffi.symbols.duckdb_column_name(result, index)
+  if (pointer) return Deno.UnsafePointerView.getCString(pointer)
+}
+
+export function duckdb_column_type(result: Deno.PointerObject, index: bigint): string | void {
+  const pointer = ffi.symbols.duckdb_column_name(result, index)
+  if (pointer) return duckdb_type[new Deno.UnsafePointerView(result).getInt32()];
+}
+
 export function duckdb_result_statement_type(result: Deno.PointerObject): duckdb_statement_type {
   return ffi.symbols.duckdb_result_statement_type(new Deno.UnsafePointerView(result).getBigUint64())
+}
+
+export function duckdb_column_logical_type(result: Deno.PointerObject, index: bigint): Deno.PointerObject | void {
+  const pointer = ffi.symbols.duckdb_column_logical_type(result, index)
+  if (pointer) return pointer
+}
+
+export function duckdb_column_count(result: Deno.PointerObject): bigint {
+  return ffi.symbols.duckdb_column_count(result)
+}
+
+export function duckdb_rows_changed(result: Deno.PointerObject): bigint {
+  return ffi.symbols.duckdb_column_count(result)
+}
+
+export function duckdb_result_error(result: Deno.PointerObject): string | void {
+  const pointer = ffi.symbols.duckdb_result_error(result)
+  if (pointer) return Deno.UnsafePointerView.getCString(pointer)
+}
+
+export function duckdb_result_error_type(result: Deno.PointerObject): string | void {
+  const pointer = ffi.symbols.duckdb_result_error_type(result)
+  if (pointer) return duckdb_error_type[new Deno.UnsafePointerView(result).getInt32()];
 }
 
 export function duckdb_result_return_type(result: Deno.PointerObject): duckdb_result_type {
@@ -61,8 +98,4 @@ export function duckdb_result_return_type(result: Deno.PointerObject): duckdb_re
 
 export function duckdb_fetch_chunk(result: Deno.PointerObject) {
   return ffi.symbols.duckdb_fetch_chunk(new Deno.UnsafePointerView(result).getBigUint64())
-}
-
-export function duckdb_destroy_result(result: Deno.PointerObject) {
-  ffi.symbols.duckdb_destroy_result(result)
 }

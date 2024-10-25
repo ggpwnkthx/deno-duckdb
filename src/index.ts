@@ -69,7 +69,7 @@ export function duckdb_column_type(result: Deno.PointerObject, index: bigint): d
 }
 
 export function duckdb_result_statement_type(result: Deno.PointerObject): duckdb_statement_type {
-  return ffi.symbols.duckdb_result_statement_type(result)
+  return ffi.symbols.duckdb_result_statement_type(new Deno.UnsafePointerView(result).getBigUint64())
 }
 
 export function duckdb_column_logical_type(result: Deno.PointerObject, index: bigint): Deno.PointerObject {
@@ -97,7 +97,7 @@ export function duckdb_result_error_type(result: Deno.PointerObject): duckdb_err
 }
 
 export function duckdb_result_return_type(result: Deno.PointerObject): duckdb_result_type {
-  return ffi.symbols.duckdb_result_return_type(result)
+  return ffi.symbols.duckdb_result_return_type(new Deno.UnsafePointerView(result).getBigUint64())
 }
 
 export function duckdb_fetch_chunk(result: Deno.PointerObject) {

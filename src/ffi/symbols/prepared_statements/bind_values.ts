@@ -13,7 +13,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_bind_value: {
-    parameters: ["pointer", "u64", "buffer"] as const,  // duckdb_prepared_statement, idx_t, duckdb_value
+    parameters: ["pointer", "u64", "buffer"] as const,  // duckdb_prepared_statement, idx_t (uint64_t), duckdb_value
     result: "i32" as const,                             // duckdb_state (int32_t)
   },
 
@@ -39,7 +39,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_bind_boolean: {
-    parameters: ["pointer", "u64", "bool"] as const,        // duckdb_prepared_statement, idx_t, bool
+    parameters: ["pointer", "u64", "bool"] as const,        // duckdb_prepared_statement, idx_t (uint64_t), bool
     result: "i32" as const,                                 // duckdb_state (int32_t)
   },
 
@@ -52,7 +52,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_bind_int8: {
-    parameters: ["pointer", "u64", "i8"] as const,          // duckdb_prepared_statement, idx_t, int8_t
+    parameters: ["pointer", "u64", "i8"] as const,          // duckdb_prepared_statement, idx_t (uint64_t), int8_t
     result: "i32" as const,                                 // duckdb_state (int32_t)
   },
 
@@ -65,7 +65,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_bind_int16: {
-    parameters: ["pointer", "u64", "i16"] as const,         // duckdb_prepared_statement, idx_t, int16_t
+    parameters: ["pointer", "u64", "i16"] as const,         // duckdb_prepared_statement, idx_t (uint64_t), int16_t
     result: "i32" as const,                                 // duckdb_state (int32_t)
   },
 
@@ -78,7 +78,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_bind_int32: {
-    parameters: ["pointer", "u64", "i32"] as const,         // duckdb_prepared_statement, idx_t, int32_t
+    parameters: ["pointer", "u64", "i32"] as const,         // duckdb_prepared_statement, idx_t (uint64_t), int32_t
     result: "i32" as const,                                 // duckdb_state (int32_t)
   },
 
@@ -91,7 +91,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_bind_int64: {
-    parameters: ["pointer", "u64", "i64"] as const,         // duckdb_prepared_statement, idx_t, int64_t
+    parameters: ["pointer", "u64", "i64"] as const,         // duckdb_prepared_statement, idx_t (uint64_t), int64_t
     result: "i32" as const,                                 // duckdb_state (int32_t)
   },
 
@@ -104,7 +104,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_bind_hugeint: {
-    parameters: ["pointer", "u64", "buffer"] as const,      // duckdb_prepared_statement, idx_t, duckdb_hugeint
+    parameters: ["pointer", "u64", "buffer"] as const,      // duckdb_prepared_statement, idx_t (uint64_t), duckdb_hugeint
     result: "i32" as const,                                 // duckdb_state (int32_t)
   },
 
@@ -117,7 +117,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_bind_uhugeint: {
-    parameters: ["pointer", "u64", "buffer"] as const,      // duckdb_prepared_statement, idx_t, duckdb_uhugeint
+    parameters: ["pointer", "u64", "buffer"] as const,      // duckdb_prepared_statement, idx_t (uint64_t), duckdb_uhugeint
     result: "i32" as const,                                 // duckdb_state (int32_t)
   },
 
@@ -130,7 +130,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_bind_decimal: {
-    parameters: ["pointer", "u64", "buffer"] as const,      // duckdb_prepared_statement, idx_t, duckdb_decimal
+    parameters: ["pointer", "u64", "buffer"] as const,      // duckdb_prepared_statement, idx_t (uint64_t), duckdb_decimal
     result: "i32" as const,                                 // duckdb_state (int32_t)
   },
 
@@ -143,7 +143,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_bind_uint8: {
-    parameters: ["pointer", "u64", "u8"] as const,          // duckdb_prepared_statement, idx_t, uint8_t
+    parameters: ["pointer", "u64", "u8"] as const,          // duckdb_prepared_statement, idx_t (uint64_t), uint8_t
     result: "i32" as const,                                 // duckdb_state (int32_t)
   },
 
@@ -156,7 +156,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_bind_uint16: {
-    parameters: ["pointer", "u64", "u16"] as const,         // duckdb_prepared_statement, idx_t, uint16_t
+    parameters: ["pointer", "u64", "u16"] as const,         // duckdb_prepared_statement, idx_t (uint64_t), uint16_t
     result: "i32" as const,                                 // duckdb_state (int32_t)
   },
 
@@ -169,7 +169,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_bind_uint32: {
-    parameters: ["pointer", "u64", "u32"] as const,         // duckdb_prepared_statement, idx_t, uint32_t
+    parameters: ["pointer", "u64", "u32"] as const,         // duckdb_prepared_statement, idx_t (uint64_t), uint32_t
     result: "i32" as const,                                 // duckdb_state (int32_t)
   },
 
@@ -182,7 +182,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_bind_uint64: {
-    parameters: ["pointer", "u64", "u64"] as const,         // duckdb_prepared_statement, idx_t, uint64_t
+    parameters: ["pointer", "u64", "u64"] as const,         // duckdb_prepared_statement, idx_t (uint64_t), uint64_t
     result: "i32" as const,                                 // duckdb_state (int32_t)
   },
 
@@ -195,7 +195,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_bind_float: {
-    parameters: ["pointer", "u64", "f32"] as const,         // duckdb_prepared_statement, idx_t, float
+    parameters: ["pointer", "u64", "f32"] as const,         // duckdb_prepared_statement, idx_t (uint64_t), float
     result: "i32" as const,                                 // duckdb_state (int32_t)
   },
 
@@ -208,7 +208,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_bind_double: {
-    parameters: ["pointer", "u64", "f64"] as const,         // duckdb_prepared_statement, idx_t, double
+    parameters: ["pointer", "u64", "f64"] as const,         // duckdb_prepared_statement, idx_t (uint64_t), double
     result: "i32" as const,                                 // duckdb_state (int32_t)
   },
 
@@ -221,7 +221,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_bind_date: {
-    parameters: ["pointer", "u64", "buffer"] as const,      // duckdb_prepared_statement, idx_t, duckdb_date
+    parameters: ["pointer", "u64", "buffer"] as const,      // duckdb_prepared_statement, idx_t (uint64_t), duckdb_date
     result: "i32" as const,                                 // duckdb_state (int32_t)
   },
 
@@ -234,7 +234,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_bind_time: {
-    parameters: ["pointer", "u64", "buffer"] as const,      // duckdb_prepared_statement, idx_t, duckdb_time
+    parameters: ["pointer", "u64", "buffer"] as const,      // duckdb_prepared_statement, idx_t (uint64_t), duckdb_time
     result: "i32" as const,                                 // duckdb_state (int32_t)
   },
 
@@ -247,7 +247,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_bind_timestamp: {
-    parameters: ["pointer", "u64", "buffer"] as const,      // duckdb_prepared_statement, idx_t, duckdb_timestamp
+    parameters: ["pointer", "u64", "buffer"] as const,      // duckdb_prepared_statement, idx_t (uint64_t), duckdb_timestamp
     result: "i32" as const,                                 // duckdb_state (int32_t)
   },
 
@@ -260,7 +260,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_bind_timestamp_tz: {
-    parameters: ["pointer", "u64", "buffer"] as const,      // duckdb_prepared_statement, idx_t, duckdb_timestamp_tz
+    parameters: ["pointer", "u64", "buffer"] as const,      // duckdb_prepared_statement, idx_t (uint64_t), duckdb_timestamp_tz
     result: "i32" as const,                                 // duckdb_state (int32_t)
   },
 
@@ -273,7 +273,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_bind_interval: {
-    parameters: ["pointer", "u64", "buffer"] as const,      // duckdb_prepared_statement, idx_t, duckdb_interval
+    parameters: ["pointer", "u64", "buffer"] as const,      // duckdb_prepared_statement, idx_t (uint64_t), duckdb_interval
     result: "i32" as const,                                 // duckdb_state (int32_t)
   },
 
@@ -286,7 +286,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_bind_varchar: {
-    parameters: ["pointer", "u64", "pointer"] as const,     // duckdb_prepared_statement, idx_t, const char*
+    parameters: ["pointer", "u64", "pointer"] as const,     // duckdb_prepared_statement, idx_t (uint64_t), const char*
     result: "i32" as const,                                 // duckdb_state (int32_t)
   },
 
@@ -300,7 +300,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_bind_varchar_length: {
-    parameters: ["pointer", "u64", "pointer", "u64"] as const, // duckdb_prepared_statement, idx_t, const char*, idx_t
+    parameters: ["pointer", "u64", "pointer", "u64"] as const, // duckdb_prepared_statement, idx_t (uint64_t), const char*, idx_t
     result: "i32" as const,                                    // duckdb_state (int32_t)
   },
 
@@ -314,7 +314,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_bind_blob: {
-    parameters: ["pointer", "u64", "pointer", "u64"] as const, // duckdb_prepared_statement, idx_t, const void*, idx_t
+    parameters: ["pointer", "u64", "pointer", "u64"] as const, // duckdb_prepared_statement, idx_t (uint64_t), const void*, idx_t
     result: "i32" as const,                                    // duckdb_state (int32_t)
   },
 
@@ -326,7 +326,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_bind_null: {
-    parameters: ["pointer", "u64"] as const,                // duckdb_prepared_statement, idx_t
+    parameters: ["pointer", "u64"] as const,                // duckdb_prepared_statement, idx_t (uint64_t)
     result: "i32" as const,                                 // duckdb_state (int32_t)
   },
 };

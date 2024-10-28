@@ -95,7 +95,7 @@ export default {
    * @return void
    */
   duckdb_bind_set_cardinality: {
-    parameters: ["pointer", "u64", "bool"] as const,  // duckdb_bind_info, idx_t (cardinality), bool (is_exact)
+    parameters: ["pointer", "u64", "bool"] as const,  // duckdb_bind_info, idx_t (uint64_t), bool (is_exact)
     result: "void" as const,                          // void
   },
 

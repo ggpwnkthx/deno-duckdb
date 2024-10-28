@@ -69,7 +69,7 @@ export default {
    * @return The column index of the projected column (`idx_t`).
    */
   duckdb_init_get_column_index: {
-    parameters: ["pointer", "u64"] as const,  // duckdb_init_info, idx_t (column_index)
+    parameters: ["pointer", "u64"] as const,  // duckdb_init_info, idx_t (uint64_t)
     result: "u64" as const,                   // idx_t (uint64_t)
   },
 
@@ -84,7 +84,7 @@ export default {
    * @return void
    */
   duckdb_init_set_max_threads: {
-    parameters: ["pointer", "u64"] as const,  // duckdb_init_info, idx_t (max_threads)
+    parameters: ["pointer", "u64"] as const,  // duckdb_init_info, idx_t (uint64_t)
     result: "void" as const,                  // void
   },
 

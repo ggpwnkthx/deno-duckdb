@@ -12,7 +12,7 @@ export default {
    * @return A boolean indicating whether the row is valid (`true`) or NULL/invalid (`false`).
    */
   duckdb_validity_row_is_valid: {
-    parameters: ["pointer", "u64"] as const,    // uint64_t* (validity mask), idx_t (row index)
+    parameters: ["pointer", "u64"] as const,    // uint64_t* (validity mask), idx_t (uint64_t)
     result: "bool" as const,                    // bool
   },
 
@@ -25,7 +25,7 @@ export default {
    * @return void
    */
   duckdb_validity_set_row_validity: {
-    parameters: ["pointer", "u64", "bool"] as const, // uint64_t* (validity mask), idx_t (row index), bool (valid or invalid)
+    parameters: ["pointer", "u64", "bool"] as const, // uint64_t* (validity mask), idx_t (uint64_t), bool (valid or invalid)
     result: "void" as const,                         // void
   },
 
@@ -39,7 +39,7 @@ export default {
    * @return void
    */
   duckdb_validity_set_row_invalid: {
-    parameters: ["pointer", "u64"] as const,    // uint64_t* (validity mask), idx_t (row index)
+    parameters: ["pointer", "u64"] as const,    // uint64_t* (validity mask), idx_t (uint64_t)
     result: "void" as const,                    // void
   },
 
@@ -53,7 +53,7 @@ export default {
    * @return void
    */
   duckdb_validity_set_row_valid: {
-    parameters: ["pointer", "u64"] as const,    // uint64_t* (validity mask), idx_t (row index)
+    parameters: ["pointer", "u64"] as const,    // uint64_t* (validity mask), idx_t (uint64_t)
     result: "void" as const,                    // void
   },
 };

@@ -15,7 +15,7 @@ export default {
    * @returns void
    */
   duckdb_execute_tasks: {
-    parameters: ["pointer", "u64"] as const,  // duckdb_database, idx_t (max_tasks)
+    parameters: ["pointer", "u64"] as const,  // duckdb_database, idx_t (uint64_t)
     result: "void" as const,                  // void
   },
 
@@ -57,8 +57,8 @@ export default {
    * @returns The actual number of tasks that were executed (`idx_t`).
    */
   duckdb_execute_n_tasks_state: {
-    parameters: ["pointer", "u64"] as const,  // duckdb_task_state, idx_t (max_tasks)
-    result: "u64" as const,                   // idx_t (number of executed tasks)
+    parameters: ["pointer", "u64"] as const,  // duckdb_task_state, idx_t (uint64_t)
+    result: "u64" as const,                   // idx_t (uint64_t)
   },
 
   /**

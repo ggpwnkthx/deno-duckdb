@@ -30,7 +30,7 @@ export default {
    */
   duckdb_appender_column_count: {
     parameters: ["pointer"] as const,          // duckdb_appender
-    result: "u64" as const,                    // idx_t
+    result: "u64" as const,                    // idx_t (uint64_t)
   },
 
   /**
@@ -43,7 +43,7 @@ export default {
    * @returns A pointer to the logical type of the column.
    */
   duckdb_appender_column_type: {
-    parameters: ["pointer", "u64"] as const,   // duckdb_appender, idx_t
+    parameters: ["pointer", "u64"] as const,   // duckdb_appender, idx_t (uint64_t)
     result: "pointer" as const,                // duckdb_logical_type
   },
 
@@ -348,7 +348,7 @@ export default {
    * @returns `DuckDBSuccess` on success, or `DuckDBError` on failure.
    */
   duckdb_append_varchar_length: {
-    parameters: ["pointer", "pointer", "u64"] as const, // duckdb_appender, const char*, idx_t (length)
+    parameters: ["pointer", "pointer", "u64"] as const, // duckdb_appender, const char*, idx_t (uint64_t)
     result: "i32" as const,                             // duckdb_state (int32_t)
   },
 
@@ -361,7 +361,7 @@ export default {
    * @returns `DuckDBSuccess` on success, or `DuckDBError` on failure.
    */
   duckdb_append_blob: {
-    parameters: ["pointer", "pointer", "u64"] as const, // duckdb_appender, const void*, idx_t (length)
+    parameters: ["pointer", "pointer", "u64"] as const, // duckdb_appender, const void*, idx_t (uint64_t)
     result: "i32" as const,                             // duckdb_state (int32_t)
   },
 

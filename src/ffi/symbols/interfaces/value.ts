@@ -34,7 +34,7 @@ export default {
    * @return A pointer to a `duckdb_value` containing the string. This must be destroyed with `duckdb_destroy_value`.
    */
   duckdb_create_varchar_length: {
-    parameters: ["pointer", "u64"] as const,    // const char*, idx_t
+    parameters: ["pointer", "u64"] as const,    // const char*, idx_t (uint64_t)
     result: "pointer" as const,                 // duckdb_value
   },
 
@@ -244,7 +244,7 @@ export default {
    * @return A pointer to a `duckdb_value` containing the blob. This must be destroyed with `duckdb_destroy_value`.
    */
   duckdb_create_blob: {
-    parameters: ["pointer", "u64"] as const,    // const uint8_t*, idx_t
+    parameters: ["pointer", "u64"] as const,    // const uint8_t*, idx_t (uint64_t)
     result: "pointer" as const,                 // duckdb_value
   },
 
@@ -467,7 +467,7 @@ export default {
    * @return A pointer to the list `duckdb_value`. Must be destroyed with `duckdb_destroy_value`.
    */
   duckdb_create_list_value: {
-    parameters: ["pointer", "pointer", "u64"] as const, // duckdb_logical_type, duckdb_value*, idx_t
+    parameters: ["pointer", "pointer", "u64"] as const, // duckdb_logical_type, duckdb_value*, idx_t (uint64_t)
     result: "pointer" as const,                         // duckdb_value
   },
 
@@ -480,7 +480,7 @@ export default {
    * @return A pointer to the array `duckdb_value`. Must be destroyed with `duckdb_destroy_value`.
    */
   duckdb_create_array_value: {
-    parameters: ["pointer", "pointer", "u64"] as const, // duckdb_logical_type, duckdb_value*, idx_t
+    parameters: ["pointer", "pointer", "u64"] as const, // duckdb_logical_type, duckdb_value*, idx_t (uint64_t)
     result: "pointer" as const,                         // duckdb_value
   },
 
@@ -503,7 +503,7 @@ export default {
    */
   duckdb_get_map_size: {
     parameters: ["pointer"] as const,           // duckdb_value
-    result: "u64" as const,                     // idx_t
+    result: "u64" as const,                     // idx_t (uint64_t)
   },
 
   /**
@@ -514,7 +514,7 @@ export default {
    * @return A pointer to the `duckdb_value` containing the key.
    */
   duckdb_get_map_key: {
-    parameters: ["pointer", "u64"] as const,    // duckdb_value, idx_t
+    parameters: ["pointer", "u64"] as const,    // duckdb_value, idx_t (uint64_t)
     result: "pointer" as const,                 // duckdb_value
   },
 
@@ -526,7 +526,7 @@ export default {
    * @return A pointer to the `duckdb_value` containing the value.
    */
   duckdb_get_map_value: {
-    parameters: ["pointer", "u64"] as const,    // duckdb_value, idx_t
+    parameters: ["pointer", "u64"] as const,    // duckdb_value, idx_t (uint64_t)
     result: "pointer" as const,                 // duckdb_value
   },
 };

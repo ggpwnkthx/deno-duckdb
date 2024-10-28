@@ -131,7 +131,7 @@ export default {
    * @param output The output vector where the row should be set to NULL.
    */
   duckdb_cast_function_set_row_error: {
-    parameters: ["pointer", "pointer", "u64", "pointer"] as const, // duckdb_function_info, const char* (error), idx_t (row), duckdb_vector (output)
+    parameters: ["pointer", "pointer", "u64", "pointer"] as const, // duckdb_function_info, const char* (error), idx_t (uint64_t), duckdb_vector (output)
     result: "void" as const,                                       // No return value (void)
   },
 

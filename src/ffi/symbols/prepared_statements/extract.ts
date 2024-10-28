@@ -35,7 +35,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_prepare_extracted_statement: {
-    parameters: ["pointer", "pointer", "u64", "pointer"] as const, // duckdb_connection, duckdb_extracted_statements, idx_t, duckdb_prepared_statement*
+    parameters: ["pointer", "pointer", "u64", "pointer"] as const, // duckdb_connection, duckdb_extracted_statements, idx_t (uint64_t), duckdb_prepared_statement*
     result: "i32" as const,                                        // duckdb_state (int32_t)
   },
 

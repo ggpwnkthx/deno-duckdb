@@ -44,7 +44,7 @@ export default {
    * @return Pointer to the column name (`const char*`), or `NULL` if the column index is out of range.
    */
   duckdb_column_name: {
-    parameters: ["pointer", "u64"] as const,                 // duckdb_result*, idx_t
+    parameters: ["pointer", "u64"] as const,                 // duckdb_result*, idx_t (uint64_t)
     result: "pointer" as const,                              // const char*
   },
 
@@ -53,12 +53,12 @@ export default {
    * 
    * Returns `DUCKDB_TYPE_INVALID` if the column index is out of range.
    * 
-   * @param result Pointer to the result object (`duckdb_result*`).
+   * @param result The result pointer to fetch the column type from. (`duckdb_result*`).
    * @param col The column index (`idx_t`).
    * @return The data type of the column (`duckdb_type` as `int32_t`).
    */
   duckdb_column_type: {
-    parameters: ["pointer", "u64"] as const,                 // duckdb_result*, idx_t
+    parameters: ["pointer", "u64"] as const,                 // duckdb_result*, idx_t (uint64_t)
     result: "u32" as const,                                  // duckdb_type (int32_t)
   },
 
@@ -67,11 +67,11 @@ export default {
    * 
    * Returns `DUCKDB_STATEMENT_TYPE_INVALID` if the statement type cannot be determined.
    * 
-   * @param result Address to the result object (`duckdb_result*`).
+   * @param result The result object to fetch the statement type from. (`duckdb_result`).
    * @return The statement type (`duckdb_statement_type` as `int32_t`).
    */
   duckdb_result_statement_type: {
-    parameters: ["u64"] as const,                        // duckdb_result
+    parameters: ["pointer"] as const,                        // duckdb_result
     result: "u32" as const,                                  // duckdb_statement_type (int32_t)
   },
 
@@ -98,7 +98,7 @@ export default {
    */
   duckdb_column_count: {
     parameters: ["pointer"] as const,                        // duckdb_result*
-    result: "u64" as const,                                  // idx_t (size_t)
+    result: "u64" as const,                                  // idx_t (uint64_t)
   },
 
   /**
@@ -107,11 +107,11 @@ export default {
    * This is relevant only for INSERT, UPDATE, and DELETE queries; for other queries, this will return 0.
    * 
    * @param result Pointer to the result object (`duckdb_result*`).
-   * @return The number of rows changed by the query (`idx_t` as `usize`).
+   * @return The number of rows changed by the query (`idx_t`).
    */
   duckdb_rows_changed: {
     parameters: ["pointer"] as const,                        // duckdb_result*
-    result: "u64" as const,                                  // idx_t (size_t)
+    result: "u64" as const,                                  // idx_t (uint64_t)
   },
 
   /**

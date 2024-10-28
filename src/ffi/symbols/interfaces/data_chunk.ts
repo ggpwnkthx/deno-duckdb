@@ -16,7 +16,7 @@ export default {
    * @return A pointer to the created `duckdb_data_chunk`. The chunk must be destroyed using `duckdb_destroy_data_chunk`.
    */
   duckdb_create_data_chunk: {
-    parameters: ["pointer", "u64"] as const,    // duckdb_logical_type*, idx_t (column count)
+    parameters: ["pointer", "u64"] as const,    // duckdb_logical_type*, idx_t (uint64_t)
     result: "pointer" as const,                 // duckdb_data_chunk
   },
 
@@ -57,7 +57,7 @@ export default {
    */
   duckdb_data_chunk_get_column_count: {
     parameters: ["pointer"] as const,           // duckdb_data_chunk
-    result: "u64" as const,                     // idx_t
+    result: "u64" as const,                     // idx_t (uint64_t)
   },
 
   /**
@@ -70,7 +70,7 @@ export default {
    * @return A pointer to the `duckdb_vector` at the specified column index.
    */
   duckdb_data_chunk_get_vector: {
-    parameters: ["pointer", "u64"] as const,    // duckdb_data_chunk, idx_t (column index)
+    parameters: ["pointer", "u64"] as const,    // duckdb_data_chunk, idx_t (uint64_t)
     result: "pointer" as const,                 // duckdb_vector
   },
 
@@ -84,7 +84,7 @@ export default {
    */
   duckdb_data_chunk_get_size: {
     parameters: ["pointer"] as const,           // duckdb_data_chunk
-    result: "u64" as const,                     // idx_t
+    result: "u64" as const,                     // idx_t (uint64_t)
   },
 
   /**
@@ -97,7 +97,7 @@ export default {
    * @return void
    */
   duckdb_data_chunk_set_size: {
-    parameters: ["pointer", "u64"] as const,    // duckdb_data_chunk, idx_t (size)
+    parameters: ["pointer", "u64"] as const,    // duckdb_data_chunk, idx_t (uint64_t)
     result: "void" as const,                    // void
   },
 };

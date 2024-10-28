@@ -58,7 +58,7 @@ export default {
    * @return void
    */
   duckdb_vector_assign_string_element: {
-    parameters: ["pointer", "u64", "pointer"] as const, // duckdb_vector, idx_t, const char* (string)
+    parameters: ["pointer", "u64", "pointer"] as const, // duckdb_vector, idx_t (uint64_t), const char* (string)
     result: "void" as const,                            // void
   },
 
@@ -72,7 +72,7 @@ export default {
    * @return void
    */
   duckdb_vector_assign_string_element_len: {
-    parameters: ["pointer", "u64", "pointer", "u64"] as const, // duckdb_vector, idx_t, const char* (string), idx_t (length)
+    parameters: ["pointer", "u64", "pointer", "u64"] as const, // duckdb_vector, idx_t (uint64_t), const char* (string), idx_t (length)
     result: "void" as const,                                   // void
   },
 
@@ -95,7 +95,7 @@ export default {
    */
   duckdb_list_vector_get_size: {
     parameters: ["pointer"] as const,           // duckdb_vector
-    result: "u64" as const,                     // idx_t (size of child vector)
+    result: "u64" as const,                     // idx_t (uint64_t)
   },
 
   /**
@@ -106,7 +106,7 @@ export default {
    * @return The `duckdb_state` (`DuckDBSuccess` or `DuckDBError`).
    */
   duckdb_list_vector_set_size: {
-    parameters: ["pointer", "u64"] as const,    // duckdb_vector, idx_t (new size)
+    parameters: ["pointer", "u64"] as const,    // duckdb_vector, idx_t (uint64_t)
     result: "i32" as const,                     // duckdb_state (int32_t)
   },
 
@@ -118,7 +118,7 @@ export default {
    * @return The `duckdb_state` (`DuckDBSuccess` or `DuckDBError`).
    */
   duckdb_list_vector_reserve: {
-    parameters: ["pointer", "u64"] as const,    // duckdb_vector, idx_t (required capacity)
+    parameters: ["pointer", "u64"] as const,    // duckdb_vector, idx_t (uint64_t)
     result: "i32" as const,                     // duckdb_state (int32_t)
   },
 
@@ -130,7 +130,7 @@ export default {
    * @return A pointer to the child `duckdb_vector`. Valid as long as the parent vector is alive.
    */
   duckdb_struct_vector_get_child: {
-    parameters: ["pointer", "u64"] as const,    // duckdb_vector, idx_t (child index)
+    parameters: ["pointer", "u64"] as const,    // duckdb_vector, idx_t (uint64_t)
     result: "pointer" as const,                 // duckdb_vector (child vector)
   },
 

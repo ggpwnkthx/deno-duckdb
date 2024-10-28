@@ -63,7 +63,7 @@ export default {
    * @returns `DuckDBSuccess` (`int32_t`) on success, or `DuckDBError` on failure.
    */
   duckdb_column_has_default: {
-    parameters: ["pointer", "u64", "pointer"] as const, // duckdb_table_description, idx_t, bool*
+    parameters: ["pointer", "u64", "pointer"] as const, // duckdb_table_description, idx_t (uint64_t), bool*
     result: "i32" as const,                             // duckdb_state (int32_t)
   },
 };

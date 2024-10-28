@@ -59,7 +59,7 @@ export default {
    * @return `DuckDBSuccess` (`uint32_t`) on success, or `DuckDBError` on failure.
    */
   duckdb_connect: {
-    parameters: ["u64", "pointer"] as const, // duckdb_database, duckdb_connection*
+    parameters: ["i64", "pointer"] as const, // duckdb_database, duckdb_connection*
     result: "u32" as const,                     // duckdb_state (uint32_t)
   },
 

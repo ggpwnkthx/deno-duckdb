@@ -65,7 +65,7 @@ export default {
    */
   duckdb_profiling_info_get_child_count: {
     parameters: ["pointer"] as const,           // duckdb_profiling_info
-    result: "u64" as const,                     // idx_t
+    result: "u64" as const,                     // idx_t (uint64_t)
   },
 
   /**
@@ -80,7 +80,7 @@ export default {
    * @return A `duckdb_profiling_info` object representing the child node at the specified index.
    */
   duckdb_profiling_info_get_child: {
-    parameters: ["pointer", "u64"] as const,    // duckdb_profiling_info, idx_t (child index)
+    parameters: ["pointer", "u64"] as const,    // duckdb_profiling_info, idx_t (uint64_t)
     result: "pointer" as const,                 // duckdb_profiling_info (child node)
   },
 };

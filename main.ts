@@ -1,6 +1,5 @@
-import { CHAR_0 } from "https://deno.land/std@0.224.0/path/_common/constants.ts";
-import { duckdb_result_type, duckdb_statement_type, duckdb_type } from "./src/ffi/types.ts";
-import { duckdb_close, duckdb_column_count, duckdb_column_logical_type, duckdb_column_name, duckdb_column_type, duckdb_connect, duckdb_destroy_result, duckdb_disconnect, duckdb_fetch_chunk, duckdb_open, duckdb_query, duckdb_result_return_type, duckdb_result_statement_type } from "./src/index.ts";
+import { duckdb_type } from "./src/ffi/types.ts";
+import { duckdb_close, duckdb_column_count, duckdb_column_name, duckdb_column_type, duckdb_connect, duckdb_destroy_result, duckdb_disconnect, duckdb_fetch_chunk, duckdb_open, duckdb_query, duckdb_result_return_type, duckdb_result_statement_type } from "./src/index.ts";
 
 function* bigintRange(start: bigint, end: bigint): Generator<bigint, void, unknown> {
   for (let i = start; i < end; i++) {

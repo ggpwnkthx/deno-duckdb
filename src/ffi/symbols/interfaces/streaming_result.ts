@@ -18,7 +18,7 @@ export default {
    * @return A pointer to the fetched data chunk (`duckdb_data_chunk`). If an error occurs during fetching, returns `NULL`.
    */
   duckdb_fetch_chunk: {
-    parameters: ["buffer"] as const,           // duckdb_result (result address)
+    parameters: ["pointer"] as const,           // duckdb_result (result address)
     result: "pointer" as const,                 // duckdb_data_chunk (fetched data chunk)
   },
 };

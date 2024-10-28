@@ -52,7 +52,6 @@ export function duckdb_query(connection: duckdb_connection, query: string): duck
         message: errorType !== undefined ? duckdb_error_type[errorType] : `DuckDB error type [${errorType}] is undocumented`,
         options: { cause: duckdb_result_error(pointer) },
       }
-      console.error(error);
       duckdb_destroy_result(pointer);
       throw Error(error.message, error.options)
     }
@@ -108,6 +107,5 @@ export function duckdb_result_return_type(result: duckdb_result): duckdb_result_
 }
 
 export function duckdb_fetch_chunk(result: duckdb_result) {
-  const buffer = Deno.UnsafePointerView.getArrayBuffer(result, 1024)
-  return ffi.symbols.duckdb_fetch_chunk(buffer)
+  return ffi.symbols.duckdb_fetch_chunk(result)
 }

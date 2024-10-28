@@ -7,7 +7,7 @@ if (db) {
   const conn = duckdb_connect(db)
   if (conn) {
     console.debug({ conn: new Deno.UnsafePointerView(conn).getArrayBuffer(8) })
-    const result = duckdb_query(conn, "PRAGMA version")
+    let result = duckdb_query(conn, "PRAGMA version")
     if (result) {
       const resultBuffer = new Deno.UnsafePointerView(result).getArrayBuffer(48)
       const column_count = Number(duckdb_column_count(result)) // Number.MAX_SAFE_INTEGER
@@ -25,10 +25,21 @@ if (db) {
           column_types: Array.from({ length: column_count }).map((_, i) => duckdb_type[duckdb_column_type(result, i)]),
         }
       })
-      // const data_chunk = duckdb_fetch_chunk(result)
-      // console.debug({ data_chunk })
+      const data_chunk = duckdb_fetch_chunk(result)
+      console.debug({ data_chunk })
       duckdb_destroy_result(result)
       console.debug({ result: new Deno.UnsafePointerView(result).getArrayBuffer(8) })
+    }
+
+    // ERROR HANDLING EXAMPLE
+    try {
+      result = duckdb_query(conn, "PRAGMA version,,;")
+      if (result) {
+        duckdb_destroy_result(result)
+        console.debug({ result: new Deno.UnsafePointerView(result).getArrayBuffer(8) })
+      }
+    } catch (error) {
+      console.error(error);
     }
     duckdb_disconnect(conn)
     console.debug({ conn: new Deno.UnsafePointerView(conn).getArrayBuffer(8) })

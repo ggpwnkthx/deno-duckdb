@@ -36,6 +36,11 @@ export function duckdb_disconnect(connection: duckdb_connection) {
   ffi.symbols.duckdb_disconnect(connection)
 }
 
+export function duckdb_library_version(): string {
+  const pointer = ffi.symbols.duckdb_library_version()
+  return pointer ? new Deno.UnsafePointerView(pointer).getCString() : ""
+}
+
 export function duckdb_query(connection: duckdb_connection, query: string): duckdb_result {
   const pointer = Deno.UnsafePointer.of(new Uint8Array(48))
   console.debug({ query })

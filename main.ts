@@ -1,6 +1,7 @@
 import { duckdb_statement_type, duckdb_type } from "./src/ffi/types.ts";
-import { duckdb_close, duckdb_column_count, duckdb_column_name, duckdb_column_type, duckdb_connect, duckdb_destroy_result, duckdb_disconnect, duckdb_fetch_chunk, duckdb_open, duckdb_query, duckdb_result_return_type, duckdb_result_statement_type } from "./src/index.ts";
+import { duckdb_close, duckdb_column_count, duckdb_column_name, duckdb_column_type, duckdb_connect, duckdb_destroy_result, duckdb_disconnect, duckdb_fetch_chunk, duckdb_library_version, duckdb_open, duckdb_query, duckdb_result_return_type, duckdb_result_statement_type } from "./src/index.ts";
 
+console.debug(duckdb_library_version())
 const db = duckdb_open("duck.db")
 if (db) {
   console.debug({ db: new Deno.UnsafePointerView(db).getArrayBuffer(8) })

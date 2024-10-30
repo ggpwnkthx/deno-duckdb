@@ -3,6 +3,8 @@
 // Open Connect - FFI functions for opening, connecting, and managing DuckDB databases
 //===--------------------------------------------------------------------===//
 
+import { duckdb_database } from "../types.ts";
+
 export default {
   /**
    * Opens a new DuckDB database or connects to an existing one.
@@ -59,7 +61,7 @@ export default {
    * @return `DuckDBSuccess` (`uint32_t`) on success, or `DuckDBError` on failure.
    */
   duckdb_connect: {
-    parameters: ["i64", "pointer"] as const, // duckdb_database, duckdb_connection*
+    parameters: [duckdb_database, "pointer"] as const, // duckdb_database, duckdb_connection*
     result: "u32" as const,                     // duckdb_state (uint32_t)
   },
 

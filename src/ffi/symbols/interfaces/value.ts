@@ -3,6 +3,8 @@
 // Value Interface - FFI functions for managing values in DuckDB
 //===--------------------------------------------------------------------===//
 
+import { duckdb_logical_type } from "../../types.ts";
+
 export default {
   /**
    * Destroys a value and frees its allocated memory.
@@ -454,7 +456,7 @@ export default {
    * @return A pointer to the struct `duckdb_value`. Must be destroyed with `duckdb_destroy_value`.
    */
   duckdb_create_struct_value: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_logical_type, duckdb_value*
+    parameters: [duckdb_logical_type, "pointer"] as const,  // duckdb_logical_type, duckdb_value*
     result: "pointer" as const,                   // duckdb_value
   },
 
@@ -467,7 +469,7 @@ export default {
    * @return A pointer to the list `duckdb_value`. Must be destroyed with `duckdb_destroy_value`.
    */
   duckdb_create_list_value: {
-    parameters: ["pointer", "pointer", "u64"] as const, // duckdb_logical_type, duckdb_value*, idx_t (uint64_t)
+    parameters: [duckdb_logical_type, "pointer", "u64"] as const, // duckdb_logical_type, duckdb_value*, idx_t (uint64_t)
     result: "pointer" as const,                         // duckdb_value
   },
 
@@ -480,7 +482,7 @@ export default {
    * @return A pointer to the array `duckdb_value`. Must be destroyed with `duckdb_destroy_value`.
    */
   duckdb_create_array_value: {
-    parameters: ["pointer", "pointer", "u64"] as const, // duckdb_logical_type, duckdb_value*, idx_t (uint64_t)
+    parameters: [duckdb_logical_type, "pointer", "u64"] as const, // duckdb_logical_type, duckdb_value*, idx_t (uint64_t)
     result: "pointer" as const,                         // duckdb_value
   },
 
@@ -492,7 +494,7 @@ export default {
    */
   duckdb_get_value_type: {
     parameters: ["pointer"] as const,           // duckdb_value
-    result: "pointer" as const,                 // duckdb_logical_type
+    result: duckdb_logical_type,                 // duckdb_logical_type
   },
 
   /**

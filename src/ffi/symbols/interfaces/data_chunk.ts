@@ -3,6 +3,8 @@
 // Data Chunk Interface - FFI functions for managing data chunks in DuckDB
 //===--------------------------------------------------------------------===//
 
+import { duckdb_data_chunk, duckdb_vector } from "../../types.ts";
+
 export default {
   /**
    * Creates an empty data chunk with the specified column types.
@@ -43,7 +45,7 @@ export default {
    * @return void
    */
   duckdb_data_chunk_reset: {
-    parameters: ["pointer"] as const,           // duckdb_data_chunk
+    parameters: [duckdb_data_chunk] as const,           // duckdb_data_chunk
     result: "void" as const,                    // void
   },
 
@@ -56,7 +58,7 @@ export default {
    * @return The number of columns in the data chunk (`idx_t`).
    */
   duckdb_data_chunk_get_column_count: {
-    parameters: ["pointer"] as const,           // duckdb_data_chunk
+    parameters: [duckdb_data_chunk] as const,           // duckdb_data_chunk
     result: "u64" as const,                     // idx_t (uint64_t)
   },
 
@@ -70,8 +72,8 @@ export default {
    * @return A pointer to the `duckdb_vector` at the specified column index.
    */
   duckdb_data_chunk_get_vector: {
-    parameters: ["pointer", "u64"] as const,    // duckdb_data_chunk, idx_t (uint64_t)
-    result: "pointer" as const,                 // duckdb_vector
+    parameters: [duckdb_data_chunk, "u64"] as const,    // duckdb_data_chunk, idx_t (uint64_t)
+    result: duckdb_vector,                 // duckdb_vector
   },
 
   /**
@@ -83,7 +85,7 @@ export default {
    * @return The number of tuples (rows) in the data chunk (`idx_t`).
    */
   duckdb_data_chunk_get_size: {
-    parameters: ["pointer"] as const,           // duckdb_data_chunk
+    parameters: [duckdb_data_chunk] as const,           // duckdb_data_chunk
     result: "u64" as const,                     // idx_t (uint64_t)
   },
 
@@ -97,7 +99,7 @@ export default {
    * @return void
    */
   duckdb_data_chunk_set_size: {
-    parameters: ["pointer", "u64"] as const,    // duckdb_data_chunk, idx_t (uint64_t)
+    parameters: [duckdb_data_chunk, "u64"] as const,    // duckdb_data_chunk, idx_t (uint64_t)
     result: "void" as const,                    // void
   },
 };

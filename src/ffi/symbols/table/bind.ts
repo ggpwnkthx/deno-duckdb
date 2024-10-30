@@ -3,6 +3,8 @@
 // Table Function Bind - FFI functions for binding table functions in DuckDB
 //===--------------------------------------------------------------------===//
 
+import { duckdb_logical_type } from "../../types.ts";
+
 export default {
   /**
    * Retrieves the extra info set in the table function using `duckdb_table_function_set_extra_info`.
@@ -26,7 +28,7 @@ export default {
    * @return void
    */
   duckdb_bind_add_result_column: {
-    parameters: ["pointer", "pointer", "pointer"] as const,  // duckdb_bind_info, const char* (name), duckdb_logical_type
+    parameters: ["pointer", "pointer", duckdb_logical_type] as const,  // duckdb_bind_info, const char* (name), duckdb_logical_type
     result: "void" as const,                                 // void
   },
 

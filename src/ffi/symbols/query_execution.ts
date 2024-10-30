@@ -3,6 +3,8 @@
 // Query Execution - FFI functions for executing SQL queries in DuckDB
 //===--------------------------------------------------------------------===//
 
+import { duckdb_connection, duckdb_logical_type, duckdb_result } from "../types.ts";
+
 export default {
   /**
    * Executes a SQL query on a given connection and stores the result in the `out_result` buffer.
@@ -16,7 +18,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success, or `DuckDBError` on failure.
    */
   duckdb_query: {
-    parameters: ["u64", "pointer", "pointer"] as const,  // duckdb_connection, const char*, duckdb_result*
+    parameters: [duckdb_connection, "pointer", "pointer"] as const,  // duckdb_connection, const char*, duckdb_result*
     result: "i32" as const,                                  // duckdb_state (int32_t)
   },
 
@@ -71,7 +73,7 @@ export default {
    * @return The statement type (`duckdb_statement_type` as `int32_t`).
    */
   duckdb_result_statement_type: {
-    parameters: ["pointer"] as const,                        // duckdb_result
+    parameters: [duckdb_result] as const,                        // duckdb_result
     result: "u32" as const,                                  // duckdb_statement_type (int32_t)
   },
 
@@ -87,7 +89,7 @@ export default {
    */
   duckdb_column_logical_type: {
     parameters: ["pointer", "u64"] as const,                 // duckdb_result*, idx_t
-    result: "pointer" as const,                              // duckdb_logical_type
+    result: duckdb_logical_type,                              // duckdb_logical_type
   },
 
   /**

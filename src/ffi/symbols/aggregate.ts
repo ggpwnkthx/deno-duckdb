@@ -3,6 +3,8 @@
 // Aggregate Functions
 //===--------------------------------------------------------------------===//
 
+import { duckdb_logical_type } from "../types.ts";
+
 export default {
   /**
    * Creates a new empty aggregate function.
@@ -46,7 +48,7 @@ export default {
    * @return void
    */
   duckdb_aggregate_function_add_parameter: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_aggregate_function, duckdb_logical_type
+    parameters: ["pointer", duckdb_logical_type] as const,  // duckdb_aggregate_function, duckdb_logical_type
     result: "void" as const,  // void
   },
 
@@ -58,7 +60,7 @@ export default {
    * @return void
    */
   duckdb_aggregate_function_set_return_type: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_aggregate_function, duckdb_logical_type
+    parameters: ["pointer", duckdb_logical_type] as const,  // duckdb_aggregate_function, duckdb_logical_type
     result: "void" as const,  // void
   },
 

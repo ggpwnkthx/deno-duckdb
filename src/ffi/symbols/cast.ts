@@ -3,6 +3,8 @@
 // Cast Functions - FFI functions for managing custom cast functions in DuckDB
 //===--------------------------------------------------------------------===//
 
+import { duckdb_logical_type, duckdb_vector } from "../types.ts";
+
 export default {
   /**
    * Creates a new cast function object.
@@ -25,7 +27,7 @@ export default {
    * @param source_type The source type to set for casting (`duckdb_logical_type`).
    */
   duckdb_cast_function_set_source_type: {
-    parameters: ["pointer", "pointer"] as const, // duckdb_cast_function, duckdb_logical_type (source type)
+    parameters: ["pointer", duckdb_logical_type] as const, // duckdb_cast_function, duckdb_logical_type (source type)
     result: "void" as const,                     // No return value (void)
   },
 
@@ -38,7 +40,7 @@ export default {
    * @param target_type The target type to set for casting (`duckdb_logical_type`).
    */
   duckdb_cast_function_set_target_type: {
-    parameters: ["pointer", "pointer"] as const, // duckdb_cast_function, duckdb_logical_type (target type)
+    parameters: ["pointer", duckdb_logical_type] as const, // duckdb_cast_function, duckdb_logical_type (target type)
     result: "void" as const,                     // No return value (void)
   },
 
@@ -131,7 +133,7 @@ export default {
    * @param output The output vector where the row should be set to NULL.
    */
   duckdb_cast_function_set_row_error: {
-    parameters: ["pointer", "pointer", "u64", "pointer"] as const, // duckdb_function_info, const char* (error), idx_t (uint64_t), duckdb_vector (output)
+    parameters: ["pointer", "pointer", "u64", duckdb_vector] as const, // duckdb_function_info, const char* (error), idx_t (uint64_t), duckdb_vector (output)
     result: "void" as const,                                       // No return value (void)
   },
 

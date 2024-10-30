@@ -3,6 +3,8 @@
 // Appender - FFI functions for appending data into tables in DuckDB
 //===--------------------------------------------------------------------===//
 
+import { duckdb_logical_type } from "../types.ts";
+
 export default {
   /**
    * Creates an appender object for a given connection and table.
@@ -44,7 +46,7 @@ export default {
    */
   duckdb_appender_column_type: {
     parameters: ["pointer", "u64"] as const,   // duckdb_appender, idx_t (uint64_t)
-    result: "pointer" as const,                // duckdb_logical_type
+    result: duckdb_logical_type,                // duckdb_logical_type
   },
 
   /**

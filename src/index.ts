@@ -2,12 +2,8 @@
 import ffi from "./ffi/index.ts";
 import { duckdb_error_type, duckdb_result_type, duckdb_state, duckdb_statement_type, duckdb_type } from "./ffi/types.ts";
 
-type duckdb_database = Deno.PointerObject
-type duckdb_connection = Deno.PointerObject
-type duckdb_result = Deno.PointerObject
-
-export function duckdb_open(path: string = ":memory:"): duckdb_database {
-  const pointer = Deno.UnsafePointer.of(new Uint8Array(8))
+export function duckdb_open(path: string = ":memory:"): Deno.PointerObject {
+  const pointer = Deno.UnsafePointer.of(new ArrayBuffer(8))
   const state = ffi.symbols.duckdb_open(
     Deno.UnsafePointer.of(new TextEncoder().encode(path + "\0")),
     pointer
@@ -17,14 +13,14 @@ export function duckdb_open(path: string = ":memory:"): duckdb_database {
   return pointer
 }
 
-export function duckdb_close(database: duckdb_database) {
+export function duckdb_close(database: Deno.PointerObject) {
   ffi.symbols.duckdb_close(database)
 }
 
-export function duckdb_connect(database: duckdb_database): duckdb_connection {
-  const pointer = Deno.UnsafePointer.of(new Uint8Array(8))
+export function duckdb_connect(database: Deno.PointerObject): Deno.PointerObject {
+  const pointer = Deno.UnsafePointer.of(new ArrayBuffer(8))
   const state = ffi.symbols.duckdb_connect(
-    new Deno.UnsafePointerView(database).getBigInt64(),
+    Deno.UnsafePointerView.getArrayBuffer(database, 8),
     pointer
   )
   console.debug(duckdb_state[state])
@@ -32,7 +28,7 @@ export function duckdb_connect(database: duckdb_database): duckdb_connection {
   return pointer
 }
 
-export function duckdb_disconnect(connection: duckdb_connection) {
+export function duckdb_disconnect(connection: Deno.PointerObject) {
   ffi.symbols.duckdb_disconnect(connection)
 }
 
@@ -41,11 +37,11 @@ export function duckdb_library_version(): string {
   return pointer ? new Deno.UnsafePointerView(pointer).getCString() : ""
 }
 
-export function duckdb_query(connection: duckdb_connection, query: string): duckdb_result {
-  const pointer = Deno.UnsafePointer.of(new Uint8Array(48))
+export function duckdb_query(connection: Deno.PointerObject, query: string) {
+  const pointer = Deno.UnsafePointer.of(new ArrayBuffer(48))
   console.debug({ query })
   const state = ffi.symbols.duckdb_query(
-    new Deno.UnsafePointerView(connection).getBigUint64(),
+    Deno.UnsafePointerView.getArrayBuffer(connection, 8),
     Deno.UnsafePointer.of(new TextEncoder().encode(query + "\0")),
     pointer
   )
@@ -54,7 +50,7 @@ export function duckdb_query(connection: duckdb_connection, query: string): duck
     if (state === duckdb_state.DuckDBError) {
       const errorType = duckdb_result_error_type(pointer)
       const error = {
-        message: errorType !== undefined ? duckdb_error_type[errorType] : `DuckDB error type [${errorType}] is undocumented`,
+        message: errorType ?? `DuckDB error type [${errorType}] is undocumented`,
         options: { cause: duckdb_result_error(pointer) },
       }
       duckdb_destroy_result(pointer);
@@ -65,52 +61,96 @@ export function duckdb_query(connection: duckdb_connection, query: string): duck
   return pointer
 }
 
-export function duckdb_destroy_result(result: duckdb_result) {
+export function duckdb_destroy_result(result: Deno.PointerObject) {
   ffi.symbols.duckdb_destroy_result(result)
 }
 
-export function duckdb_column_name(result: duckdb_result, index: bigint | number): string {
+export function duckdb_column_name(result: Deno.PointerObject, index: bigint | number): string {
   const pointer = ffi.symbols.duckdb_column_name(result, BigInt(index))
   if (pointer === null) throw new Error("Column not found. Index value may be invalid.");
   return Deno.UnsafePointerView.getCString(pointer)
 }
 
-export function duckdb_column_type(result: duckdb_result, index: bigint | number ): duckdb_type {
-  return ffi.symbols.duckdb_column_type(result, BigInt(index))
+export function duckdb_column_type(result: Deno.PointerObject, index: bigint | number): string | void {
+  return duckdb_type[ffi.symbols.duckdb_column_type(result, BigInt(index))]
 }
 
-export function duckdb_result_statement_type(result: duckdb_result): duckdb_statement_type {
-  return ffi.symbols.duckdb_result_statement_type(result)
+export function duckdb_result_statement_type(result: Deno.PointerObject): string | void {
+  return duckdb_statement_type[ffi.symbols.duckdb_result_statement_type(Deno.UnsafePointerView.getArrayBuffer(result, 48))]
 }
 
-export function duckdb_column_logical_type(result: duckdb_result, index: bigint | number): Deno.PointerObject {
+export function duckdb_column_logical_type(result: Deno.PointerObject, index: bigint | number): ArrayBuffer {
   const pointer = ffi.symbols.duckdb_column_logical_type(result, BigInt(index))
   if (pointer === null) throw new Error("Column not found. Index value may be invalid.");
   return pointer
 }
 
-export function duckdb_column_count(result: duckdb_result): bigint {
+export function duckdb_column_count(result: Deno.PointerObject): bigint {
   return ffi.symbols.duckdb_column_count(result)
 }
 
-export function duckdb_rows_changed(result: duckdb_result): bigint {
-  return ffi.symbols.duckdb_column_count(result)
+export function duckdb_rows_changed(result: Deno.PointerObject): bigint {
+  return ffi.symbols.duckdb_rows_changed(result)
 }
 
-export function duckdb_result_error(result: duckdb_result): string {
+export function duckdb_result_error(result: Deno.PointerObject): string {
   const pointer = ffi.symbols.duckdb_result_error(result)
   return pointer ? Deno.UnsafePointerView.getCString(pointer) : "No errors"
 }
 
-export function duckdb_result_error_type(result: duckdb_result): duckdb_error_type | void {
-  const pointer = ffi.symbols.duckdb_result_error_type(result)
-  if (pointer) return new Deno.UnsafePointerView(result).getInt32();
+export function duckdb_result_error_type(result: Deno.PointerObject): string | void {
+  const type = ffi.symbols.duckdb_result_error_type(result)
+  if (type) return duckdb_error_type[type];
 }
 
-export function duckdb_result_return_type(result: duckdb_result): duckdb_result_type {
-  return ffi.symbols.duckdb_result_return_type(new Deno.UnsafePointerView(result).getBigUint64())
+export function duckdb_result_return_type(result: Deno.PointerObject): string | void {
+  const type = ffi.symbols.duckdb_result_return_type(Deno.UnsafePointerView.getArrayBuffer(result, 48))
+  return duckdb_result_type[type]
 }
 
-export function duckdb_fetch_chunk(result: duckdb_result) {
-  return ffi.symbols.duckdb_fetch_chunk(result)
+export function duckdb_fetch_chunk(result: Deno.PointerObject) {
+  const buffer = ffi.symbols.duckdb_fetch_chunk(Deno.UnsafePointerView.getArrayBuffer(result, 48))
+  if (buffer.every(b => b === 0)) return null
+  return buffer
+}
+
+export function duckdb_data_chunk_get_column_count(chunk: ArrayBuffer) {
+  return ffi.symbols.duckdb_data_chunk_get_column_count(chunk)
+}
+
+export function duckdb_data_chunk_get_vector(chunk: ArrayBuffer, column_index: bigint | number) {
+  return ffi.symbols.duckdb_data_chunk_get_vector(chunk, BigInt(column_index))
+}
+
+export function duckdb_data_chunk_get_size(chunk: ArrayBuffer) {
+  return ffi.symbols.duckdb_data_chunk_get_size(chunk)
+}
+
+export function duckdb_vector_get_column_type(vector: ArrayBuffer) {
+  return ffi.symbols.duckdb_vector_get_column_type(vector)
+}
+
+export function duckdb_vector_get_data(vector: ArrayBuffer) {
+  return ffi.symbols.duckdb_vector_get_data(vector)
+}
+
+export function duckdb_vector_get_validity(vector: ArrayBuffer) {
+  return ffi.symbols.duckdb_vector_get_validity(vector)
+}
+
+export function duckdb_validity_row_is_valid(validity: Deno.PointerObject, row_index: bigint) {
+  return ffi.symbols.duckdb_validity_row_is_valid(validity, row_index)
+}
+
+export function duckdb_get_type_id(type: ArrayBuffer) {
+  return ffi.symbols.duckdb_get_type_id(type)
+}
+
+export function duckdb_logical_type_get_alias(type: ArrayBuffer) {
+  const pointer = ffi.symbols.duckdb_logical_type_get_alias(type)
+  return pointer ? Deno.UnsafePointerView.getCString(pointer) : "Unknown"
+}
+
+export function duckdb_destroy_data_chunk(chunk: ArrayBuffer) {
+  return ffi.symbols.duckdb_destroy_data_chunk(Deno.UnsafePointer.of(chunk))
 }

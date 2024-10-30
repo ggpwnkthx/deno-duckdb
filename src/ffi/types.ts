@@ -187,3 +187,34 @@ export enum duckdb_cast_mode {
   DUCKDB_CAST_NORMAL = 0,  // Normal cast mode
   DUCKDB_CAST_TRY = 1,     // Try cast mode, ignores errors
 }
+
+export const duckdb_database = {
+  struct: ["pointer"] as const
+}
+
+export const duckdb_connection = {
+  struct: ["pointer"] as const
+}
+
+export const duckdb_result = {
+  struct: [
+    "u64",
+    "u64",
+    "u64",
+    "pointer",
+    "pointer",
+    "pointer",
+  ] as const
+}
+
+export const duckdb_data_chunk = {
+  struct: ["pointer"] as const
+}
+
+export const duckdb_vector = {
+  struct: ["pointer"] as const
+}
+
+export const duckdb_logical_type = {
+  struct: ["pointer"] as const
+}

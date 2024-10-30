@@ -3,6 +3,8 @@
 // Scalar Functions
 //===--------------------------------------------------------------------===//
 
+import { duckdb_logical_type } from "../types.ts";
+
 export default {
   /**
    * Creates a new empty scalar function.
@@ -46,7 +48,7 @@ export default {
    * @return void
    */
   duckdb_scalar_function_set_varargs: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_scalar_function, duckdb_logical_type
+    parameters: ["pointer", duckdb_logical_type] as const,  // duckdb_scalar_function, duckdb_logical_type
     result: "void" as const,                      // void
   },
 
@@ -80,7 +82,7 @@ export default {
    * @return void
    */
   duckdb_scalar_function_add_parameter: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_scalar_function, duckdb_logical_type
+    parameters: ["pointer", duckdb_logical_type] as const,  // duckdb_scalar_function, duckdb_logical_type
     result: "void" as const,                      // void
   },
 
@@ -92,7 +94,7 @@ export default {
    * @return void
    */
   duckdb_scalar_function_set_return_type: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_scalar_function, duckdb_logical_type
+    parameters: ["pointer", duckdb_logical_type] as const,  // duckdb_scalar_function, duckdb_logical_type
     result: "void" as const,                      // void
   },
 

@@ -3,6 +3,8 @@
 // Streaming Result Interface - FFI functions for fetching result data chunks from DuckDB
 //===--------------------------------------------------------------------===//
 
+import { duckdb_data_chunk, duckdb_result } from "../../types.ts";
+
 export default {
   /**
    * Fetches a data chunk from the specified DuckDB result object.
@@ -18,7 +20,7 @@ export default {
    * @return A pointer to the fetched data chunk (`duckdb_data_chunk`). If an error occurs during fetching, returns `NULL`.
    */
   duckdb_fetch_chunk: {
-    parameters: ["pointer"] as const,           // duckdb_result (result address)
-    result: "pointer" as const,                 // duckdb_data_chunk (fetched data chunk)
+    parameters: [duckdb_result] as const,           // duckdb_result (result address)
+    result: duckdb_data_chunk,                 // duckdb_data_chunk (fetched data chunk)
   },
 };

@@ -3,6 +3,8 @@
 // Result Functions - FFI functions for working with query results in DuckDB
 //===--------------------------------------------------------------------===//
 
+import { duckdb_result } from "../types.ts";
+
 export default {
   /**
    * Retrieves the return type of the given result object.
@@ -15,7 +17,7 @@ export default {
    * @return The result return type (`duckdb_result_type`) or `DUCKDB_RETURN_TYPE_INVALID` on error.
    */
   duckdb_result_return_type: {
-    parameters: ["u64"] as const,   // duckdb_result (result address)
+    parameters: [duckdb_result] as const,   // duckdb_result (result address)
     result: "u32" as const,             // duckdb_result_type (int32_t)
   },
 };

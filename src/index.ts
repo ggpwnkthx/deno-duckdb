@@ -154,3 +154,15 @@ export function duckdb_logical_type_get_alias(type: ArrayBuffer) {
 export function duckdb_destroy_data_chunk(chunk: ArrayBuffer) {
   return ffi.symbols.duckdb_destroy_data_chunk(Deno.UnsafePointer.of(chunk))
 }
+
+export function duckdb_string_is_inlined(string_t: ArrayBuffer) {
+  return ffi.symbols.duckdb_string_is_inlined(string_t)
+}
+
+export function duckdb_string_t_length(string_t: ArrayBuffer) {
+  return ffi.symbols.duckdb_string_t_length(string_t)
+}
+
+export function duckdb_string_t_data(string_t: ArrayBuffer) {
+  return ffi.symbols.duckdb_string_t_data(Deno.UnsafePointer.of(string_t))
+}

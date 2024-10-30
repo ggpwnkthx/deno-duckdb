@@ -1,5 +1,5 @@
 import { duckdb_type } from "./src/ffi/types.ts";
-import { duckdb_close, duckdb_column_count, duckdb_column_name, duckdb_column_type, duckdb_connect, duckdb_data_chunk_get_column_count, duckdb_data_chunk_get_size, duckdb_data_chunk_get_vector, duckdb_destroy_data_chunk, duckdb_destroy_result, duckdb_disconnect, duckdb_fetch_chunk, duckdb_get_type_id, duckdb_library_version, duckdb_logical_type_get_alias, duckdb_open, duckdb_query, duckdb_result_return_type, duckdb_result_statement_type, duckdb_validity_row_is_valid, duckdb_vector_get_column_type, duckdb_vector_get_data, duckdb_vector_get_validity } from "./src/index.ts";
+import { duckdb_close, duckdb_column_count, duckdb_column_name, duckdb_column_type, duckdb_connect, duckdb_data_chunk_get_column_count, duckdb_data_chunk_get_size, duckdb_data_chunk_get_vector, duckdb_destroy_data_chunk, duckdb_destroy_result, duckdb_disconnect, duckdb_fetch_chunk, duckdb_get_type_id, duckdb_library_version, duckdb_logical_type_get_alias, duckdb_open, duckdb_query, duckdb_result_return_type, duckdb_result_statement_type, duckdb_string_is_inlined, duckdb_string_t_data, duckdb_string_t_length, duckdb_validity_row_is_valid, duckdb_vector_get_column_type, duckdb_vector_get_data, duckdb_vector_get_validity } from "./src/index.ts";
 
 console.debug(duckdb_library_version())
 const db = duckdb_open("duck.db")
@@ -8,12 +8,13 @@ if (db) {
   if (conn) {
     const query = duckdb_query(conn, `
       SELECT
-        hash(i * 10 + j) AS id,
+        hash(i * 10 + j) AS id1,
         IF (j % 2, true, false) AS bool,
-        'test' as quest
+        CONCAT(i,'this') as 'short string',
+        hash(j * 10 + i) AS id2,
       FROM generate_series(1, 10000) s(i)
       CROSS JOIN generate_series(1, 10) t(j)
-      ORDER BY id
+      ORDER BY id1
     `)
     // const query = duckdb_query(conn, `SELECT 42 AS answer, 'test' AS why`)
     if (query) {
@@ -60,9 +61,15 @@ if (db) {
                 case "DUCKDB_TYPE_DOUBLE": return view.getFloat64(row_index * 8)
 
                 case "DUCKDB_TYPE_VARCHAR": {
-                  const stringPtr = view.getBigUint64(row_index * 8); // Assuming each pointer is 8 bytes on a 64-bit system
-                  return row_index * 8
-                  return null; // Null pointer means no string (optional safeguard)
+                  const length = view.getInt32(row_index * 16)
+                  if (length <= 12) {
+                    return new TextDecoder().decode(
+                      Deno.UnsafePointerView.getArrayBuffer(view.pointer, length, row_index * 16 + 4)
+                    )
+                  } else {
+                    const ptr = view.getPointer(row_index * 16 + 8);
+                    return ptr ? new TextDecoder().decode(Deno.UnsafePointerView.getArrayBuffer(ptr, length)) : null
+                  }
                 }
                 default: return undefined
               }

@@ -13,8 +13,8 @@ export default {
    * @return A pointer to the extra info object (`void*`).
    */
   duckdb_init_get_extra_info: {
-    parameters: ["pointer"] as const,  // duckdb_init_info
-    result: "pointer" as const,        // void*
+    parameters: ["pointer"],  // duckdb_init_info
+    result: "pointer",        // void*
   },
 
   /**
@@ -26,8 +26,8 @@ export default {
    * @return A pointer to the bind data object (`void*`).
    */
   duckdb_init_get_bind_data: {
-    parameters: ["pointer"] as const,  // duckdb_init_info
-    result: "pointer" as const,        // void*
+    parameters: ["pointer"],  // duckdb_init_info
+    result: "pointer",        // void*
   },
 
   /**
@@ -42,8 +42,8 @@ export default {
    * @return void
    */
   duckdb_init_set_init_data: {
-    parameters: ["pointer", "pointer", "pointer"] as const,  // duckdb_init_info, void* (init_data), duckdb_delete_callback_t
-    result: "void" as const,                                 // void
+    parameters: ["pointer", "pointer", "pointer"],  // duckdb_init_info, void* (init_data), duckdb_delete_callback_t
+    result: "void",                                 // void
   },
 
   /**
@@ -55,8 +55,8 @@ export default {
    * @return The number of projected columns (`idx_t`).
    */
   duckdb_init_get_column_count: {
-    parameters: ["pointer"] as const,  // duckdb_init_info
-    result: "u64" as const,            // idx_t (uint64_t)
+    parameters: ["pointer"],  // duckdb_init_info
+    result: "u64",            // idx_t (uint64_t)
   },
 
   /**
@@ -69,8 +69,8 @@ export default {
    * @return The column index of the projected column (`idx_t`).
    */
   duckdb_init_get_column_index: {
-    parameters: ["pointer", "u64"] as const,  // duckdb_init_info, idx_t (uint64_t)
-    result: "u64" as const,                   // idx_t (uint64_t)
+    parameters: ["pointer", "u64"],  // duckdb_init_info, idx_t (uint64_t)
+    result: "u64",                   // idx_t (uint64_t)
   },
 
   /**
@@ -84,8 +84,8 @@ export default {
    * @return void
    */
   duckdb_init_set_max_threads: {
-    parameters: ["pointer", "u64"] as const,  // duckdb_init_info, idx_t (uint64_t)
-    result: "void" as const,                  // void
+    parameters: ["pointer", "u64"],  // duckdb_init_info, idx_t (uint64_t)
+    result: "void",                  // void
   },
 
   /**
@@ -98,7 +98,7 @@ export default {
    * @return void
    */
   duckdb_init_set_error: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_init_info, const char* (error message)
-    result: "void" as const,                      // void
+    parameters: ["pointer", "pointer"],  // duckdb_init_info, const char* (error message)
+    result: "void",                      // void
   },
-};
+} as const satisfies Deno.ForeignLibraryInterface;

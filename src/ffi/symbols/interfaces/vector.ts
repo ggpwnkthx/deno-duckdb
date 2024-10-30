@@ -13,7 +13,7 @@ export default {
    * @return A pointer to the `duckdb_logical_type` of the vector. Must be destroyed with `duckdb_destroy_logical_type`.
    */
   duckdb_vector_get_column_type: {
-    parameters: [duckdb_vector] as const,           // duckdb_vector
+    parameters: [duckdb_vector],           // duckdb_vector
     result: duckdb_logical_type,                  // duckdb_logical_type
   },
 
@@ -24,8 +24,8 @@ export default {
    * @return A pointer to the data of the vector. The data format depends on the vector's type.
    */
   duckdb_vector_get_data: {
-    parameters: [duckdb_vector] as const,           // duckdb_vector
-    result: "pointer" as const,                 // void* (data pointer)
+    parameters: [duckdb_vector],           // duckdb_vector
+    result: "pointer",                 // void* (data pointer)
   },
 
   /**
@@ -35,8 +35,8 @@ export default {
    * @return A pointer to the validity mask, or `NULL` if no validity mask is present. The validity mask is a bitset.
    */
   duckdb_vector_get_validity: {
-    parameters: [duckdb_vector] as const,           // duckdb_vector
-    result: "pointer" as const,                 // uint64_t* (validity mask pointer)
+    parameters: [duckdb_vector],           // duckdb_vector
+    result: "pointer",                 // uint64_t* (validity mask pointer)
   },
 
   /**
@@ -47,8 +47,8 @@ export default {
    * @return void
    */
   duckdb_vector_ensure_validity_writable: {
-    parameters: [duckdb_vector] as const,           // duckdb_vector
-    result: "void" as const,                    // void
+    parameters: [duckdb_vector],           // duckdb_vector
+    result: "void",                    // void
   },
 
   /**
@@ -60,8 +60,8 @@ export default {
    * @return void
    */
   duckdb_vector_assign_string_element: {
-    parameters: [duckdb_vector, "u64", "pointer"] as const, // duckdb_vector, idx_t (uint64_t), const char* (string)
-    result: "void" as const,                            // void
+    parameters: [duckdb_vector, "u64", "pointer"], // duckdb_vector, idx_t (uint64_t), const char* (string)
+    result: "void",                            // void
   },
 
   /**
@@ -74,8 +74,8 @@ export default {
    * @return void
    */
   duckdb_vector_assign_string_element_len: {
-    parameters: [duckdb_vector, "u64", "pointer", "u64"] as const, // duckdb_vector, idx_t (uint64_t), const char* (string), idx_t (length)
-    result: "void" as const,                                   // void
+    parameters: [duckdb_vector, "u64", "pointer", "u64"], // duckdb_vector, idx_t (uint64_t), const char* (string), idx_t (length)
+    result: "void",                                   // void
   },
 
   /**
@@ -85,7 +85,7 @@ export default {
    * @return A pointer to the child `duckdb_vector`. Valid as long as the parent vector is alive.
    */
   duckdb_list_vector_get_child: {
-    parameters: [duckdb_vector] as const,           // duckdb_vector
+    parameters: [duckdb_vector],           // duckdb_vector
     result: duckdb_vector,                 // duckdb_vector (child vector)
   },
 
@@ -96,8 +96,8 @@ export default {
    * @return The number of elements in the child vector (list size).
    */
   duckdb_list_vector_get_size: {
-    parameters: [duckdb_vector] as const,           // duckdb_vector
-    result: "u64" as const,                     // idx_t (uint64_t)
+    parameters: [duckdb_vector],           // duckdb_vector
+    result: "u64",                     // idx_t (uint64_t)
   },
 
   /**
@@ -108,8 +108,8 @@ export default {
    * @return The `duckdb_state` (`DuckDBSuccess` or `DuckDBError`).
    */
   duckdb_list_vector_set_size: {
-    parameters: [duckdb_vector, "u64"] as const,    // duckdb_vector, idx_t (uint64_t)
-    result: "i32" as const,                     // duckdb_state (int32_t)
+    parameters: [duckdb_vector, "u64"],    // duckdb_vector, idx_t (uint64_t)
+    result: "i32",                     // duckdb_state (int32_t)
   },
 
   /**
@@ -120,8 +120,8 @@ export default {
    * @return The `duckdb_state` (`DuckDBSuccess` or `DuckDBError`).
    */
   duckdb_list_vector_reserve: {
-    parameters: [duckdb_vector, "u64"] as const,    // duckdb_vector, idx_t (uint64_t)
-    result: "i32" as const,                     // duckdb_state (int32_t)
+    parameters: [duckdb_vector, "u64"],    // duckdb_vector, idx_t (uint64_t)
+    result: "i32",                     // duckdb_state (int32_t)
   },
 
   /**
@@ -132,7 +132,7 @@ export default {
    * @return A pointer to the child `duckdb_vector`. Valid as long as the parent vector is alive.
    */
   duckdb_struct_vector_get_child: {
-    parameters: [duckdb_vector, "u64"] as const,    // duckdb_vector, idx_t (uint64_t)
+    parameters: [duckdb_vector, "u64"],    // duckdb_vector, idx_t (uint64_t)
     result: duckdb_vector,                 // duckdb_vector (child vector)
   },
 
@@ -145,7 +145,7 @@ export default {
    * @return A pointer to the child `duckdb_vector`. Valid as long as the parent vector is alive.
    */
   duckdb_array_vector_get_child: {
-    parameters: [duckdb_vector] as const,           // duckdb_vector
+    parameters: [duckdb_vector],           // duckdb_vector
     result: duckdb_vector,                 // duckdb_vector (child vector)
   },
-};
+} as const satisfies Deno.ForeignLibraryInterface;

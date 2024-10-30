@@ -14,8 +14,8 @@ export default {
    * @return A pointer to the created cast function object (`duckdb_cast_function`).
    */
   duckdb_create_cast_function: {
-    parameters: [] as const,                    // No parameters
-    result: "pointer" as const,                 // duckdb_cast_function
+    parameters: [],                    // No parameters
+    result: "pointer",                 // duckdb_cast_function
   },
 
   /**
@@ -27,8 +27,8 @@ export default {
    * @param source_type The source type to set for casting (`duckdb_logical_type`).
    */
   duckdb_cast_function_set_source_type: {
-    parameters: ["pointer", duckdb_logical_type] as const, // duckdb_cast_function, duckdb_logical_type (source type)
-    result: "void" as const,                     // No return value (void)
+    parameters: ["pointer", duckdb_logical_type], // duckdb_cast_function, duckdb_logical_type (source type)
+    result: "void",                     // No return value (void)
   },
 
   /**
@@ -40,8 +40,8 @@ export default {
    * @param target_type The target type to set for casting (`duckdb_logical_type`).
    */
   duckdb_cast_function_set_target_type: {
-    parameters: ["pointer", duckdb_logical_type] as const, // duckdb_cast_function, duckdb_logical_type (target type)
-    result: "void" as const,                     // No return value (void)
+    parameters: ["pointer", duckdb_logical_type], // duckdb_cast_function, duckdb_logical_type (target type)
+    result: "void",                     // No return value (void)
   },
 
   /**
@@ -54,8 +54,8 @@ export default {
    * @param cost The implicit cast cost to set (`int64_t`).
    */
   duckdb_cast_function_set_implicit_cast_cost: {
-    parameters: ["pointer", "i64"] as const,    // duckdb_cast_function, int64_t (cost)
-    result: "void" as const,                    // No return value (void)
+    parameters: ["pointer", "i64"],    // duckdb_cast_function, int64_t (cost)
+    result: "void",                    // No return value (void)
   },
 
   /**
@@ -67,8 +67,8 @@ export default {
    * @param function The function to use for casting (`duckdb_cast_function_t`).
    */
   duckdb_cast_function_set_function: {
-    parameters: ["pointer", "pointer"] as const, // duckdb_cast_function, duckdb_cast_function_t (function)
-    result: "void" as const,                    // No return value (void)
+    parameters: ["pointer", "pointer"], // duckdb_cast_function, duckdb_cast_function_t (function)
+    result: "void",                    // No return value (void)
   },
 
   /**
@@ -81,8 +81,8 @@ export default {
    * @param destroy A callback function to destroy the extra information when no longer needed (`duckdb_delete_callback_t`).
    */
   duckdb_cast_function_set_extra_info: {
-    parameters: ["pointer", "pointer", "pointer"] as const, // duckdb_cast_function, void* (extra_info), duckdb_delete_callback_t
-    result: "void" as const,                                // No return value (void)
+    parameters: ["pointer", "pointer", "pointer"], // duckdb_cast_function, void* (extra_info), duckdb_delete_callback_t
+    result: "void",                                // No return value (void)
   },
 
   /**
@@ -92,8 +92,8 @@ export default {
    * @return A pointer to the extra information (`void*`).
    */
   duckdb_cast_function_get_extra_info: {
-    parameters: ["pointer"] as const,           // duckdb_function_info
-    result: "pointer" as const,                 // void* (extra_info)
+    parameters: ["pointer"],           // duckdb_function_info
+    result: "pointer",                 // void* (extra_info)
   },
 
   /**
@@ -105,8 +105,8 @@ export default {
    * @return The cast mode (`duckdb_cast_mode`).
    */
   duckdb_cast_function_get_cast_mode: {
-    parameters: ["pointer"] as const,           // duckdb_function_info
-    result: "i32" as const,                     // duckdb_cast_mode (int32_t)
+    parameters: ["pointer"],           // duckdb_function_info
+    result: "i32",                     // duckdb_cast_mode (int32_t)
   },
 
   /**
@@ -118,8 +118,8 @@ export default {
    * @param error A pointer to the error message (`const char*`).
    */
   duckdb_cast_function_set_error: {
-    parameters: ["pointer", "pointer"] as const, // duckdb_function_info, const char* (error message)
-    result: "void" as const,                     // No return value (void)
+    parameters: ["pointer", "pointer"], // duckdb_function_info, const char* (error message)
+    result: "void",                     // No return value (void)
   },
 
   /**
@@ -133,8 +133,8 @@ export default {
    * @param output The output vector where the row should be set to NULL.
    */
   duckdb_cast_function_set_row_error: {
-    parameters: ["pointer", "pointer", "u64", duckdb_vector] as const, // duckdb_function_info, const char* (error), idx_t (uint64_t), duckdb_vector (output)
-    result: "void" as const,                                       // No return value (void)
+    parameters: ["pointer", "pointer", "u64", duckdb_vector], // duckdb_function_info, const char* (error), idx_t (uint64_t), duckdb_vector (output)
+    result: "void",                                       // No return value (void)
   },
 
   /**
@@ -147,8 +147,8 @@ export default {
    * @return `DuckDBSuccess` on success, or `DuckDBError` on failure (`int32_t`).
    */
   duckdb_register_cast_function: {
-    parameters: ["pointer", "pointer"] as const, // duckdb_connection, duckdb_cast_function
-    result: "i32" as const,                      // duckdb_state (int32_t)
+    parameters: ["pointer", "pointer"], // duckdb_connection, duckdb_cast_function
+    result: "i32",                      // duckdb_state (int32_t)
   },
 
   /**
@@ -157,7 +157,7 @@ export default {
    * @param cast_function A pointer to the cast function object to destroy.
    */
   duckdb_destroy_cast_function: {
-    parameters: ["pointer"] as const,           // duckdb_cast_function*
-    result: "void" as const,                    // No return value (void)
+    parameters: ["pointer"],           // duckdb_cast_function*
+    result: "void",                    // No return value (void)
   },
-};
+} as const satisfies Deno.ForeignLibraryInterface;

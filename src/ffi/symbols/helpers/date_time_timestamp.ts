@@ -13,8 +13,8 @@ export default {
    * @return The `duckdb_date_struct` with the decomposed year, month, and day.
    */
   duckdb_from_date: {
-    parameters: ["buffer"] as const,    // duckdb_date
-    result: "buffer" as const,          // duckdb_date_struct
+    parameters: ["buffer"],    // duckdb_date
+    result: "buffer",          // duckdb_date_struct
   },
 
   /**
@@ -26,8 +26,8 @@ export default {
    * @return The `duckdb_date` element.
    */
   duckdb_to_date: {
-    parameters: ["buffer"] as const,    // duckdb_date_struct
-    result: "buffer" as const,          // duckdb_date
+    parameters: ["buffer"],    // duckdb_date_struct
+    result: "buffer",          // duckdb_date
   },
 
   /**
@@ -37,8 +37,8 @@ export default {
    * @return `true` if the date is finite, `false` if it is ±infinity.
    */
   duckdb_is_finite_date: {
-    parameters: ["buffer"] as const,    // duckdb_date
-    result: "bool" as const,            // bool
+    parameters: ["buffer"],    // duckdb_date
+    result: "bool",            // bool
   },
 
   /**
@@ -50,8 +50,8 @@ export default {
    * @return The `duckdb_time_struct` with the decomposed time components.
    */
   duckdb_from_time: {
-    parameters: ["buffer"] as const,    // duckdb_time
-    result: "buffer" as const,          // duckdb_time_struct
+    parameters: ["buffer"],    // duckdb_time
+    result: "buffer",          // duckdb_time_struct
   },
 
   /**
@@ -64,8 +64,8 @@ export default {
    * @return The `duckdb_time_tz` element.
    */
   duckdb_create_time_tz: {
-    parameters: ["i64", "i32"] as const,    // int64_t (micros), int32_t (offset)
-    result: "buffer" as const,              // duckdb_time_tz
+    parameters: ["i64", "i32"],    // int64_t (micros), int32_t (offset)
+    result: "buffer",              // duckdb_time_tz
   },
 
   /**
@@ -77,8 +77,8 @@ export default {
    * @return The `duckdb_time_tz_struct` with the decomposed elements.
    */
   duckdb_from_time_tz: {
-    parameters: ["buffer"] as const,    // duckdb_time_tz
-    result: "buffer" as const,          // duckdb_time_tz_struct
+    parameters: ["buffer"],    // duckdb_time_tz
+    result: "buffer",          // duckdb_time_tz_struct
   },
 
   /**
@@ -90,8 +90,8 @@ export default {
    * @return The `duckdb_time` element.
    */
   duckdb_to_time: {
-    parameters: ["buffer"] as const,    // duckdb_time_struct
-    result: "buffer" as const,          // duckdb_time
+    parameters: ["buffer"],    // duckdb_time_struct
+    result: "buffer",          // duckdb_time
   },
 
   /**
@@ -103,8 +103,8 @@ export default {
    * @return The `duckdb_timestamp_struct` with the decomposed elements.
    */
   duckdb_from_timestamp: {
-    parameters: ["buffer"] as const,    // duckdb_timestamp
-    result: "buffer" as const,          // duckdb_timestamp_struct
+    parameters: ["buffer"],    // duckdb_timestamp
+    result: "buffer",          // duckdb_timestamp_struct
   },
 
   /**
@@ -114,8 +114,8 @@ export default {
    * @return The `duckdb_timestamp` element.
    */
   duckdb_to_timestamp: {
-    parameters: ["buffer"] as const,    // duckdb_timestamp_struct
-    result: "buffer" as const,          // duckdb_timestamp
+    parameters: ["buffer"],    // duckdb_timestamp_struct
+    result: "buffer",          // duckdb_timestamp
   },
 
   /**
@@ -125,7 +125,7 @@ export default {
    * @return `true` if the timestamp is finite, `false` if it is ±infinity.
    */
   duckdb_is_finite_timestamp: {
-    parameters: ["buffer"] as const,    // duckdb_timestamp
-    result: "bool" as const,            // bool
+    parameters: ["buffer"],    // duckdb_timestamp
+    result: "bool",            // bool
   },
-};
+} as const satisfies Deno.ForeignLibraryInterface;

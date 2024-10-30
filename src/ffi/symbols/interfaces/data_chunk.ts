@@ -18,8 +18,8 @@ export default {
    * @return A pointer to the created `duckdb_data_chunk`. The chunk must be destroyed using `duckdb_destroy_data_chunk`.
    */
   duckdb_create_data_chunk: {
-    parameters: ["pointer", "u64"] as const,    // duckdb_logical_type*, idx_t (uint64_t)
-    result: "pointer" as const,                 // duckdb_data_chunk
+    parameters: ["pointer", "u64"],    // duckdb_logical_type*, idx_t (uint64_t)
+    result: "pointer",                 // duckdb_data_chunk
   },
 
   /**
@@ -31,8 +31,8 @@ export default {
    * @return void
    */
   duckdb_destroy_data_chunk: {
-    parameters: ["pointer"] as const,           // duckdb_data_chunk*
-    result: "void" as const,                    // void
+    parameters: ["pointer"],           // duckdb_data_chunk*
+    result: "void",                    // void
   },
 
   /**
@@ -45,8 +45,8 @@ export default {
    * @return void
    */
   duckdb_data_chunk_reset: {
-    parameters: [duckdb_data_chunk] as const,           // duckdb_data_chunk
-    result: "void" as const,                    // void
+    parameters: [duckdb_data_chunk],           // duckdb_data_chunk
+    result: "void",                    // void
   },
 
   /**
@@ -58,8 +58,8 @@ export default {
    * @return The number of columns in the data chunk (`idx_t`).
    */
   duckdb_data_chunk_get_column_count: {
-    parameters: [duckdb_data_chunk] as const,           // duckdb_data_chunk
-    result: "u64" as const,                     // idx_t (uint64_t)
+    parameters: [duckdb_data_chunk],           // duckdb_data_chunk
+    result: "u64",                     // idx_t (uint64_t)
   },
 
   /**
@@ -72,7 +72,7 @@ export default {
    * @return A pointer to the `duckdb_vector` at the specified column index.
    */
   duckdb_data_chunk_get_vector: {
-    parameters: [duckdb_data_chunk, "u64"] as const,    // duckdb_data_chunk, idx_t (uint64_t)
+    parameters: [duckdb_data_chunk, "u64"],    // duckdb_data_chunk, idx_t (uint64_t)
     result: duckdb_vector,                 // duckdb_vector
   },
 
@@ -85,8 +85,8 @@ export default {
    * @return The number of tuples (rows) in the data chunk (`idx_t`).
    */
   duckdb_data_chunk_get_size: {
-    parameters: [duckdb_data_chunk] as const,           // duckdb_data_chunk
-    result: "u64" as const,                     // idx_t (uint64_t)
+    parameters: [duckdb_data_chunk],           // duckdb_data_chunk
+    result: "u64",                     // idx_t (uint64_t)
   },
 
   /**
@@ -99,7 +99,7 @@ export default {
    * @return void
    */
   duckdb_data_chunk_set_size: {
-    parameters: [duckdb_data_chunk, "u64"] as const,    // duckdb_data_chunk, idx_t (uint64_t)
-    result: "void" as const,                    // void
+    parameters: [duckdb_data_chunk, "u64"],    // duckdb_data_chunk, idx_t (uint64_t)
+    result: "void",                    // void
   },
-};
+} as const satisfies Deno.ForeignLibraryInterface;

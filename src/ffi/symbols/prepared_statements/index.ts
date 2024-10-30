@@ -23,8 +23,8 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success, or `DuckDBError` on failure.
    */
   duckdb_prepare: {
-    parameters: ["pointer", "pointer", "pointer"] as const, // duckdb_connection, const char* (string pointer), duckdb_prepared_statement*
-    result: "i32" as const,                                 // duckdb_state (int32_t)
+    parameters: ["pointer", "pointer", "pointer"], // duckdb_connection, const char* (string pointer), duckdb_prepared_statement*
+    result: "i32",                                 // duckdb_state (int32_t)
   },
 
   /**
@@ -36,8 +36,8 @@ export default {
    * @return void
    */
   duckdb_destroy_prepare: {
-    parameters: ["pointer"] as const,                       // duckdb_prepared_statement*
-    result: "void" as const,                                // void
+    parameters: ["pointer"],                       // duckdb_prepared_statement*
+    result: "void",                                // void
   },
 
   /**
@@ -50,8 +50,8 @@ export default {
    * @return The error message (`const char*`), or `nullptr` if no error is present.
    */
   duckdb_prepare_error: {
-    parameters: ["pointer"] as const,                       // duckdb_prepared_statement
-    result: "pointer" as const,                             // const char* (string pointer)
+    parameters: ["pointer"],                       // duckdb_prepared_statement
+    result: "pointer",                             // const char* (string pointer)
   },
 
   /**
@@ -63,8 +63,8 @@ export default {
    * @return The number of parameters in the statement (`idx_t`).
    */
   duckdb_nparams: {
-    parameters: ["pointer"] as const,                       // duckdb_prepared_statement
-    result: "u64" as const,                                 // idx_t (uint64_t)
+    parameters: ["pointer"],                       // duckdb_prepared_statement
+    result: "u64",                                 // idx_t (uint64_t)
   },
 
   /**
@@ -77,8 +77,8 @@ export default {
    * @return The parameter name (`const char*`), or `nullptr` if the index is out of range.
    */
   duckdb_parameter_name: {
-    parameters: ["pointer", "u64"] as const,                // duckdb_prepared_statement, idx_t (uint64_t)
-    result: "pointer" as const,                             // const char* (string pointer)
+    parameters: ["pointer", "u64"],                // duckdb_prepared_statement, idx_t (uint64_t)
+    result: "pointer",                             // const char* (string pointer)
   },
 
   /**
@@ -91,8 +91,8 @@ export default {
    * @return The parameter type (`duckdb_type`).
    */
   duckdb_param_type: {
-    parameters: ["pointer", "u64"] as const,                // duckdb_prepared_statement, idx_t (uint64_t)
-    result: "i32" as const,                                 // duckdb_type (int32_t)
+    parameters: ["pointer", "u64"],                // duckdb_prepared_statement, idx_t (uint64_t)
+    result: "i32",                                 // duckdb_type (int32_t)
   },
 
   /**
@@ -104,8 +104,8 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success, or `DuckDBError` on failure.
    */
   duckdb_clear_bindings: {
-    parameters: ["pointer"] as const,                       // duckdb_prepared_statement
-    result: "i32" as const,                                 // duckdb_state (int32_t)
+    parameters: ["pointer"],                       // duckdb_prepared_statement
+    result: "i32",                                 // duckdb_state (int32_t)
   },
 
   /**
@@ -115,8 +115,8 @@ export default {
    * @return The statement type (`duckdb_statement_type`), or `DUCKDB_STATEMENT_TYPE_INVALID` on error.
    */
   duckdb_prepared_statement_type: {
-    parameters: ["pointer"] as const,                       // duckdb_prepared_statement
-    result: "i32" as const,                                 // duckdb_statement_type (int32_t)
+    parameters: ["pointer"],                       // duckdb_prepared_statement
+    result: "i32",                                 // duckdb_statement_type (int32_t)
   },
 
   // Additional FFI functions for prepared statements
@@ -124,4 +124,4 @@ export default {
   ...execute,
   ...extract,
   ...pending,
-};
+} as const satisfies Deno.ForeignLibraryInterface;

@@ -16,8 +16,8 @@ export default {
    * @return `DuckDBSuccess` (`uint32_t`) on success, or `DuckDBError` on failure.
    */
   duckdb_open: {
-    parameters: ["pointer", "pointer"] as const, // const char* (path), duckdb_database*
-    result: "u32" as const,                     // duckdb_state (uint32_t)
+    parameters: ["pointer", "pointer"], // const char* (path), duckdb_database*
+    result: "u32",                     // duckdb_state (uint32_t)
   },
 
   /**
@@ -33,8 +33,8 @@ export default {
    * @return `DuckDBSuccess` (`uint32_t`) on success, or `DuckDBError` on failure.
    */
   duckdb_open_ext: {
-    parameters: ["pointer", "pointer", "pointer", "pointer"] as const, // const char* (path), duckdb_database*, duckdb_config, char**
-    result: "u32" as const,                                          // duckdb_state (uint32_t)
+    parameters: ["pointer", "pointer", "pointer", "pointer"], // const char* (path), duckdb_database*, duckdb_config, char**
+    result: "u32",                                          // duckdb_state (uint32_t)
   },
 
   /**
@@ -47,8 +47,8 @@ export default {
    * @return void
    */
   duckdb_close: {
-    parameters: ["pointer"] as const, // duckdb_database*
-    result: "void" as const,         // void
+    parameters: ["pointer"], // duckdb_database*
+    result: "void",         // void
   },
 
   /**
@@ -61,8 +61,8 @@ export default {
    * @return `DuckDBSuccess` (`uint32_t`) on success, or `DuckDBError` on failure.
    */
   duckdb_connect: {
-    parameters: [duckdb_database, "pointer"] as const, // duckdb_database, duckdb_connection*
-    result: "u32" as const,                     // duckdb_state (uint32_t)
+    parameters: [duckdb_database, "pointer"], // duckdb_database, duckdb_connection*
+    result: "u32",                     // duckdb_state (uint32_t)
   },
 
   /**
@@ -72,8 +72,8 @@ export default {
    * @return void
    */
   duckdb_interrupt: {
-    parameters: ["pointer"] as const, // duckdb_connection
-    result: "void" as const,          // void
+    parameters: ["pointer"], // duckdb_connection
+    result: "void",          // void
   },
 
   /**
@@ -84,10 +84,10 @@ export default {
    * @return Struct containing query progress (`duckdb_query_progress_type`).
    */
   duckdb_query_progress: {
-    parameters: ["pointer"] as const, // duckdb_connection
+    parameters: ["pointer"], // duckdb_connection
     result: {
       struct: ["f64", "u64", "u64"],
-    } as const, // duckdb_query_progress_type
+    }, // duckdb_query_progress_type
   },
 
   /**
@@ -99,8 +99,8 @@ export default {
    * @return void
    */
   duckdb_disconnect: {
-    parameters: ["pointer"] as const, // duckdb_connection*
-    result: "void" as const,         // void
+    parameters: ["pointer"], // duckdb_connection*
+    result: "void",         // void
   },
 
   /**
@@ -110,7 +110,7 @@ export default {
    * @return Pointer to the version string (`const char*`).
    */
   duckdb_library_version: {
-    parameters: [] as const, // No parameters
-    result: "pointer" as const, // const char* (string pointer)
+    parameters: [], // No parameters
+    result: "pointer", // const char* (string pointer)
   },
-};
+} as const satisfies Deno.ForeignLibraryInterface;

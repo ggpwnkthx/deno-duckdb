@@ -20,7 +20,7 @@ export default {
    * @return A pointer to the fetched data chunk (`duckdb_data_chunk`). If an error occurs during fetching, returns `NULL`.
    */
   duckdb_fetch_chunk: {
-    parameters: [duckdb_result] as const,           // duckdb_result (result address)
+    parameters: [duckdb_result],           // duckdb_result (result address)
     result: duckdb_data_chunk,                 // duckdb_data_chunk (fetched data chunk)
   },
-};
+} as const satisfies Deno.ForeignLibraryInterface;

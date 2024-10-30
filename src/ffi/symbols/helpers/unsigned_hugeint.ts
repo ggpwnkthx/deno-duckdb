@@ -14,8 +14,8 @@ export default {
    * @return The converted `double` value.
    */
   duckdb_uhugeint_to_double: {
-    parameters: ["buffer"] as const,    // duckdb_uhugeint
-    result: "f64" as const,             // double
+    parameters: ["buffer"],    // duckdb_uhugeint
+    result: "f64",             // double
   },
 
   /**
@@ -28,7 +28,7 @@ export default {
    * @return The converted `duckdb_uhugeint` object.
    */
   duckdb_double_to_uhugeint: {
-    parameters: ["f64"] as const,       // double
-    result: "buffer" as const,          // duckdb_uhugeint
+    parameters: ["f64"],       // double
+    result: "buffer",          // duckdb_uhugeint
   },
-};
+} as const satisfies Deno.ForeignLibraryInterface;

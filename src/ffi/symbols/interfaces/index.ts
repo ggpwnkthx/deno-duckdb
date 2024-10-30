@@ -18,4 +18,4 @@ export default {
   ...data_chunk,
   ...vector,
   ...streaming_result,
-};
+} as const satisfies Deno.ForeignLibraryInterface;

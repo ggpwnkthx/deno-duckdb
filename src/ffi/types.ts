@@ -188,14 +188,12 @@ export enum duckdb_cast_mode {
   DUCKDB_CAST_TRY = 1,     // Try cast mode, ignores errors
 }
 
-export const duckdb_database = {
-  struct: ["pointer"] as const
-}
-
-export const duckdb_connection = {
-  struct: ["pointer"] as const
-}
-
+const duckdb_internal_pointer = { struct: ["pointer"] as const }
+export const duckdb_database = duckdb_internal_pointer
+export const duckdb_connection = duckdb_internal_pointer
+export const duckdb_data_chunk = duckdb_internal_pointer
+export const duckdb_vector = duckdb_internal_pointer
+export const duckdb_logical_type = duckdb_internal_pointer
 export const duckdb_result = {
   struct: [
     "u64",
@@ -206,15 +204,16 @@ export const duckdb_result = {
     "pointer",
   ] as const
 }
-
-export const duckdb_data_chunk = {
-  struct: ["pointer"] as const
-}
-
-export const duckdb_vector = {
-  struct: ["pointer"] as const
-}
-
-export const duckdb_logical_type = {
-  struct: ["pointer"] as const
-}
+const duckdb_string_pointer_struct = {
+  struct: [
+    "u32",               // length
+    ["char", 4],         // prefix[4]
+    "pointer",           // char* ptr
+  ] as const,
+};
+const duckdb_string_inlined_struct = {
+  struct: [
+    "u32",               // length
+    ["char", 12],        // inlined[12]
+  ] as const,
+};

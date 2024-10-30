@@ -17,8 +17,8 @@ export default {
    * @return A pointer to the created table function object.
    */
   duckdb_create_table_function: {
-    parameters: [] as const,
-    result: "pointer" as const,  // duckdb_table_function
+    parameters: [],
+    result: "pointer",  // duckdb_table_function
   },
 
   /**
@@ -28,8 +28,8 @@ export default {
    * @return void
    */
   duckdb_destroy_table_function: {
-    parameters: ["pointer"] as const,  // duckdb_table_function*
-    result: "void" as const,  // void
+    parameters: ["pointer"],  // duckdb_table_function*
+    result: "void",  // void
   },
 
   /**
@@ -40,8 +40,8 @@ export default {
    * @return void
    */
   duckdb_table_function_set_name: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_table_function, const char* (name)
-    result: "void" as const,  // void
+    parameters: ["pointer", "pointer"],  // duckdb_table_function, const char* (name)
+    result: "void",  // void
   },
 
   /**
@@ -54,8 +54,8 @@ export default {
    * @return void
    */
   duckdb_table_function_add_parameter: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_table_function, duckdb_logical_type
-    result: "void" as const,  // void
+    parameters: ["pointer", "pointer"],  // duckdb_table_function, duckdb_logical_type
+    result: "void",  // void
   },
 
   /**
@@ -69,8 +69,8 @@ export default {
    * @return void
    */
   duckdb_table_function_add_named_parameter: {
-    parameters: ["pointer", "pointer", "pointer"] as const,  // duckdb_table_function, const char* (name), duckdb_logical_type
-    result: "void" as const,  // void
+    parameters: ["pointer", "pointer", "pointer"],  // duckdb_table_function, const char* (name), duckdb_logical_type
+    result: "void",  // void
   },
 
   /**
@@ -84,8 +84,8 @@ export default {
    * @return void
    */
   duckdb_table_function_set_extra_info: {
-    parameters: ["pointer", "pointer", "pointer"] as const,  // duckdb_table_function, void* (extra_info), duckdb_delete_callback_t
-    result: "void" as const,  // void
+    parameters: ["pointer", "pointer", "pointer"],  // duckdb_table_function, void* (extra_info), duckdb_delete_callback_t
+    result: "void",  // void
   },
 
   /**
@@ -98,8 +98,8 @@ export default {
    * @return void
    */
   duckdb_table_function_set_bind: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_table_function, duckdb_table_function_bind_t (bind function)
-    result: "void" as const,  // void
+    parameters: ["pointer", "pointer"],  // duckdb_table_function, duckdb_table_function_bind_t (bind function)
+    result: "void",  // void
   },
 
   /**
@@ -112,8 +112,8 @@ export default {
    * @return void
    */
   duckdb_table_function_set_init: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_table_function, duckdb_table_function_init_t (init function)
-    result: "void" as const,  // void
+    parameters: ["pointer", "pointer"],  // duckdb_table_function, duckdb_table_function_init_t (init function)
+    result: "void",  // void
   },
 
   /**
@@ -126,8 +126,8 @@ export default {
    * @return void
    */
   duckdb_table_function_set_local_init: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_table_function, duckdb_table_function_init_t (init function)
-    result: "void" as const,  // void
+    parameters: ["pointer", "pointer"],  // duckdb_table_function, duckdb_table_function_init_t (init function)
+    result: "void",  // void
   },
 
   /**
@@ -140,8 +140,8 @@ export default {
    * @return void
    */
   duckdb_table_function_set_function: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_table_function, duckdb_table_function_t (function)
-    result: "void" as const,  // void
+    parameters: ["pointer", "pointer"],  // duckdb_table_function, duckdb_table_function_t (function)
+    result: "void",  // void
   },
 
   /**
@@ -155,8 +155,8 @@ export default {
    * @return void
    */
   duckdb_table_function_supports_projection_pushdown: {
-    parameters: ["pointer", "bool"] as const,  // duckdb_table_function, bool (pushdown)
-    result: "void" as const,  // void
+    parameters: ["pointer", "bool"],  // duckdb_table_function, bool (pushdown)
+    result: "void",  // void
   },
 
   /**
@@ -169,8 +169,8 @@ export default {
    * @return An integer representing success (`DuckDBSuccess`) or failure (`DuckDBError`).
    */
   duckdb_register_table_function: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_connection, duckdb_table_function
-    result: "i32" as const,  // duckdb_state (int32_t)
+    parameters: ["pointer", "pointer"],  // duckdb_connection, duckdb_table_function
+    result: "i32",  // duckdb_state (int32_t)
   },
 
   /**
@@ -182,8 +182,8 @@ export default {
    * @return A pointer to the extra info object.
    */
   duckdb_function_get_extra_info: {
-    parameters: ["pointer"] as const,  // duckdb_function_info
-    result: "pointer" as const,        // void*
+    parameters: ["pointer"],  // duckdb_function_info
+    result: "pointer",        // void*
   },
 
   /**
@@ -196,8 +196,8 @@ export default {
    * @return A pointer to the bind data object.
    */
   duckdb_function_get_bind_data: {
-    parameters: ["pointer"] as const,  // duckdb_function_info
-    result: "pointer" as const,        // void*
+    parameters: ["pointer"],  // duckdb_function_info
+    result: "pointer",        // void*
   },
 
   /**
@@ -209,8 +209,8 @@ export default {
    * @return A pointer to the init data object.
    */
   duckdb_function_get_init_data: {
-    parameters: ["pointer"] as const,  // duckdb_function_info
-    result: "pointer" as const,        // void*
+    parameters: ["pointer"],  // duckdb_function_info
+    result: "pointer",        // void*
   },
 
   /**
@@ -222,8 +222,8 @@ export default {
    * @return A pointer to the thread-local init data object.
    */
   duckdb_function_get_local_init_data: {
-    parameters: ["pointer"] as const,  // duckdb_function_info
-    result: "pointer" as const,        // void*
+    parameters: ["pointer"],  // duckdb_function_info
+    result: "pointer",        // void*
   },
 
   /**
@@ -236,11 +236,11 @@ export default {
    * @return void
    */
   duckdb_function_set_error: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_function_info, const char* (error message)
-    result: "void" as const,                      // void
+    parameters: ["pointer", "pointer"],  // duckdb_function_info, const char* (error message)
+    result: "void",                      // void
   },
 
   ...bind,
   ...init,
   ...describe,
-};
+} as const satisfies Deno.ForeignLibraryInterface;

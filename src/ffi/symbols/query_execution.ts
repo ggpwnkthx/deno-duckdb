@@ -18,8 +18,8 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success, or `DuckDBError` on failure.
    */
   duckdb_query: {
-    parameters: [duckdb_connection, "pointer", "pointer"] as const,  // duckdb_connection, const char*, duckdb_result*
-    result: "i32" as const,                                  // duckdb_state (int32_t)
+    parameters: [duckdb_connection, "pointer", "pointer"],  // duckdb_connection, const char*, duckdb_result*
+    result: "i32",                                  // duckdb_state (int32_t)
   },
 
   /**
@@ -31,8 +31,8 @@ export default {
    * @return void
    */
   duckdb_destroy_result: {
-    parameters: ["pointer"] as const,                        // duckdb_result*
-    result: "void" as const,                                 // void
+    parameters: ["pointer"],                        // duckdb_result*
+    result: "void",                                 // void
   },
 
   /**
@@ -46,8 +46,8 @@ export default {
    * @return Pointer to the column name (`const char*`), or `NULL` if the column index is out of range.
    */
   duckdb_column_name: {
-    parameters: ["pointer", "u64"] as const,                 // duckdb_result*, idx_t (uint64_t)
-    result: "pointer" as const,                              // const char*
+    parameters: ["pointer", "u64"],                 // duckdb_result*, idx_t (uint64_t)
+    result: "pointer",                              // const char*
   },
 
   /**
@@ -60,8 +60,8 @@ export default {
    * @return The data type of the column (`duckdb_type` as `int32_t`).
    */
   duckdb_column_type: {
-    parameters: ["pointer", "u64"] as const,                 // duckdb_result*, idx_t (uint64_t)
-    result: "u32" as const,                                  // duckdb_type (int32_t)
+    parameters: ["pointer", "u64"],                 // duckdb_result*, idx_t (uint64_t)
+    result: "u32",                                  // duckdb_type (int32_t)
   },
 
   /**
@@ -73,8 +73,8 @@ export default {
    * @return The statement type (`duckdb_statement_type` as `int32_t`).
    */
   duckdb_result_statement_type: {
-    parameters: [duckdb_result] as const,                        // duckdb_result
-    result: "u32" as const,                                  // duckdb_statement_type (int32_t)
+    parameters: [duckdb_result],                        // duckdb_result
+    result: "u32",                                  // duckdb_statement_type (int32_t)
   },
 
   /**
@@ -88,7 +88,7 @@ export default {
    * @return Pointer to the logical type of the column (`duckdb_logical_type`).
    */
   duckdb_column_logical_type: {
-    parameters: ["pointer", "u64"] as const,                 // duckdb_result*, idx_t
+    parameters: ["pointer", "u64"],                 // duckdb_result*, idx_t
     result: duckdb_logical_type,                              // duckdb_logical_type
   },
 
@@ -99,8 +99,8 @@ export default {
    * @return The number of columns in the result object (`idx_t` as `usize`).
    */
   duckdb_column_count: {
-    parameters: ["pointer"] as const,                        // duckdb_result*
-    result: "u64" as const,                                  // idx_t (uint64_t)
+    parameters: ["pointer"],                        // duckdb_result*
+    result: "u64",                                  // idx_t (uint64_t)
   },
 
   /**
@@ -112,8 +112,8 @@ export default {
    * @return The number of rows changed by the query (`idx_t`).
    */
   duckdb_rows_changed: {
-    parameters: ["pointer"] as const,                        // duckdb_result*
-    result: "u64" as const,                                  // idx_t (uint64_t)
+    parameters: ["pointer"],                        // duckdb_result*
+    result: "u64",                                  // idx_t (uint64_t)
   },
 
   /**
@@ -126,8 +126,8 @@ export default {
    * @return Pointer to the error message (`const char*`), or `NULL` if no error is present.
    */
   duckdb_result_error: {
-    parameters: ["pointer"] as const,                        // duckdb_result*
-    result: "pointer" as const,                              // const char*
+    parameters: ["pointer"],                        // duckdb_result*
+    result: "pointer",                              // const char*
   },
 
   /**
@@ -139,7 +139,7 @@ export default {
    * @return The error type of the result (`duckdb_error_type` as `int32_t`).
    */
   duckdb_result_error_type: {
-    parameters: ["pointer"] as const,                        // duckdb_result*
-    result: "i32" as const,                                  // duckdb_error_type (int32_t)
+    parameters: ["pointer"],                        // duckdb_result*
+    result: "i32",                                  // duckdb_error_type (int32_t)
   },
-};
+} as const satisfies Deno.ForeignLibraryInterface;

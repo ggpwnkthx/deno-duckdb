@@ -55,4 +55,4 @@ export default {
   ...appender,
   ...threading,
   ...cast
-};
+} as const satisfies Deno.ForeignLibraryInterface;

@@ -13,7 +13,7 @@ export default {
    * @return A pointer to the created `duckdb_logical_type`. Must be destroyed with `duckdb_destroy_logical_type`.
    */
   duckdb_create_logical_type: {
-    parameters: ["i32"] as const,              // duckdb_type (primitive type)
+    parameters: ["i32"],              // duckdb_type (primitive type)
     result: duckdb_logical_type,                // duckdb_logical_type
   },
 
@@ -24,8 +24,8 @@ export default {
    * @return A pointer to the alias string if set, otherwise `nullptr`. Must be destroyed with `duckdb_free`.
    */
   duckdb_logical_type_get_alias: {
-    parameters: [duckdb_logical_type] as const,          // duckdb_logical_type
-    result: "pointer" as const,                // char* (string pointer)
+    parameters: [duckdb_logical_type],          // duckdb_logical_type
+    result: "pointer",                // char* (string pointer)
   },
 
   /**
@@ -36,8 +36,8 @@ export default {
    * @return void
    */
   duckdb_logical_type_set_alias: {
-    parameters: [duckdb_logical_type, "pointer"] as const, // duckdb_logical_type, const char* (alias)
-    result: "void" as const,                    // void
+    parameters: [duckdb_logical_type, "pointer"], // duckdb_logical_type, const char* (alias)
+    result: "void",                    // void
   },
 
   /**
@@ -47,7 +47,7 @@ export default {
    * @return A pointer to the created `duckdb_logical_type`. Must be destroyed with `duckdb_destroy_logical_type`.
    */
   duckdb_create_list_type: {
-    parameters: [duckdb_logical_type] as const,           // duckdb_logical_type (child type)
+    parameters: [duckdb_logical_type],           // duckdb_logical_type (child type)
     result: duckdb_logical_type,                 // duckdb_logical_type
   },
 
@@ -59,7 +59,7 @@ export default {
    * @return A pointer to the created `duckdb_logical_type`. Must be destroyed with `duckdb_destroy_logical_type`.
    */
   duckdb_create_array_type: {
-    parameters: [duckdb_logical_type, "u64"] as const,    // duckdb_logical_type, idx_t (uint64_t)
+    parameters: [duckdb_logical_type, "u64"],    // duckdb_logical_type, idx_t (uint64_t)
     result: duckdb_logical_type,                 // duckdb_logical_type
   },
 
@@ -71,7 +71,7 @@ export default {
    * @return A pointer to the created `duckdb_logical_type`. Must be destroyed with `duckdb_destroy_logical_type`.
    */
   duckdb_create_map_type: {
-    parameters: [duckdb_logical_type, duckdb_logical_type] as const,  // duckdb_logical_type (key type), duckdb_logical_type (value type)
+    parameters: [duckdb_logical_type, duckdb_logical_type],  // duckdb_logical_type (key type), duckdb_logical_type (value type)
     result: duckdb_logical_type,                 // duckdb_logical_type
   },
 
@@ -84,7 +84,7 @@ export default {
    * @return A pointer to the created `duckdb_logical_type`. Must be destroyed with `duckdb_destroy_logical_type`.
    */
   duckdb_create_union_type: {
-    parameters: ["pointer", "pointer", "u64"] as const, // duckdb_logical_type*, const char**, idx_t (uint64_t)
+    parameters: ["pointer", "pointer", "u64"], // duckdb_logical_type*, const char**, idx_t (uint64_t)
     result: duckdb_logical_type,                         // duckdb_logical_type
   },
 
@@ -97,7 +97,7 @@ export default {
    * @return A pointer to the created `duckdb_logical_type`. Must be destroyed with `duckdb_destroy_logical_type`.
    */
   duckdb_create_struct_type: {
-    parameters: ["pointer", "pointer", "u64"] as const, // duckdb_logical_type*, const char**, idx_t (uint64_t)
+    parameters: ["pointer", "pointer", "u64"], // duckdb_logical_type*, const char**, idx_t (uint64_t)
     result: duckdb_logical_type,                         // duckdb_logical_type
   },
 
@@ -109,7 +109,7 @@ export default {
    * @return A pointer to the created `duckdb_logical_type`. Must be destroyed with `duckdb_destroy_logical_type`.
    */
   duckdb_create_enum_type: {
-    parameters: ["pointer", "u64"] as const,    // const char** (member names), idx_t (uint64_t)
+    parameters: ["pointer", "u64"],    // const char** (member names), idx_t (uint64_t)
     result: duckdb_logical_type,                 // duckdb_logical_type
   },
 
@@ -121,7 +121,7 @@ export default {
    * @return A pointer to the created `duckdb_logical_type`. Must be destroyed with `duckdb_destroy_logical_type`.
    */
   duckdb_create_decimal_type: {
-    parameters: ["u8", "u8"] as const,          // uint8_t (width), uint8_t (scale)
+    parameters: ["u8", "u8"],          // uint8_t (width), uint8_t (scale)
     result: duckdb_logical_type,                 // duckdb_logical_type
   },
 
@@ -132,8 +132,8 @@ export default {
    * @return The `duckdb_type` of the logical type.
    */
   duckdb_get_type_id: {
-    parameters: [duckdb_logical_type] as const,           // duckdb_logical_type
-    result: "i32" as const,                     // duckdb_type (int32_t)
+    parameters: [duckdb_logical_type],           // duckdb_logical_type
+    result: "i32",                     // duckdb_type (int32_t)
   },
 
   /**
@@ -143,8 +143,8 @@ export default {
    * @return The width of the DECIMAL type.
    */
   duckdb_decimal_width: {
-    parameters: [duckdb_logical_type] as const,           // duckdb_logical_type
-    result: "u8" as const,                      // uint8_t
+    parameters: [duckdb_logical_type],           // duckdb_logical_type
+    result: "u8",                      // uint8_t
   },
 
   /**
@@ -154,8 +154,8 @@ export default {
    * @return The scale of the DECIMAL type.
    */
   duckdb_decimal_scale: {
-    parameters: [duckdb_logical_type] as const,           // duckdb_logical_type
-    result: "u8" as const,                      // uint8_t
+    parameters: [duckdb_logical_type],           // duckdb_logical_type
+    result: "u8",                      // uint8_t
   },
 
   /**
@@ -165,8 +165,8 @@ export default {
    * @return The `duckdb_type` representing the internal storage type of the DECIMAL type.
    */
   duckdb_decimal_internal_type: {
-    parameters: [duckdb_logical_type] as const,           // duckdb_logical_type
-    result: "i32" as const,                     // duckdb_type (int32_t)
+    parameters: [duckdb_logical_type],           // duckdb_logical_type
+    result: "i32",                     // duckdb_type (int32_t)
   },
 
   /**
@@ -176,8 +176,8 @@ export default {
    * @return The `duckdb_type` representing the internal storage type of the ENUM type.
    */
   duckdb_enum_internal_type: {
-    parameters: [duckdb_logical_type] as const,           // duckdb_logical_type
-    result: "i32" as const,                     // duckdb_type (int32_t)
+    parameters: [duckdb_logical_type],           // duckdb_logical_type
+    result: "i32",                     // duckdb_type (int32_t)
   },
 
   /**
@@ -187,8 +187,8 @@ export default {
    * @return The size of the ENUM dictionary.
    */
   duckdb_enum_dictionary_size: {
-    parameters: [duckdb_logical_type] as const,           // duckdb_logical_type
-    result: "u32" as const,                     // uint32_t
+    parameters: [duckdb_logical_type],           // duckdb_logical_type
+    result: "u32",                     // uint32_t
   },
 
   /**
@@ -199,8 +199,8 @@ export default {
    * @return A pointer to the string value. Must be destroyed with `duckdb_free`.
    */
   duckdb_enum_dictionary_value: {
-    parameters: [duckdb_logical_type, "u64"] as const,    // duckdb_logical_type, idx_t (uint64_t)
-    result: "pointer" as const,                 // char* (string pointer)
+    parameters: [duckdb_logical_type, "u64"],    // duckdb_logical_type, idx_t (uint64_t)
+    result: "pointer",                 // char* (string pointer)
   },
 
   /**
@@ -210,7 +210,7 @@ export default {
    * @return A pointer to the child `duckdb_logical_type`. Must be destroyed with `duckdb_destroy_logical_type`.
    */
   duckdb_list_type_child_type: {
-    parameters: [duckdb_logical_type] as const,           // duckdb_logical_type
+    parameters: [duckdb_logical_type],           // duckdb_logical_type
     result: duckdb_logical_type,                 // duckdb_logical_type
   },
 
@@ -221,7 +221,7 @@ export default {
    * @return A pointer to the child `duckdb_logical_type`. Must be destroyed with `duckdb_destroy_logical_type`.
    */
   duckdb_array_type_child_type: {
-    parameters: [duckdb_logical_type] as const,           // duckdb_logical_type
+    parameters: [duckdb_logical_type],           // duckdb_logical_type
     result: duckdb_logical_type,                 // duckdb_logical_type
   },
 
@@ -232,8 +232,8 @@ export default {
    * @return The number of elements in the ARRAY type.
    */
   duckdb_array_type_array_size: {
-    parameters: [duckdb_logical_type] as const,           // duckdb_logical_type
-    result: "u64" as const,                     // idx_t (uint64_t)
+    parameters: [duckdb_logical_type],           // duckdb_logical_type
+    result: "u64",                     // idx_t (uint64_t)
   },
 
   /**
@@ -243,7 +243,7 @@ export default {
    * @return A pointer to the key `duckdb_logical_type`. Must be destroyed with `duckdb_destroy_logical_type`.
    */
   duckdb_map_type_key_type: {
-    parameters: [duckdb_logical_type] as const,           // duckdb_logical_type
+    parameters: [duckdb_logical_type],           // duckdb_logical_type
     result: duckdb_logical_type,                 // duckdb_logical_type
   },
 
@@ -254,7 +254,7 @@ export default {
    * @return A pointer to the value `duckdb_logical_type`. Must be destroyed with `duckdb_destroy_logical_type`.
    */
   duckdb_map_type_value_type: {
-    parameters: [duckdb_logical_type] as const,           // duckdb_logical_type
+    parameters: [duckdb_logical_type],           // duckdb_logical_type
     result: duckdb_logical_type,                 // duckdb_logical_type
   },
 
@@ -265,8 +265,8 @@ export default {
    * @return The number of children in the STRUCT type.
    */
   duckdb_struct_type_child_count: {
-    parameters: [duckdb_logical_type] as const,           // duckdb_logical_type
-    result: "u64" as const,                     // idx_t (uint64_t)
+    parameters: [duckdb_logical_type],           // duckdb_logical_type
+    result: "u64",                     // idx_t (uint64_t)
   },
 
   /**
@@ -277,8 +277,8 @@ export default {
    * @return A pointer to the child name string. Must be destroyed with `duckdb_free`.
    */
   duckdb_struct_type_child_name: {
-    parameters: [duckdb_logical_type, "u64"] as const,    // duckdb_logical_type, idx_t (uint64_t)
-    result: "pointer" as const,                 // char* (string pointer)
+    parameters: [duckdb_logical_type, "u64"],    // duckdb_logical_type, idx_t (uint64_t)
+    result: "pointer",                 // char* (string pointer)
   },
 
   /**
@@ -289,8 +289,8 @@ export default {
    * @return A pointer to the child `duckdb_logical_type`. Must be destroyed with `duckdb_destroy_logical_type`.
    */
   duckdb_struct_type_child_type: {
-    parameters: [duckdb_logical_type, "u64"] as const,    // duckdb_logical_type, idx_t (uint64_t)
-    result: "pointer" as const,                 // duckdb_logical_type
+    parameters: [duckdb_logical_type, "u64"],    // duckdb_logical_type, idx_t (uint64_t)
+    result: "pointer",                 // duckdb_logical_type
   },
 
   /**
@@ -300,8 +300,8 @@ export default {
    * @return The number of members in the UNION type.
    */
   duckdb_union_type_member_count: {
-    parameters: [duckdb_logical_type] as const,           // duckdb_logical_type
-    result: "u64" as const,                     // idx_t (uint64_t)
+    parameters: [duckdb_logical_type],           // duckdb_logical_type
+    result: "u64",                     // idx_t (uint64_t)
   },
 
   /**
@@ -312,8 +312,8 @@ export default {
    * @return A pointer to the member name string. Must be destroyed with `duckdb_free`.
    */
   duckdb_union_type_member_name: {
-    parameters: [duckdb_logical_type, "u64"] as const,    // duckdb_logical_type, idx_t (uint64_t)
-    result: "pointer" as const,                 // char* (string pointer)
+    parameters: [duckdb_logical_type, "u64"],    // duckdb_logical_type, idx_t (uint64_t)
+    result: "pointer",                 // char* (string pointer)
   },
 
   /**
@@ -324,7 +324,7 @@ export default {
    * @return A pointer to the member `duckdb_logical_type`. Must be destroyed with `duckdb_destroy_logical_type`.
    */
   duckdb_union_type_member_type: {
-    parameters: [duckdb_logical_type, "u64"] as const,    // duckdb_logical_type, idx_t (uint64_t)
+    parameters: [duckdb_logical_type, "u64"],    // duckdb_logical_type, idx_t (uint64_t)
     result: duckdb_logical_type,                 // duckdb_logical_type
   },
 
@@ -335,8 +335,8 @@ export default {
    * @return void
    */
   duckdb_destroy_logical_type: {
-    parameters: ["pointer"] as const,           // duckdb_logical_type*
-    result: "void" as const,                    // void
+    parameters: ["pointer"],           // duckdb_logical_type*
+    result: "void",                    // void
   },
 
   /**
@@ -348,7 +348,7 @@ export default {
    * @return `DuckDBSuccess` on success, or `DuckDBError` on failure.
    */
   duckdb_register_logical_type: {
-    parameters: [duckdb_connection, duckdb_logical_type, "pointer"] as const, // duckdb_connection, duckdb_logical_type, duckdb_create_type_info
-    result: "i32" as const,                                 // duckdb_state (int32_t)
+    parameters: [duckdb_connection, duckdb_logical_type, "pointer"], // duckdb_connection, duckdb_logical_type, duckdb_create_type_info
+    result: "i32",                                 // duckdb_state (int32_t)
   },
-};
+} as const satisfies Deno.ForeignLibraryInterface;

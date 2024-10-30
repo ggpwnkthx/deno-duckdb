@@ -18,8 +18,8 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` (`int32_t`) on failure.
    */
   duckdb_pending_prepared: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_prepared_statement, duckdb_pending_result*
-    result: "i32" as const,                       // duckdb_state (int32_t)
+    parameters: ["pointer", "pointer"],  // duckdb_prepared_statement, duckdb_pending_result*
+    result: "i32",                       // duckdb_state (int32_t)
   },
 
   /**
@@ -31,8 +31,8 @@ export default {
    * @return void
    */
   duckdb_destroy_pending: {
-    parameters: ["pointer"] as const,             // duckdb_pending_result*
-    result: "void" as const,                      // void
+    parameters: ["pointer"],             // duckdb_pending_result*
+    result: "void",                      // void
   },
 
   /**
@@ -45,8 +45,8 @@ export default {
    * @return A pointer to the error message string (`const char*`), or `nullptr` if no error exists.
    */
   duckdb_pending_error: {
-    parameters: ["pointer"] as const,             // duckdb_pending_result
-    result: "pointer" as const,                   // const char* (string pointer)
+    parameters: ["pointer"],             // duckdb_pending_result
+    result: "pointer",                   // const char* (string pointer)
   },
 
   /**
@@ -63,8 +63,8 @@ export default {
    * or `DUCKDB_PENDING_ERROR`).
    */
   duckdb_pending_execute_task: {
-    parameters: ["pointer"] as const,             // duckdb_pending_result
-    result: "i32" as const,                       // duckdb_pending_state (int32_t)
+    parameters: ["pointer"],             // duckdb_pending_result
+    result: "i32",                       // duckdb_pending_state (int32_t)
   },
 
   /**
@@ -79,8 +79,8 @@ export default {
    * or `DUCKDB_PENDING_ERROR`).
    */
   duckdb_pending_execute_check_state: {
-    parameters: ["pointer"] as const,             // duckdb_pending_result
-    result: "i32" as const,                       // duckdb_pending_state (int32_t)
+    parameters: ["pointer"],             // duckdb_pending_result
+    result: "i32",                       // duckdb_pending_state (int32_t)
   },
 
   /**
@@ -95,8 +95,8 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_execute_pending: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_pending_result, duckdb_result*
-    result: "i32" as const,                       // duckdb_state (int32_t)
+    parameters: ["pointer", "pointer"],  // duckdb_pending_result, duckdb_result*
+    result: "i32",                       // duckdb_state (int32_t)
   },
 
   /**
@@ -109,7 +109,7 @@ export default {
    * @return `true` if the query is finished executing, `false` otherwise.
    */
   duckdb_pending_execution_is_finished: {
-    parameters: ["i32"] as const,                 // duckdb_pending_state (int32_t)
-    result: "bool" as const,                      // bool
+    parameters: ["i32"],                 // duckdb_pending_state (int32_t)
+    result: "bool",                      // bool
   },
-};
+} as const satisfies Deno.ForeignLibraryInterface;

@@ -13,8 +13,8 @@ export default {
   // @param delete_callback A callback that will be called to delete the `extra_data` when it is no longer needed.
   // @return void
   duckdb_add_replacement_scan: {
-    parameters: ["pointer", "pointer", "pointer", "pointer"] as const,  // duckdb_database, duckdb_replacement_callback_t, void*, duckdb_delete_callback_t
-    result: "void" as const,                                            // void
+    parameters: ["pointer", "pointer", "pointer", "pointer"],  // duckdb_database, duckdb_replacement_callback_t, void*, duckdb_delete_callback_t
+    result: "void",                                            // void
   },
 
   // Sets the function name for the replacement scan.
@@ -25,8 +25,8 @@ export default {
   // @param function_name A pointer to the null-terminated string representing the name of the function to substitute.
   // @return void
   duckdb_replacement_scan_set_function_name: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_replacement_scan_info, const char* (function name)
-    result: "void" as const,                      // void
+    parameters: ["pointer", "pointer"],  // duckdb_replacement_scan_info, const char* (function name)
+    result: "void",                      // void
   },
 
   // Adds a parameter to the replacement scan function.
@@ -36,8 +36,8 @@ export default {
   // @param parameter A `duckdb_value` representing the parameter to add.
   // @return void
   duckdb_replacement_scan_add_parameter: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_replacement_scan_info, duckdb_value
-    result: "void" as const,                      // void
+    parameters: ["pointer", "pointer"],  // duckdb_replacement_scan_info, duckdb_value
+    result: "void",                      // void
   },
 
   // Reports an error that occurred while executing the replacement scan.
@@ -47,7 +47,7 @@ export default {
   // @param error A pointer to the null-terminated string representing the error message.
   // @return void
   duckdb_replacement_scan_set_error: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_replacement_scan_info, const char* (error message)
-    result: "void" as const,                      // void
+    parameters: ["pointer", "pointer"],  // duckdb_replacement_scan_info, const char* (error message)
+    result: "void",                      // void
   },
-};
+} as const satisfies Deno.ForeignLibraryInterface;

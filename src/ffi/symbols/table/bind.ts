@@ -13,8 +13,8 @@ export default {
    * @return A pointer to the extra info object (`void*`).
    */
   duckdb_bind_get_extra_info: {
-    parameters: ["pointer"] as const,  // duckdb_bind_info
-    result: "pointer" as const,        // void*
+    parameters: ["pointer"],  // duckdb_bind_info
+    result: "pointer",        // void*
   },
 
   /**
@@ -28,8 +28,8 @@ export default {
    * @return void
    */
   duckdb_bind_add_result_column: {
-    parameters: ["pointer", "pointer", duckdb_logical_type] as const,  // duckdb_bind_info, const char* (name), duckdb_logical_type
-    result: "void" as const,                                 // void
+    parameters: ["pointer", "pointer", duckdb_logical_type],  // duckdb_bind_info, const char* (name), duckdb_logical_type
+    result: "void",                                 // void
   },
 
   /**
@@ -39,8 +39,8 @@ export default {
    * @return The number of parameters (`idx_t`).
    */
   duckdb_bind_get_parameter_count: {
-    parameters: ["pointer"] as const,  // duckdb_bind_info
-    result: "u64" as const,            // idx_t (uint64_t)
+    parameters: ["pointer"],  // duckdb_bind_info
+    result: "u64",            // idx_t (uint64_t)
   },
 
   /**
@@ -53,8 +53,8 @@ export default {
    * @return A pointer to the `duckdb_value` object. Must be destroyed with `duckdb_destroy_value`.
    */
   duckdb_bind_get_parameter: {
-    parameters: ["pointer", "u64"] as const,  // duckdb_bind_info, idx_t (uint64_t)
-    result: "pointer" as const,               // duckdb_value (pointer to result)
+    parameters: ["pointer", "u64"],  // duckdb_bind_info, idx_t (uint64_t)
+    result: "pointer",               // duckdb_value (pointer to result)
   },
 
   /**
@@ -67,8 +67,8 @@ export default {
    * @return A pointer to the `duckdb_value` object. Must be destroyed with `duckdb_destroy_value`.
    */
   duckdb_bind_get_named_parameter: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_bind_info, const char* (name)
-    result: "pointer" as const,                   // duckdb_value (pointer to result)
+    parameters: ["pointer", "pointer"],  // duckdb_bind_info, const char* (name)
+    result: "pointer",                   // duckdb_value (pointer to result)
   },
 
   /**
@@ -82,8 +82,8 @@ export default {
    * @return void
    */
   duckdb_bind_set_bind_data: {
-    parameters: ["pointer", "pointer", "pointer"] as const,  // duckdb_bind_info, void* (bind_data), duckdb_delete_callback_t
-    result: "void" as const,                                 // void
+    parameters: ["pointer", "pointer", "pointer"],  // duckdb_bind_info, void* (bind_data), duckdb_delete_callback_t
+    result: "void",                                 // void
   },
 
   /**
@@ -97,8 +97,8 @@ export default {
    * @return void
    */
   duckdb_bind_set_cardinality: {
-    parameters: ["pointer", "u64", "bool"] as const,  // duckdb_bind_info, idx_t (uint64_t), bool (is_exact)
-    result: "void" as const,                          // void
+    parameters: ["pointer", "u64", "bool"],  // duckdb_bind_info, idx_t (uint64_t), bool (is_exact)
+    result: "void",                          // void
   },
 
   /**
@@ -111,7 +111,7 @@ export default {
    * @return void
    */
   duckdb_bind_set_error: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_bind_info, const char* (error)
-    result: "void" as const,                      // void
+    parameters: ["pointer", "pointer"],  // duckdb_bind_info, const char* (error)
+    result: "void",                      // void
   },
-};
+} as const satisfies Deno.ForeignLibraryInterface;

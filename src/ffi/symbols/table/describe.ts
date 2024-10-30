@@ -18,8 +18,8 @@ export default {
    * @returns `DuckDBSuccess` (`int32_t`) on success, or `DuckDBError` on failure.
    */
   duckdb_table_description_create: {
-    parameters: ["pointer", "pointer", "pointer", "pointer"] as const, // duckdb_connection, const char*, const char*, duckdb_table_description*
-    result: "i32" as const,                                            // duckdb_state (int32_t)
+    parameters: ["pointer", "pointer", "pointer", "pointer"], // duckdb_connection, const char*, const char*, duckdb_table_description*
+    result: "i32",                                            // duckdb_state (int32_t)
   },
 
   /**
@@ -32,8 +32,8 @@ export default {
    * @returns void
    */
   duckdb_table_description_destroy: {
-    parameters: ["pointer"] as const, // duckdb_table_description*
-    result: "void" as const,          // void
+    parameters: ["pointer"], // duckdb_table_description*
+    result: "void",          // void
   },
 
   /**
@@ -47,8 +47,8 @@ export default {
    * @returns A pointer to the error message (`const char*`), or `nullptr` if no error is present.
    */
   duckdb_table_description_error: {
-    parameters: ["pointer"] as const, // duckdb_table_description
-    result: "pointer" as const,       // const char* (string pointer)
+    parameters: ["pointer"], // duckdb_table_description
+    result: "pointer",       // const char* (string pointer)
   },
 
   /**
@@ -63,7 +63,7 @@ export default {
    * @returns `DuckDBSuccess` (`int32_t`) on success, or `DuckDBError` on failure.
    */
   duckdb_column_has_default: {
-    parameters: ["pointer", "u64", "pointer"] as const, // duckdb_table_description, idx_t (uint64_t), bool*
-    result: "i32" as const,                             // duckdb_state (int32_t)
+    parameters: ["pointer", "u64", "pointer"], // duckdb_table_description, idx_t (uint64_t), bool*
+    result: "i32",                             // duckdb_state (int32_t)
   },
-};
+} as const satisfies Deno.ForeignLibraryInterface;

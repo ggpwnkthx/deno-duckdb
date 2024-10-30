@@ -15,8 +15,8 @@ export default {
    * @return A `duckdb_profiling_info` object representing the root profiling node, or `nullptr` if profiling is not enabled.
    */
   duckdb_get_profiling_info: {
-    parameters: ["pointer"] as const,           // duckdb_connection
-    result: "pointer" as const,                 // duckdb_profiling_info
+    parameters: ["pointer"],           // duckdb_connection
+    result: "pointer",                 // duckdb_profiling_info
   },
 
   /**
@@ -33,8 +33,8 @@ export default {
    * @return A `duckdb_value` containing the metric value, or `nullptr` if the metric is not available.
    */
   duckdb_profiling_info_get_value: {
-    parameters: ["pointer", "pointer"] as const, // duckdb_profiling_info, const char* (metric key)
-    result: "pointer" as const,                  // duckdb_value
+    parameters: ["pointer", "pointer"], // duckdb_profiling_info, const char* (metric key)
+    result: "pointer",                  // duckdb_value
   },
 
   /**
@@ -50,8 +50,8 @@ export default {
    * @return A `duckdb_value` containing the key-value metric map, or `nullptr` if no metrics are available.
    */
   duckdb_profiling_info_get_metrics: {
-    parameters: ["pointer"] as const,           // duckdb_profiling_info
-    result: "pointer" as const,                 // duckdb_value (MAP type)
+    parameters: ["pointer"],           // duckdb_profiling_info
+    result: "pointer",                 // duckdb_value (MAP type)
   },
 
   /**
@@ -64,8 +64,8 @@ export default {
    * @return The number of child nodes (`idx_t`) in the current profiling node.
    */
   duckdb_profiling_info_get_child_count: {
-    parameters: ["pointer"] as const,           // duckdb_profiling_info
-    result: "u64" as const,                     // idx_t (uint64_t)
+    parameters: ["pointer"],           // duckdb_profiling_info
+    result: "u64",                     // idx_t (uint64_t)
   },
 
   /**
@@ -80,7 +80,7 @@ export default {
    * @return A `duckdb_profiling_info` object representing the child node at the specified index.
    */
   duckdb_profiling_info_get_child: {
-    parameters: ["pointer", "u64"] as const,    // duckdb_profiling_info, idx_t (uint64_t)
-    result: "pointer" as const,                 // duckdb_profiling_info (child node)
+    parameters: ["pointer", "u64"],    // duckdb_profiling_info, idx_t (uint64_t)
+    result: "pointer",                 // duckdb_profiling_info (child node)
   },
-};
+} as const satisfies Deno.ForeignLibraryInterface;

@@ -15,8 +15,8 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success, or `DuckDBError` on failure.
    */
   duckdb_create_config: {
-    parameters: ["pointer"] as const,   // duckdb_config*
-    result: "i32" as const,             // duckdb_state (int32_t)
+    parameters: ["pointer"],   // duckdb_config*
+    result: "i32",             // duckdb_state (int32_t)
   },
 
   /**
@@ -26,8 +26,8 @@ export default {
    * @return The number of available configuration options (`size_t`).
    */
   duckdb_config_count: {
-    parameters: [] as const,            // No parameters
-    result: "usize" as const,           // size_t
+    parameters: [],            // No parameters
+    result: "usize",           // size_t
   },
 
   /**
@@ -42,8 +42,8 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success, or `DuckDBError` on failure.
    */
   duckdb_get_config_flag: {
-    parameters: ["usize", "pointer", "pointer"] as const, // size_t, char** (name), char** (description)
-    result: "i32" as const,                               // duckdb_state (int32_t)
+    parameters: ["usize", "pointer", "pointer"], // size_t, char** (name), char** (description)
+    result: "i32",                               // duckdb_state (int32_t)
   },
 
   /**
@@ -58,8 +58,8 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success, or `DuckDBError` on failure.
    */
   duckdb_set_config: {
-    parameters: ["pointer", "pointer", "pointer"] as const, // duckdb_config, char* (name), char* (option)
-    result: "i32" as const,                                 // duckdb_state (int32_t)
+    parameters: ["pointer", "pointer", "pointer"], // duckdb_config, char* (name), char* (option)
+    result: "i32",                                 // duckdb_state (int32_t)
   },
 
   /**
@@ -71,7 +71,7 @@ export default {
    * @return void
    */
   duckdb_destroy_config: {
-    parameters: ["pointer"] as const,    // duckdb_config*
-    result: "void" as const,             // void
+    parameters: ["pointer"],    // duckdb_config*
+    result: "void",             // void
   },
-};
+} as const satisfies Deno.ForeignLibraryInterface;

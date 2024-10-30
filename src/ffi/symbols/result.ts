@@ -17,7 +17,7 @@ export default {
    * @return The result return type (`duckdb_result_type`) or `DUCKDB_RETURN_TYPE_INVALID` on error.
    */
   duckdb_result_return_type: {
-    parameters: [duckdb_result] as const,   // duckdb_result (result address)
-    result: "u32" as const,             // duckdb_result_type (int32_t)
+    parameters: [duckdb_result],   // duckdb_result (result address)
+    result: "u32",             // duckdb_result_type (int32_t)
   },
-};
+} as const satisfies Deno.ForeignLibraryInterface;

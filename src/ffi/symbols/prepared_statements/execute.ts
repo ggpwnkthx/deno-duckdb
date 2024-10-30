@@ -17,7 +17,7 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` (`int32_t`) on failure.
    */
   duckdb_execute_prepared: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_prepared_statement, duckdb_result*
-    result: "i32" as const,                       // duckdb_state (int32_t)
+    parameters: ["pointer", "pointer"],  // duckdb_prepared_statement, duckdb_result*
+    result: "i32",                       // duckdb_state (int32_t)
   },
-};
+} as const satisfies Deno.ForeignLibraryInterface;

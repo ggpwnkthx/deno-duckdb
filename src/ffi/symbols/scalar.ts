@@ -13,8 +13,8 @@ export default {
    * @return A pointer to the created scalar function object.
    */
   duckdb_create_scalar_function: {
-    parameters: [] as const,
-    result: "pointer" as const,                // duckdb_scalar_function
+    parameters: [],
+    result: "pointer",                // duckdb_scalar_function
   },
 
   /**
@@ -24,8 +24,8 @@ export default {
    * @return void
    */
   duckdb_destroy_scalar_function: {
-    parameters: ["pointer"] as const,          // duckdb_scalar_function*
-    result: "void" as const,                   // void
+    parameters: ["pointer"],          // duckdb_scalar_function*
+    result: "void",                   // void
   },
 
   /**
@@ -36,8 +36,8 @@ export default {
    * @return void
    */
   duckdb_scalar_function_set_name: {
-    parameters: ["pointer", "pointer"] as const, // duckdb_scalar_function, const char* (name)
-    result: "void" as const,                     // void
+    parameters: ["pointer", "pointer"], // duckdb_scalar_function, const char* (name)
+    result: "void",                     // void
   },
 
   /**
@@ -48,8 +48,8 @@ export default {
    * @return void
    */
   duckdb_scalar_function_set_varargs: {
-    parameters: ["pointer", duckdb_logical_type] as const,  // duckdb_scalar_function, duckdb_logical_type
-    result: "void" as const,                      // void
+    parameters: ["pointer", duckdb_logical_type],  // duckdb_scalar_function, duckdb_logical_type
+    result: "void",                      // void
   },
 
   /**
@@ -59,8 +59,8 @@ export default {
    * @return void
    */
   duckdb_scalar_function_set_special_handling: {
-    parameters: ["pointer"] as const,            // duckdb_scalar_function
-    result: "void" as const,                    // void
+    parameters: ["pointer"],            // duckdb_scalar_function
+    result: "void",                    // void
   },
 
   /**
@@ -70,8 +70,8 @@ export default {
    * @return void
    */
   duckdb_scalar_function_set_volatile: {
-    parameters: ["pointer"] as const,           // duckdb_scalar_function
-    result: "void" as const,                    // void
+    parameters: ["pointer"],           // duckdb_scalar_function
+    result: "void",                    // void
   },
 
   /**
@@ -82,8 +82,8 @@ export default {
    * @return void
    */
   duckdb_scalar_function_add_parameter: {
-    parameters: ["pointer", duckdb_logical_type] as const,  // duckdb_scalar_function, duckdb_logical_type
-    result: "void" as const,                      // void
+    parameters: ["pointer", duckdb_logical_type],  // duckdb_scalar_function, duckdb_logical_type
+    result: "void",                      // void
   },
 
   /**
@@ -94,8 +94,8 @@ export default {
    * @return void
    */
   duckdb_scalar_function_set_return_type: {
-    parameters: ["pointer", duckdb_logical_type] as const,  // duckdb_scalar_function, duckdb_logical_type
-    result: "void" as const,                      // void
+    parameters: ["pointer", duckdb_logical_type],  // duckdb_scalar_function, duckdb_logical_type
+    result: "void",                      // void
   },
 
   /**
@@ -107,8 +107,8 @@ export default {
    * @return void
    */
   duckdb_scalar_function_set_extra_info: {
-    parameters: ["pointer", "pointer", "pointer"] as const, // duckdb_scalar_function, void* (extra_info), duckdb_delete_callback_t
-    result: "void" as const,                                // void
+    parameters: ["pointer", "pointer", "pointer"], // duckdb_scalar_function, void* (extra_info), duckdb_delete_callback_t
+    result: "void",                                // void
   },
 
   /**
@@ -119,8 +119,8 @@ export default {
    * @return void
    */
   duckdb_scalar_function_set_function: {
-    parameters: ["pointer", "pointer"] as const, // duckdb_scalar_function, duckdb_scalar_function_t (function)
-    result: "void" as const,                     // void
+    parameters: ["pointer", "pointer"], // duckdb_scalar_function, duckdb_scalar_function_t (function)
+    result: "void",                     // void
   },
 
   /**
@@ -131,8 +131,8 @@ export default {
    * @return An integer representing the success (`DuckDBSuccess`) or failure (`DuckDBError`) of the registration.
    */
   duckdb_register_scalar_function: {
-    parameters: ["pointer", "pointer"] as const, // duckdb_connection, duckdb_scalar_function
-    result: "i32" as const,                      // duckdb_state (int32_t)
+    parameters: ["pointer", "pointer"], // duckdb_connection, duckdb_scalar_function
+    result: "i32",                      // duckdb_state (int32_t)
   },
 
   /**
@@ -142,8 +142,8 @@ export default {
    * @return A pointer to the extra information.
    */
   duckdb_scalar_function_get_extra_info: {
-    parameters: ["pointer"] as const,            // duckdb_function_info
-    result: "pointer" as const,                  // void* (extra_info)
+    parameters: ["pointer"],            // duckdb_function_info
+    result: "pointer",                  // void* (extra_info)
   },
 
   /**
@@ -154,8 +154,8 @@ export default {
    * @return void
    */
   duckdb_scalar_function_set_error: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_function_info, const char* (error message)
-    result: "void" as const,                     // void
+    parameters: ["pointer", "pointer"],  // duckdb_function_info, const char* (error message)
+    result: "void",                     // void
   },
 
   /**
@@ -165,8 +165,8 @@ export default {
    * @return A pointer to the created scalar function set.
    */
   duckdb_create_scalar_function_set: {
-    parameters: ["pointer"] as const,            // const char* (name)
-    result: "pointer" as const,                  // duckdb_scalar_function_set
+    parameters: ["pointer"],            // const char* (name)
+    result: "pointer",                  // duckdb_scalar_function_set
   },
 
   /**
@@ -176,8 +176,8 @@ export default {
    * @return void
    */
   duckdb_destroy_scalar_function_set: {
-    parameters: ["pointer"] as const,            // duckdb_scalar_function_set*
-    result: "void" as const,                     // void
+    parameters: ["pointer"],            // duckdb_scalar_function_set*
+    result: "void",                     // void
   },
 
   /**
@@ -188,8 +188,8 @@ export default {
    * @return An integer representing success (`DuckDBSuccess`) or failure (`DuckDBError`).
    */
   duckdb_add_scalar_function_to_set: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_scalar_function_set, duckdb_scalar_function
-    result: "i32" as const,                       // duckdb_state (int32_t)
+    parameters: ["pointer", "pointer"],  // duckdb_scalar_function_set, duckdb_scalar_function
+    result: "i32",                       // duckdb_state (int32_t)
   },
 
   /**
@@ -200,7 +200,7 @@ export default {
    * @return An integer representing success (`DuckDBSuccess`) or failure (`DuckDBError`).
    */
   duckdb_register_scalar_function_set: {
-    parameters: ["pointer", "pointer"] as const,  // duckdb_connection, duckdb_scalar_function_set
-    result: "i32" as const,                       // duckdb_state (int32_t)
+    parameters: ["pointer", "pointer"],  // duckdb_connection, duckdb_scalar_function_set
+    result: "i32",                       // duckdb_state (int32_t)
   },
-};
+} as const satisfies Deno.ForeignLibraryInterface;

@@ -15,8 +15,8 @@ export default {
    * @returns void
    */
   duckdb_execute_tasks: {
-    parameters: ["pointer", "u64"] as const,  // duckdb_database, idx_t (uint64_t)
-    result: "void" as const,                  // void
+    parameters: ["pointer", "u64"],  // duckdb_database, idx_t (uint64_t)
+    result: "void",                  // void
   },
 
   /**
@@ -29,8 +29,8 @@ export default {
    * @returns A pointer to the newly created task state (`duckdb_task_state`).
    */
   duckdb_create_task_state: {
-    parameters: ["pointer"] as const,         // duckdb_database
-    result: "pointer" as const,               // duckdb_task_state
+    parameters: ["pointer"],         // duckdb_database
+    result: "pointer",               // duckdb_task_state
   },
 
   /**
@@ -42,8 +42,8 @@ export default {
    * @returns void
    */
   duckdb_execute_tasks_state: {
-    parameters: ["pointer"] as const,         // duckdb_task_state
-    result: "void" as const,                  // void
+    parameters: ["pointer"],         // duckdb_task_state
+    result: "void",                  // void
   },
 
   /**
@@ -57,8 +57,8 @@ export default {
    * @returns The actual number of tasks that were executed (`idx_t`).
    */
   duckdb_execute_n_tasks_state: {
-    parameters: ["pointer", "u64"] as const,  // duckdb_task_state, idx_t (uint64_t)
-    result: "u64" as const,                   // idx_t (uint64_t)
+    parameters: ["pointer", "u64"],  // duckdb_task_state, idx_t (uint64_t)
+    result: "u64",                   // idx_t (uint64_t)
   },
 
   /**
@@ -70,8 +70,8 @@ export default {
    * @returns void
    */
   duckdb_finish_execution: {
-    parameters: ["pointer"] as const,         // duckdb_task_state
-    result: "void" as const,                  // void
+    parameters: ["pointer"],         // duckdb_task_state
+    result: "void",                  // void
   },
 
   /**
@@ -83,8 +83,8 @@ export default {
    * @returns `true` if execution has been finished, `false` otherwise.
    */
   duckdb_task_state_is_finished: {
-    parameters: ["pointer"] as const,         // duckdb_task_state
-    result: "bool" as const,                  // bool
+    parameters: ["pointer"],         // duckdb_task_state
+    result: "bool",                  // bool
   },
 
   /**
@@ -97,8 +97,8 @@ export default {
    * @returns void
    */
   duckdb_destroy_task_state: {
-    parameters: ["pointer"] as const,         // duckdb_task_state
-    result: "void" as const,                  // void
+    parameters: ["pointer"],         // duckdb_task_state
+    result: "void",                  // void
   },
 
   /**
@@ -110,7 +110,7 @@ export default {
    * @returns `true` if query execution is finished, `false` otherwise.
    */
   duckdb_execution_is_finished: {
-    parameters: ["pointer"] as const,         // duckdb_connection
-    result: "bool" as const,                  // bool
+    parameters: ["pointer"],         // duckdb_connection
+    result: "bool",                  // bool
   },
-};
+} as const satisfies Deno.ForeignLibraryInterface;

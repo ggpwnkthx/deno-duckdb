@@ -16,8 +16,8 @@ export default {
    * @return The converted `duckdb_decimal` object.
    */
   duckdb_double_to_decimal: {
-    parameters: ["f64", "u8", "u8"] as const,   // double (val), uint8_t (width), uint8_t (scale)
-    result: "buffer" as const,                 // duckdb_decimal
+    parameters: ["f64", "u8", "u8"],   // double (val), uint8_t (width), uint8_t (scale)
+    result: "buffer",                 // duckdb_decimal
   },
 
   /**
@@ -30,7 +30,7 @@ export default {
    * @return The converted `double` value.
    */
   duckdb_decimal_to_double: {
-    parameters: ["buffer"] as const,           // duckdb_decimal
-    result: "f64" as const,                    // double
+    parameters: ["buffer"],           // duckdb_decimal
+    result: "f64",                    // double
   },
-};
+} as const satisfies Deno.ForeignLibraryInterface;

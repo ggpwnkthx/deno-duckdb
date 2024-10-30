@@ -19,8 +19,8 @@ export default {
    * @return A pointer to the allocated memory region (`void*`).
    */
   duckdb_malloc: {
-    parameters: ["usize"] as const,     // size_t
-    result: "pointer" as const,         // void* (pointer to the allocated memory)
+    parameters: ["usize"],     // size_t
+    result: "pointer",         // void* (pointer to the allocated memory)
   },
 
   /**
@@ -32,8 +32,8 @@ export default {
    * @return void
    */
   duckdb_free: {
-    parameters: ["pointer"] as const,   // void*
-    result: "void" as const,            // void
+    parameters: ["pointer"],   // void*
+    result: "void",            // void
   },
 
   /**
@@ -45,8 +45,8 @@ export default {
    * @return The vector size (`idx_t`).
    */
   duckdb_vector_size: {
-    parameters: [] as const,            // No parameters
-    result: "u64" as const,             // idx_t (uint64_t)
+    parameters: [],            // No parameters
+    result: "u64",             // idx_t (uint64_t)
   },
 
   /**
@@ -59,8 +59,8 @@ export default {
    * @return `true` if the string is inlined, `false` otherwise.
    */
   duckdb_string_is_inlined: {
-    parameters: ["buffer"] as const,    // duckdb_string_t (struct)
-    result: "bool" as const,            // bool
+    parameters: ["buffer"],    // duckdb_string_t
+    result: "bool",            // bool
   },
 
   /**
@@ -72,8 +72,8 @@ export default {
    * @return The length of the string (`uint32_t`).
    */
   duckdb_string_t_length: {
-    parameters: ["buffer"] as const,    // duckdb_string_t (struct)
-    result: "u32" as const,             // uint32_t
+    parameters: ["buffer"],    // duckdb_string_t (struct)
+    result: "u32",             // uint32_t
   },
 
   /**
@@ -86,8 +86,8 @@ export default {
    * @return A pointer to the string data (`const char*`).
    */
   duckdb_string_t_data: {
-    parameters: ["pointer"] as const,   // duckdb_string_t*
-    result: "pointer" as const,         // const char* (pointer to string data)
+    parameters: ["pointer"],   // duckdb_string_t*
+    result: "pointer",         // const char* (pointer to string data)
   },
 
   // Include additional helper functions from imported modules
@@ -95,4 +95,4 @@ export default {
   ...hugeint,
   ...unsigned_hugeint,
   ...decimal,
-};
+} as const satisfies Deno.ForeignLibraryInterface;

@@ -17,8 +17,8 @@ export default {
    * @return The number of extracted statements (`idx_t`) or 0 if extraction fails.
    */
   duckdb_extract_statements: {
-    parameters: ["pointer", "pointer", "pointer"] as const, // duckdb_connection, const char* (query), duckdb_extracted_statements*
-    result: "u64" as const,                                 // idx_t (uint64_t)
+    parameters: ["pointer", "pointer", "pointer"], // duckdb_connection, const char* (query), duckdb_extracted_statements*
+    result: "u64",                                 // idx_t (uint64_t)
   },
 
   /**
@@ -35,8 +35,8 @@ export default {
    * @return `DuckDBSuccess` (`int32_t`) on success or `DuckDBError` on failure.
    */
   duckdb_prepare_extracted_statement: {
-    parameters: ["pointer", "pointer", "u64", "pointer"] as const, // duckdb_connection, duckdb_extracted_statements, idx_t (uint64_t), duckdb_prepared_statement*
-    result: "i32" as const,                                        // duckdb_state (int32_t)
+    parameters: ["pointer", "pointer", "u64", "pointer"], // duckdb_connection, duckdb_extracted_statements, idx_t (uint64_t), duckdb_prepared_statement*
+    result: "i32",                                        // duckdb_state (int32_t)
   },
 
   /**
@@ -49,8 +49,8 @@ export default {
    * @return A pointer to the error message string (`const char*`), or `nullptr` if no error exists.
    */
   duckdb_extract_statements_error: {
-    parameters: ["pointer"] as const,                 // duckdb_extracted_statements
-    result: "pointer" as const,                       // const char* (string pointer)
+    parameters: ["pointer"],                 // duckdb_extracted_statements
+    result: "pointer",                       // const char* (string pointer)
   },
 
   /**
@@ -62,7 +62,7 @@ export default {
    * @return void
    */
   duckdb_destroy_extracted: {
-    parameters: ["pointer"] as const,                 // duckdb_extracted_statements*
-    result: "void" as const,                          // void
+    parameters: ["pointer"],                 // duckdb_extracted_statements*
+    result: "void",                          // void
   },
-};
+} as const satisfies Deno.ForeignLibraryInterface;

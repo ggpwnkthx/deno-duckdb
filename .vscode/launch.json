@@ -3,10 +3,10 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Deno: Run main.ts",
+      "name": "Deno: Run example.ts",
       "type": "node",
       "request": "launch",
-      "program": "${workspaceFolder}/main.ts",
+      "program": "${workspaceFolder}/example.ts",
       "cwd": "${workspaceFolder}",
       "runtimeExecutable": "deno",
       "runtimeArgs": [

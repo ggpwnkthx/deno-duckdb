@@ -3,143 +3,121 @@
 // Query Execution - FFI functions for executing SQL queries in DuckDB
 //===--------------------------------------------------------------------===//
 
-import { duckdb_connection, duckdb_logical_type, duckdb_result } from "../enums.ts";
+import { duckdb_connection, duckdb_logical_type, duckdb_result } from "../structs.ts";
 
 export default {
   /**
-   * Executes a SQL query on a given connection and stores the result in the `out_result` buffer.
-   * 
-   * If the query fails, `DuckDBError` is returned, and the error message can be retrieved via `duckdb_result_error`.
-   * Always call `duckdb_destroy_result` on the result object after query execution, even on failure, to free memory.
-   * 
-   * @param connection Pointer to the database connection (`duckdb_connection`).
-   * @param query Pointer to the SQL query string (`const char*`).
-   * @param out_result Buffer to receive the result object (`duckdb_result*`).
-   * @return `DuckDBSuccess` (`int32_t`) on success, or `DuckDBError` on failure.
+   * Executes a SQL query on a specified connection, storing the result in `out_result`.
+   *
+   * @param connection - The DuckDB connection buffer (`duckdb_connection`).
+   * @param query - UTF-8 buffer containing the SQL query string.
+   * @param out_result - Pointer for receiving the query result (`duckdb_result*`).
+   * @returns `duckdb_state` as an unsigned 32-bit integer, indicating the success or failure of the operation.
    */
   duckdb_query: {
-    parameters: [duckdb_connection, "pointer", "pointer"],  // duckdb_connection, const char*, duckdb_result*
-    result: "i32",                                  // duckdb_state (int32_t)
+    parameters: [duckdb_connection, "buffer", "pointer"],
+    result: "i32",
   },
 
   /**
-   * Destroys the result object and deallocates all memory associated with it.
-   * 
-   * This should always be called after a query is executed, even if it fails, to ensure proper memory cleanup.
-   * 
-   * @param result Pointer to the result object to be destroyed (`duckdb_result*`).
-   * @return void
+   * Releases memory associated with a query result buffer.
+   *
+   * @param result - Pointer to the result buffer (`duckdb_result*`) to be destroyed.
+   * @returns Void.
    */
   duckdb_destroy_result: {
-    parameters: ["pointer"],                        // duckdb_result*
-    result: "void",                                 // void
+    parameters: ["pointer"],
+    result: "void",
   },
 
   /**
-   * Retrieves the name of a specific column in the result based on its index.
-   * 
-   * The column names do not need to be freed as they will be automatically released when the result is destroyed.
-   * Returns `NULL` if the column index is out of range.
-   * 
-   * @param result Buffer containing the result object (`duckdb_result*`).
-   * @param col The column index (`idx_t`).
-   * @return Pointer to the column name (`const char*`), or `NULL` if the column index is out of range.
+   * Retrieves the name of a specified column in the query result.
+   *
+   * @param result - Pointer to the result buffer (`duckdb_result*`).
+   * @param col - Index of the column (`idx_t`).
+   * @returns Pointer to the column name (`const char*`), or `NULL` if index is out of range.
    */
   duckdb_column_name: {
-    parameters: ["pointer", "u64"],                 // duckdb_result*, idx_t (uint64_t)
-    result: "pointer",                              // const char*
+    parameters: ["pointer", "u64"],
+    result: "pointer",
   },
 
   /**
-   * Retrieves the data type of a specific column in the result based on its index.
-   * 
-   * Returns `DUCKDB_TYPE_INVALID` if the column index is out of range.
-   * 
-   * @param result The result pointer to fetch the column type from. (`duckdb_result*`).
-   * @param col The column index (`idx_t`).
-   * @return The data type of the column (`duckdb_type` as `int32_t`).
+   * Gets the data type of a specified column in the query result.
+   *
+   * @param result - Pointer to the result buffer (`duckdb_result*`).
+   * @param col - Column index (`idx_t`).
+   * @returns `duckdb_type` as an unsigned 32-bit integer.
    */
   duckdb_column_type: {
-    parameters: ["pointer", "u64"],                 // duckdb_result*, idx_t (uint64_t)
-    result: "u32",                                  // duckdb_type (int32_t)
+    parameters: ["pointer", "u64"],
+    result: "u32",
   },
 
   /**
-   * Retrieves the type of statement that was executed (e.g., SELECT, INSERT, etc.).
-   * 
-   * Returns `DUCKDB_STATEMENT_TYPE_INVALID` if the statement type cannot be determined.
-   * 
-   * @param result The result object to fetch the statement type from. (`duckdb_result`).
-   * @return The statement type (`duckdb_statement_type` as `int32_t`).
+   * Returns the SQL statement type executed, such as SELECT or INSERT.
+   *
+   * @param result - The result buffer (`duckdb_result`) from which to fetch the statement type.
+   * @returns `duckdb_result_type` as an unsigned 32-bit integer.
    */
   duckdb_result_statement_type: {
-    parameters: [duckdb_result],                        // duckdb_result
-    result: "u32",                                  // duckdb_statement_type (int32_t)
+    parameters: [duckdb_result],
+    result: "u32",
   },
 
   /**
-   * Retrieves the logical data type of a specific column in the result based on its index.
-   * 
-   * The returned logical type must be destroyed using `duckdb_destroy_logical_type` to free memory.
-   * Returns `NULL` if the column index is out of range.
-   * 
-   * @param result Buffer containing the result object (`duckdb_result*`).
-   * @param col The column index (`idx_t`).
-   * @return Pointer to the logical type of the column (`duckdb_logical_type`).
+   * Gets the logical data type of a specified column in the result.
+   *
+   * @param result - Pointer to the result buffer (`duckdb_result*`).
+   * @param col - Column index (`idx_t`).
+   * @returns `duckdb_logical_type`: The column’s logical type buffer, or `NULL` if out of range.
    */
   duckdb_column_logical_type: {
-    parameters: ["pointer", "u64"],                 // duckdb_result*, idx_t
-    result: duckdb_logical_type,                              // duckdb_logical_type
+    parameters: ["pointer", "u64"],
+    result: duckdb_logical_type,
   },
 
   /**
-   * Retrieves the number of columns present in the result object.
-   * 
-   * @param result Pointer to the result object (`duckdb_result*`).
-   * @return The number of columns in the result object (`idx_t` as `usize`).
+   * Returns the number of columns in the result.
+   *
+   * @param result - Pointer to the result buffer (`duckdb_result*`).
+   * @returns `uint64_t`: Column count.
    */
   duckdb_column_count: {
-    parameters: ["pointer"],                        // duckdb_result*
-    result: "u64",                                  // idx_t (uint64_t)
+    parameters: ["pointer"],
+    result: "u64",
   },
 
   /**
-   * Retrieves the number of rows changed by the query stored in the result object.
-   * 
-   * This is relevant only for INSERT, UPDATE, and DELETE queries; for other queries, this will return 0.
-   * 
-   * @param result Pointer to the result object (`duckdb_result*`).
-   * @return The number of rows changed by the query (`idx_t`).
+   * Gets the number of rows changed by a data-modifying query.
+   *
+   * @param result - Pointer to the result buffer (`duckdb_result*`).
+   * @returns `uint64_t`: Number of rows changed, or 0 for non-modifying queries.
    */
   duckdb_rows_changed: {
-    parameters: ["pointer"],                        // duckdb_result*
-    result: "u64",                                  // idx_t (uint64_t)
+    parameters: ["pointer"],
+    result: "u64",
   },
 
   /**
-   * Retrieves the error message contained within the result object.
-   * 
-   * The error is only set if `duckdb_query` returns `DuckDBError`.
-   * The error message does not need to be freed, as it will be cleaned up when `duckdb_destroy_result` is called.
-   * 
-   * @param result Pointer to the result object (`duckdb_result*`).
-   * @return Pointer to the error message (`const char*`), or `NULL` if no error is present.
+   * Fetches the error message from the result buffer if an error occurred.
+   *
+   * @param result - Pointer to the result buffer (`duckdb_result*`).
+   * @returns Buffer containing the error message (`const char*`), or `NULL` if no error.
    */
   duckdb_result_error: {
-    parameters: ["pointer"],                        // duckdb_result*
-    result: "pointer",                              // const char*
+    parameters: ["pointer"],
+    result: "buffer",
   },
 
   /**
-   * Retrieves the error type contained within the result object.
-   * 
-   * The error is only set if `duckdb_query` returns `DuckDBError`.
-   * 
-   * @param result Pointer to the result object (`duckdb_result*`).
-   * @return The error type of the result (`duckdb_error_type` as `int32_t`).
+   * Gets the error type from the result buffer if an error occurred.
+   *
+   * @param result - Pointer to the result buffer (`duckdb_result*`).
+   * @returns `duckdb_error_type` as an unsigned 32-bit integer.
    */
   duckdb_result_error_type: {
-    parameters: ["pointer"],                        // duckdb_result*
-    result: "i32",                                  // duckdb_error_type (int32_t)
+    parameters: ["pointer"],
+    result: "i32",
   },
 } as const satisfies Deno.ForeignLibraryInterface;

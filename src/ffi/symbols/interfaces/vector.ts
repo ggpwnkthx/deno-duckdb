@@ -3,7 +3,7 @@
 // Vector Interface
 //===--------------------------------------------------------------------===//
 
-import { duckdb_logical_type, duckdb_vector } from "../../enums.ts";
+import { duckdb_logical_type, duckdb_vector } from "../../structs.ts";
 
 export default {
   /**

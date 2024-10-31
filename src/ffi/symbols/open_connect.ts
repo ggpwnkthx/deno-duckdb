@@ -3,112 +3,98 @@
 // Open Connect - FFI functions for opening, connecting, and managing DuckDB databases
 //===--------------------------------------------------------------------===//
 
-import { duckdb_connection, duckdb_database, duckdb_query_progress_type } from "../enums.ts";
+import { duckdb_config, duckdb_connection, duckdb_database, duckdb_query_progress_type } from "../structs.ts";
 
 export default {
   /**
-   * Opens a new DuckDB database or connects to an existing one.
-   * If the path is `nullptr` or `:memory:`, an in-memory database is created.
-   * Make sure to close the database using `duckdb_close` after usage.
+   * Opens a DuckDB database or connects to an existing one. For in-memory databases, use `nullptr` or `:memory:` as the path.
    *
-   * @param path Pointer to the database file path (`const char*`), or `nullptr`/`:memory:` for an in-memory DB.
-   * @param out_database Pointer (`BigUint64Array`) to receive the resulting database object (`duckdb_database*`).
-   * @return `DuckDBSuccess` (`uint32_t`) on success, or `DuckDBError` on failure.
+   * @param path - UTF-8 buffer containing the database file path, or `nullptr`/:memory: for in-memory databases.
+   * @param out_database - Pointer for receiving the resulting database instance (`duckdb_database*`).
+   * @returns `duckdb_state` as an unsigned 32-bit integer, indicating the success or failure of the operation.
    */
   duckdb_open: {
-    parameters: ["buffer", "pointer"], // const char* (path), duckdb_database*
-    result: "u32",                     // duckdb_state (uint32_t)
+    parameters: ["buffer", "pointer"], 
+    result: "u32",
   },
 
   /**
-   * Extended version of `duckdb_open`, with added support for configuration.
-   * Creates or opens a database with optional configuration. If the operation fails,
-   * `out_error` will contain a message (which should be freed with `duckdb_free`).
-   * The database should be closed with `duckdb_close`.
+   * Opens a DuckDB database with optional configuration support. If an error occurs, `out_error` will be populated with the error message.
    *
-   * @param path Pointer to the database file path (`const char*`), or `nullptr`/`:memory:` for an in-memory DB.
-   * @param out_database Pointer (`BigUint64Array`) to receive the resulting database object (`duckdb_database*`).
-   * @param config Pointer to the configuration object (`duckdb_config`), or `null` for default configuration.
-   * @param out_error Pointer (`BigUint64Array`) to receive the error message (`char**`) if the operation fails.
-   * @return `DuckDBSuccess` (`uint32_t`) on success, or `DuckDBError` on failure.
+   * @param path - UTF-8 buffer with the path to the database file, or `nullptr`/:memory: for in-memory.
+   * @param out_database - Pointer to receive the database instance (`duckdb_database*`).
+   * @param config - Optional configuration buffer (`duckdb_config`), or `null` for default settings.
+   * @param out_error - Pointer for capturing error messages (`char**`), should be freed with `duckdb_free` if populated.
+   * @returns `duckdb_state` as an unsigned 32-bit integer.
    */
   duckdb_open_ext: {
-    parameters: ["buffer", "pointer", "pointer", "pointer"], // const char* (path), duckdb_database*, duckdb_config, char**
-    result: "u32",                                          // duckdb_state (uint32_t)
+    parameters: ["buffer", "pointer", duckdb_config, "pointer"],
+    result: "u32",
   },
 
   /**
-   * Closes an open DuckDB database and deallocates all memory associated with it.
-   * This function should be called after using a database opened with `duckdb_open` or `duckdb_open_ext`.
-   * Failing to call this function (e.g., due to a crash) will not result in data corruption, but
-   * it's still recommended to close the database properly.
+   * Closes an open DuckDB database, releasing associated memory.
    *
-   * @param database Pointer (`BigUint64Array`) containing the database object to close (`duckdb_database*`).
-   * @return void
+   * @param database - Pointer to the DuckDB database instance (`duckdb_database*`) to close.
+   * @returns Void.
    */
   duckdb_close: {
-    parameters: ["pointer"], // duckdb_database*
-    result: "void",         // void
+    parameters: ["pointer"],
+    result: "void",
   },
 
   /**
-   * Establishes a connection to an open DuckDB database.
-   * A connection is required to execute queries and manage transaction states.
-   * Ensure to close the connection using `duckdb_disconnect` when no longer needed.
+   * Initiates a connection to a DuckDB database, required for executing queries.
    *
-   * @param database Pointer to the database object to connect to (`duckdb_database`).
-   * @param out_connection Pointer (`BigUint64Array`) to receive the resulting connection object (`duckdb_connection*`).
-   * @return `DuckDBSuccess` (`uint32_t`) on success, or `DuckDBError` on failure.
+   * @param database - The database instance (`duckdb_database`) to connect to.
+   * @param out_connection - Pointer to receive the resulting connection instance (`duckdb_connection*`).
+   * @returns `duckdb_state` as an unsigned 32-bit integer.
    */
   duckdb_connect: {
-    parameters: [duckdb_database, "pointer"], // duckdb_database, duckdb_connection*
-    result: "u32",                     // duckdb_state (uint32_t)
+    parameters: [duckdb_database, "pointer"],
+    result: "u32",
   },
 
   /**
-   * Interrupts the execution of a currently running query on the provided connection.
+   * Interrupts the execution of an active query on the specified connection.
    *
-   * @param connection Pointer to the connection on which the query is running (`duckdb_connection`).
-   * @return void
+   * @param connection - The connection instance (`duckdb_connection`) on which the query is being executed.
+   * @returns Void.
    */
   duckdb_interrupt: {
-    parameters: [duckdb_connection], // duckdb_connection
-    result: "void",          // void
+    parameters: [duckdb_connection],
+    result: "void",
   },
 
   /**
-   * Retrieves the progress of a running query on the provided connection.
-   * Returns a `duckdb_query_progress_type` struct containing progress information.
+   * Retrieves progress information for a query in progress.
    *
-   * @param connection Pointer to the connection (`duckdb_connection`).
-   * @return Struct containing query progress (`duckdb_query_progress_type`).
+   * @param connection - The connection instance (`duckdb_connection`) on which the query is running.
+   * @returns `duckdb_query_progress_type`, containing the query's progress details.
    */
   duckdb_query_progress: {
-    parameters: [duckdb_connection], // duckdb_connection
-    result: duckdb_query_progress_type, // duckdb_query_progress_type
+    parameters: [duckdb_connection],
+    result: duckdb_query_progress_type,
   },
 
   /**
-   * Disconnects an active connection to a DuckDB database and deallocates all memory
-   * associated with the connection. This should be called after you are done using
-   * the connection.
+   * Closes a connection to a DuckDB database, releasing associated memory.
    *
-   * @param connection Pointer (`BigUint64Array`) containing the connection object to close (`duckdb_connection*`).
-   * @return void
+   * @param connection - Pointer to the connection instance (`duckdb_connection*`) to close.
+   * @returns Void.
    */
   duckdb_disconnect: {
-    parameters: ["pointer"], // duckdb_connection*
-    result: "void",         // void
+    parameters: ["pointer"],
+    result: "void",
   },
 
   /**
-   * Returns the version of the linked DuckDB library, including any development version postfixes.
-   * This is useful for checking compatibility when developing extensions.
+   * Retrieves the DuckDB library version as a string.
    *
-   * @return Pointer to the version string (`const char*`).
+   * @returns Buffer containing the DuckDB library version string (`const char*`).
    */
   duckdb_library_version: {
-    parameters: [], // No parameters
-    result: "pointer", // const char* (string pointer)
+    parameters: [],
+    result: "buffer",
   },
 } as const satisfies Deno.ForeignLibraryInterface;

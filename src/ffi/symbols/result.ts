@@ -3,21 +3,17 @@
 // Result Functions - FFI functions for working with query results in DuckDB
 //===--------------------------------------------------------------------===//
 
-import { duckdb_result } from "../enums.ts";
+import { duckdb_result } from "../structs.ts";
 
 export default {
   /**
-   * Retrieves the return type of the given result object.
-   * 
-   * The return type indicates the nature of the result, such as whether the result is 
-   * a set of query rows, a modified row count, or if the result is invalid.
-   * If an error occurs, it returns `DUCKDB_RETURN_TYPE_INVALID`.
-   * 
-   * @param result Address to the result object (`duckdb_result`).
-   * @return The result return type (`duckdb_result_type`) or `DUCKDB_RETURN_TYPE_INVALID` on error.
+   * Retrieves the type of data contained in the result, indicating if it represents query rows, a row count, or is invalid.
+   *
+   * @param result - The result buffer (`duckdb_result`).
+   * @returns `duckdb_result_type` as an unsigned 32-bit integer.
    */
   duckdb_result_return_type: {
-    parameters: [duckdb_result],   // duckdb_result (result address)
-    result: "u32",             // duckdb_result_type (int32_t)
+    parameters: [duckdb_result],
+    result: "u32",
   },
 } as const satisfies Deno.ForeignLibraryInterface;

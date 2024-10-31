@@ -7,6 +7,7 @@
 const duckdb_internal_pointer = { struct: ["pointer"] as const };
 
 // Database objects as internal pointers
+export const duckdb_config = duckdb_internal_pointer;
 export const duckdb_database = duckdb_internal_pointer;
 export const duckdb_connection = duckdb_internal_pointer;
 export const duckdb_data_chunk = duckdb_internal_pointer;

@@ -1,59 +1,55 @@
 //===--------------------------------------------------------------------===//
-// File: src/ffi/symbols/validiity_mask.ts
+// File: src/ffi/symbols/validity_mask.ts
 // Validity Mask Functions
 //===--------------------------------------------------------------------===//
 
 export default {
   /**
-   * Returns whether or not a row is valid (i.e., not NULL) in the given validity mask.
+   * Checks if a specific row in the validity mask is valid (not NULL).
    *
-   * @param validity A pointer to the uint64_t array representing the validity mask, as obtained from `duckdb_vector_get_validity`.
-   * @param row The row index to check for validity.
-   * @return A boolean indicating whether the row is valid (`true`) or NULL/invalid (`false`).
+   * @param validity - Pointer to the `uint64_t` array representing the validity mask.
+   * @param row - Index of the row to check.
+   * @returns `boolean`: `true` if the row is valid, `false` if NULL/invalid.
    */
   duckdb_validity_row_is_valid: {
-    parameters: ["pointer", "u64"],    // uint64_t* (validity mask), idx_t (uint64_t)
-    result: "bool",                    // bool
+    parameters: ["pointer", "u64"],
+    result: "bool",
   },
 
   /**
-   * Sets the validity of a specific row in the validity mask to either valid or invalid.
+   * Sets the validity status of a specific row in the validity mask.
    *
-   * @param validity A pointer to the uint64_t array representing the validity mask, as obtained from `duckdb_vector_get_validity`.
-   * @param row The row index to update the validity for.
-   * @param valid A boolean indicating whether the row should be set as valid (`true`) or invalid (`false`).
-   * @return void
+   * @param validity - Pointer to the `uint64_t` array representing the validity mask.
+   * @param row - Index of the row to update.
+   * @param valid - `true` to mark the row as valid, `false` to mark it as invalid.
+   * @returns Void.
    */
   duckdb_validity_set_row_validity: {
-    parameters: ["pointer", "u64", "bool"], // uint64_t* (validity mask), idx_t (uint64_t), bool (valid or invalid)
-    result: "void",                         // void
+    parameters: ["pointer", "u64", "bool"],
+    result: "void",
   },
 
   /**
-   * Sets a specific row in the validity mask to invalid (NULL).
-   * 
-   * Equivalent to calling `duckdb_validity_set_row_validity` with the `valid` parameter set to `false`.
+   * Marks a specific row in the validity mask as invalid (NULL).
    *
-   * @param validity A pointer to the uint64_t array representing the validity mask.
-   * @param row The row index to mark as invalid.
-   * @return void
+   * @param validity - Pointer to the `uint64_t` array representing the validity mask.
+   * @param row - Index of the row to mark as invalid.
+   * @returns Void.
    */
   duckdb_validity_set_row_invalid: {
-    parameters: ["pointer", "u64"],    // uint64_t* (validity mask), idx_t (uint64_t)
-    result: "void",                    // void
+    parameters: ["pointer", "u64"],
+    result: "void",
   },
 
   /**
-   * Sets a specific row in the validity mask to valid (not NULL).
-   * 
-   * Equivalent to calling `duckdb_validity_set_row_validity` with the `valid` parameter set to `true`.
+   * Marks a specific row in the validity mask as valid (not NULL).
    *
-   * @param validity A pointer to the uint64_t array representing the validity mask.
-   * @param row The row index to mark as valid.
-   * @return void
+   * @param validity - Pointer to the `uint64_t` array representing the validity mask.
+   * @param row - Index of the row to mark as valid.
+   * @returns Void.
    */
   duckdb_validity_set_row_valid: {
-    parameters: ["pointer", "u64"],    // uint64_t* (validity mask), idx_t (uint64_t)
-    result: "void",                    // void
+    parameters: ["pointer", "u64"],
+    result: "void",
   },
 } as const satisfies Deno.ForeignLibraryInterface;

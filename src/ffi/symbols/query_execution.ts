@@ -3,7 +3,7 @@
 // Query Execution - FFI functions for executing SQL queries in DuckDB
 //===--------------------------------------------------------------------===//
 
-import { duckdb_connection, duckdb_logical_type, duckdb_result } from "../types.ts";
+import { duckdb_connection, duckdb_logical_type, duckdb_result } from "../enums.ts";
 
 export default {
   /**

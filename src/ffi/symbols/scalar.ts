@@ -3,7 +3,7 @@
 // Scalar Functions
 //===--------------------------------------------------------------------===//
 
-import { duckdb_logical_type } from "../types.ts";
+import { duckdb_logical_type } from "../enums.ts";
 
 export default {
   /**

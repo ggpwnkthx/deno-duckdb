@@ -3,7 +3,7 @@
 // Open Connect - FFI functions for opening, connecting, and managing DuckDB databases
 //===--------------------------------------------------------------------===//
 
-import { duckdb_database } from "../types.ts";
+import { duckdb_connection, duckdb_database, duckdb_query_progress_type } from "../enums.ts";
 
 export default {
   /**
@@ -16,7 +16,7 @@ export default {
    * @return `DuckDBSuccess` (`uint32_t`) on success, or `DuckDBError` on failure.
    */
   duckdb_open: {
-    parameters: ["pointer", "pointer"], // const char* (path), duckdb_database*
+    parameters: ["buffer", "pointer"], // const char* (path), duckdb_database*
     result: "u32",                     // duckdb_state (uint32_t)
   },
 
@@ -33,7 +33,7 @@ export default {
    * @return `DuckDBSuccess` (`uint32_t`) on success, or `DuckDBError` on failure.
    */
   duckdb_open_ext: {
-    parameters: ["pointer", "pointer", "pointer", "pointer"], // const char* (path), duckdb_database*, duckdb_config, char**
+    parameters: ["buffer", "pointer", "pointer", "pointer"], // const char* (path), duckdb_database*, duckdb_config, char**
     result: "u32",                                          // duckdb_state (uint32_t)
   },
 
@@ -72,7 +72,7 @@ export default {
    * @return void
    */
   duckdb_interrupt: {
-    parameters: ["pointer"], // duckdb_connection
+    parameters: [duckdb_connection], // duckdb_connection
     result: "void",          // void
   },
 
@@ -84,10 +84,8 @@ export default {
    * @return Struct containing query progress (`duckdb_query_progress_type`).
    */
   duckdb_query_progress: {
-    parameters: ["pointer"], // duckdb_connection
-    result: {
-      struct: ["f64", "u64", "u64"],
-    }, // duckdb_query_progress_type
+    parameters: [duckdb_connection], // duckdb_connection
+    result: duckdb_query_progress_type, // duckdb_query_progress_type
   },
 
   /**

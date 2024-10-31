@@ -1,11 +1,11 @@
 // File: src/index.ts
 import ffi from "./ffi/index.ts";
-import { duckdb_error_type, duckdb_result_type, duckdb_state, duckdb_statement_type, duckdb_type } from "./ffi/types.ts";
+import { duckdb_error_type, duckdb_result_type, duckdb_state, duckdb_statement_type, duckdb_type } from "./ffi/enums.ts";
 
 export function duckdb_open(path: string = ":memory:"): Deno.PointerObject {
   const pointer = Deno.UnsafePointer.of(new ArrayBuffer(8))
   const state = ffi.symbols.duckdb_open(
-    Deno.UnsafePointer.of(new TextEncoder().encode(path + "\0")),
+    new TextEncoder().encode(path + "\0"),
     pointer
   )
   console.debug(duckdb_state[state])

@@ -2,7 +2,7 @@ import { decodeDuckDBValue } from "./src/helpers.ts";
 import { duckdb_close, duckdb_column_count, duckdb_column_name, duckdb_column_type, duckdb_connect, duckdb_data_chunk_get_column_count, duckdb_data_chunk_get_size, duckdb_data_chunk_get_vector, duckdb_destroy_data_chunk, duckdb_destroy_result, duckdb_disconnect, duckdb_fetch_chunk, duckdb_get_type_id, duckdb_library_version, duckdb_logical_type_get_alias, duckdb_open, duckdb_query, duckdb_result_return_type, duckdb_result_statement_type, duckdb_string_is_inlined, duckdb_string_t_data, duckdb_string_t_length, duckdb_validity_row_is_valid, duckdb_vector_get_column_type, duckdb_vector_get_data, duckdb_vector_get_validity } from "./src/index.ts";
 
 console.debug(duckdb_library_version())
-const db = duckdb_open()
+const db = duckdb_open("duck.db")
 const conn = duckdb_connect(db)
 const query = duckdb_query(conn, `
   SELECT

@@ -3,7 +3,7 @@
 // Cast Functions - FFI functions for managing custom cast functions in DuckDB
 //===--------------------------------------------------------------------===//
 
-import { duckdb_logical_type, duckdb_vector } from "../types.ts";
+import { duckdb_logical_type, duckdb_vector } from "../enums.ts";
 
 export default {
   /**

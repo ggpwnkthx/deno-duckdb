@@ -3,7 +3,7 @@
 // Appender - FFI functions for appending data into tables in DuckDB
 //===--------------------------------------------------------------------===//
 
-import { duckdb_logical_type } from "../types.ts";
+import { duckdb_logical_type } from "../enums.ts";
 
 export default {
   /**

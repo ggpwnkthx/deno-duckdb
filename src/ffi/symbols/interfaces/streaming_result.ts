@@ -3,7 +3,7 @@
 // Streaming Result Interface - FFI functions for fetching result data chunks from DuckDB
 //===--------------------------------------------------------------------===//
 
-import { duckdb_data_chunk, duckdb_result } from "../../types.ts";
+import { duckdb_data_chunk, duckdb_result } from "../../enums.ts";
 
 export default {
   /**

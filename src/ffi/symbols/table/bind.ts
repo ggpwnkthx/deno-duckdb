@@ -3,7 +3,7 @@
 // Table Function Bind - FFI functions for binding table functions in DuckDB
 //===--------------------------------------------------------------------===//
 
-import { duckdb_logical_type } from "../../types.ts";
+import { duckdb_logical_type } from "../../enums.ts";
 
 export default {
   /**

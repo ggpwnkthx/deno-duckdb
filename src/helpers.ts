@@ -1,4 +1,4 @@
-import { duckdb_type } from "./ffi/types.ts";
+import { duckdb_type } from "./ffi/enums.ts";
 
 export function decodeDuckDBValue({ pointer, type, rowIndex }: { pointer: Deno.PointerObject, type: duckdb_type, rowIndex: number }) {
   const view = new Deno.UnsafePointerView(pointer)

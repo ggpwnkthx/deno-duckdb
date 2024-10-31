@@ -3,7 +3,7 @@
 // Data Chunk Interface - FFI functions for managing data chunks in DuckDB
 //===--------------------------------------------------------------------===//
 
-import { duckdb_data_chunk, duckdb_vector } from "../../types.ts";
+import { duckdb_data_chunk, duckdb_vector } from "../../enums.ts";
 
 export default {
   /**

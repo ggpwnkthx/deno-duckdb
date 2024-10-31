@@ -3,7 +3,7 @@
 // Result Functions - FFI functions for working with query results in DuckDB
 //===--------------------------------------------------------------------===//
 
-import { duckdb_result } from "../types.ts";
+import { duckdb_result } from "../enums.ts";
 
 export default {
   /**

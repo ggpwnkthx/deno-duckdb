@@ -3,7 +3,7 @@
 // Logical Type Interface - FFI functions for managing logical types in DuckDB
 //===--------------------------------------------------------------------===//
 
-import { duckdb_connection, duckdb_logical_type } from "../../types.ts";
+import { duckdb_connection, duckdb_logical_type } from "../../enums.ts";
 
 export default {
   /**

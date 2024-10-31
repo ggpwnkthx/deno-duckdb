@@ -1,33 +1,33 @@
 import { DuckDBConfigurationKeys, rows } from "./src/helpers.ts";
 import {
-  duckdb_close,
-  duckdb_connect,
-  duckdb_destroy_result,
-  duckdb_disconnect,
-  duckdb_library_version,
-  duckdb_open,
-  duckdb_query,
-  duckdb_column_count,
-  duckdb_column_name,
-  duckdb_column_type,
-  duckdb_result_return_type,
-  duckdb_result_statement_type
+   close,
+   connect,
+   destroy_result,
+   disconnect,
+   library_version,
+   open,
+   query,
+   column_count,
+   column_name,
+   column_type,
+   result_return_type,
+   result_statement_type
 } from "./src/index.ts";
 
-console.debug(`DuckDB Library Version: ${duckdb_library_version()}`);
+console.debug(`DuckDB Library Version: ${ library_version()}`);
 
 // Open a connection to the database with configuration options
 // Run console.debug(DuckDBConfigurationKeys) for all config keys
-const db = duckdb_open("duck.db", {
+const db =  open("duck.db", {
   "max_memory": "1GB",
   "threads": "4"
 });
 
 // Connect to the database
-const conn = duckdb_connect(db);
+const conn =  connect(db);
 
 // Execute a query
-const result = duckdb_query(conn, `
+const result =  query(conn, `
   SELECT
     hash(i * 10 + j) AS id1,
     IF (j % 2, true, false) AS bool,
@@ -40,11 +40,11 @@ const result = duckdb_query(conn, `
 
 // Get meta data from the results
 const metadata = {
-  statement_type: duckdb_result_statement_type(result),
-  result_type: duckdb_result_return_type(result),
-  columns: Array.from({ length: Number(duckdb_column_count(result)) }, (_, i) => ({
-    name: duckdb_column_name(result, i),
-    type: duckdb_column_type(result, i)
+  statement_type:  result_statement_type(result),
+  result_type:  result_return_type(result),
+  columns: Array.from({ length: Number( column_count(result)) }, (_, i) => ({
+    name:  column_name(result, i),
+    type:  column_type(result, i)
   }))
 }
 console.debug({ metadata })
@@ -54,6 +54,6 @@ const data = rows(result).toArray();
 console.debug({ data });
 
 // Clean up resources
-duckdb_destroy_result(result);
-duckdb_disconnect(conn);
-duckdb_close(db);
+ destroy_result(result);
+ disconnect(conn);
+ close(db);

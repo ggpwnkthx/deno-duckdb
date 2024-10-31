@@ -1,8 +1,8 @@
 import { duckdb_type } from "./ffi/enums.ts";
-import { duckdb_config_count, duckdb_data_chunk_get_column_count, duckdb_data_chunk_get_size, duckdb_data_chunk_get_vector, duckdb_destroy_data_chunk, duckdb_fetch_chunk, duckdb_get_config_flag, duckdb_get_type_id, duckdb_validity_row_is_valid, duckdb_vector_get_column_type, duckdb_vector_get_data, duckdb_vector_get_validity } from "./index.ts";
+import {  config_count,  data_chunk_get_column_count,  data_chunk_get_size,  data_chunk_get_vector,  destroy_data_chunk,  fetch_chunk,  get_config_flag,  get_type_id,  validity_row_is_valid,  vector_get_column_type,  vector_get_data,  vector_get_validity } from "./index.ts";
 
-export const DuckDBConfigurationKeys = Array.from({ length: Number(duckdb_config_count()) }, (_, i) => {
-  return duckdb_get_config_flag(BigInt(i));
+export const DuckDBConfigurationKeys = Array.from({ length: Number(config_count()) }, (_, i) => {
+  return get_config_flag(BigInt(i));
 }).reduce((acc, [name, description]) => {
   if (name) Object.assign(acc, {[name]: description})
   return acc;
@@ -53,27 +53,27 @@ export function decodeDuckDBValue({ pointer, type, rowIndex }: { pointer: Deno.P
 
 export function* rows(query: Deno.PointerObject) {
   while (true) {
-    const chunk = duckdb_fetch_chunk(query);
+    const chunk = fetch_chunk(query);
     if (!chunk) break;
 
-    const column_count = duckdb_data_chunk_get_column_count(chunk);
-    const row_count = duckdb_data_chunk_get_size(chunk);
+    const column_count = data_chunk_get_column_count(chunk);
+    const row_count = data_chunk_get_size(chunk);
 
     const columns = Array.from({ length: Number(column_count) }, (_, i) => {
-      const vector = duckdb_data_chunk_get_vector(chunk, i);
+      const vector = data_chunk_get_vector(chunk, i);
       return {
-        type: duckdb_vector_get_column_type(vector),
-        data: duckdb_vector_get_data(vector) as Deno.PointerObject,
-        validity: duckdb_vector_get_validity(vector) as Deno.PointerObject,
+        type: vector_get_column_type(vector),
+        data: vector_get_data(vector) as Deno.PointerObject,
+        validity: vector_get_validity(vector) as Deno.PointerObject,
       };
     });
 
     for (let rowIndex = 0; rowIndex < row_count; rowIndex++) {
       const row = Array.from({ length: Number(column_count) }, (_, column_index) => {
-        if (duckdb_validity_row_is_valid(columns[column_index].validity, BigInt(rowIndex))) {
+        if (validity_row_is_valid(columns[column_index].validity, BigInt(rowIndex))) {
           return decodeDuckDBValue({
             pointer: columns[column_index].data,
-            type: duckdb_get_type_id(columns[column_index].type),
+            type: get_type_id(columns[column_index].type),
             rowIndex
           });
         }
@@ -82,6 +82,6 @@ export function* rows(query: Deno.PointerObject) {
       yield row;
     }
 
-    duckdb_destroy_data_chunk(chunk);
+    destroy_data_chunk(chunk);
   }
 }

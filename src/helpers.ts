@@ -1,12 +1,12 @@
 import { duckdb_type } from "./ffi/enums.ts";
 import { config_count,  data_chunk_get_column_count,  data_chunk_get_size,  data_chunk_get_vector,  destroy_data_chunk,  fetch_chunk,  get_config_flag,  get_type_id,  validity_row_is_valid,  vector_get_column_type,  vector_get_data,  vector_get_validity } from "./index.ts";
 
-export const DuckDBConfigurationKeys = Array.from({ length: Number(config_count()) }, (_, i) => {
-  return get_config_flag(BigInt(i));
-}).reduce((acc, [name, description]) => {
-  if (name) Object.assign(acc, {[name]: description})
-  return acc;
-}, {});
+// export const DuckDBConfigurationKeys = Array.from({ length: Number(config_count()) }, (_, i) => {
+//   return get_config_flag(BigInt(i));
+// }).reduce((acc, [name, description]) => {
+//   if (name) Object.assign(acc, {[name]: description})
+//   return acc;
+// }, {});
 
 export function decodeDuckDBValue({ pointer, type, rowIndex }: { pointer: Deno.PointerObject, type: duckdb_type, rowIndex: number }) {
   const view = new Deno.UnsafePointerView(pointer)

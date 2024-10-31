@@ -54,6 +54,6 @@ const data = rows(result).toArray();
 console.debug({ data });
 
 // Clean up resources
- destroy_result(result);
- disconnect(conn);
- close(db);
+destroy_result(result);
+disconnect(conn);
+close(db);

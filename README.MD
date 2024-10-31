@@ -5,16 +5,20 @@ A TypeScript library to enable interaction with DuckDB, optimized for Deno 2.0 a
 
 ## Getting Started
 ```typescript
-import DuckDB from "https://github.com/ggpwnkthx/deno-duckdb/mod.ts";
+import DuckDB from "https://raw.githubusercontent.com/ggpwnkthx/deno-duckdb/main/mod.ts";
 
 const db = DuckDB.open()
 const conn = DuckDB.connect(db);
 const result = DuckDB.query(conn, `SELECT 42 AS answer`)
 const data = DuckDB.rows(result).toArray();
 
-destroy_result(result);
-disconnect(conn);
-close(db);
+DuckDB.destroy_result(result);
+DuckDB.disconnect(conn);
+DuckDB.close(db);
+```
+
+```bash
+deno run --allow-import --allow-read myApp.ts
 ```
 
 ### Basic Usage

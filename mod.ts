@@ -1,1 +1,2 @@
-export default "./src/index.ts";
+import * as duckdb from "./src/index.ts";
+export default duckdb

@@ -1,8 +1,9 @@
 // File: src/index.ts
-import { default as ffi } from "./ffi/index.ts";
+import init from "./ffi/index.ts";
+const ffi = await init()
+
 import { duckdb_error_type, duckdb_result_type, duckdb_state, duckdb_statement_type, duckdb_type } from "./ffi/enums.ts";
-import { rows } from "./helpers.ts"
-export { rows }
+export { rows } from "./helpers.ts"
 
 export function open(path: string = ":memory:", options?: Record<string, string>): Deno.PointerObject {
   const database = Deno.UnsafePointer.of(new ArrayBuffer(8))

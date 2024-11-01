@@ -49,9 +49,9 @@ export const defaultDir = join(
 )
 export const defaultPath = join(defaultDir, getFileNames().libraryName)
 
-export async function libraryExists(path?: string): Promise<boolean> {
+export function libraryExists(path?: string): boolean {
   try {
-    await Deno.stat(path ?? defaultPath);
+    Deno.statSync(path ?? defaultPath);
     return true;
   } catch {
     return false;
@@ -93,11 +93,10 @@ export async function downloadLatestRelease(fileName: string): Promise<void> {
   }
 }
 
-export async function getDuckDBLibraryPath(): Promise<string> {
+export async function init() {
   const { archiveName } = getFileNames();
-  if (!(await libraryExists(defaultPath))) {
+  if (!(libraryExists(defaultPath))) {
     console.debug(`${defaultPath} not found. Downloading ${archiveName}...`);
     await downloadLatestRelease(archiveName);
   }
-  return defaultPath;
 }

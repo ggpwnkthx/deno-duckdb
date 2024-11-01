@@ -18,11 +18,13 @@ import DuckDB from "https://raw.githubusercontent.com/ggpwnkthx/deno-duckdb/main
 
 ### Permissions
 This module requires the following permissions to operate:
+- `--allow-net` for fetching DuckDB binary.
+- `--allow-write` for saving the DuckDB binary.
 - `--allow-read` for reading local DuckDB files.
 - `--allow-ffi` for using the Foreign Function Interface.
 Run your application as follows:
 ```bash
-deno run --allow-read --allow-ffi your_script.ts
+deno run --allow-net --allow-write --allow-read --allow-ffi your_script.ts
 ```
 
 ### Example Usage

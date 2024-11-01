@@ -30,16 +30,24 @@ const db =  open("duck.db", {
 const conn =  connect(db);
 
 // Execute a query
-const result =  query(conn, `
+const result = query(conn, `
   SELECT
-    hash(i * 10 + j) AS id1,
-    IF (j % 2, true, false) AS bool,
-    CONCAT(i, ' this is a string') AS short_string,
-    hash(j * 10 + i) AS id2
-  FROM generate_series(1, 10000) s(i)
-  CROSS JOIN generate_series(1, 10) t(j)
-  ORDER BY id1
+    IF (j % 2, TRUE, FALSE) AS bool,                      -- BOOLEAN
+    CONCAT(i, ' this is a string') AS string,             -- VARCHAR (string)
+    i::TINYINT AS tiny_int,                               -- TINYINT
+    j::SMALLINT AS small_int,                             -- SMALLINT
+    (hash(i * 10 + j) % 9223372036854775807) AS big_int,                  -- BIGINT
+    (i / NULLIF(j, 0))::FLOAT AS float_val,               -- FLOAT
+    (i / NULLIF(j, 0))::DOUBLE AS double_val,             -- DOUBLE
+    DATE '2024-01-01' + (j * INTERVAL '1 day') AS date,   -- DATE
+    TIME '12:34:56' + (i * INTERVAL '1 second') AS time,  -- TIME
+    TIMESTAMP '2024-01-01 12:00:00' + (j * INTERVAL '1 second') AS timestamp, -- TIMESTAMP
+    to_hex(hash(i * j)) AS blob_val,                          -- BLOB (hexadecimal string representation)
+    INTERVAL '1 day' * j AS interval_val                      -- INTERVAL
+  FROM generate_series(1, 100) s(i)
+  CROSS JOIN generate_series(1, 5) t(j)
 `);
+
 
 // Get meta data from the results
 const metadata = {

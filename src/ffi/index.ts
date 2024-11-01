@@ -10,7 +10,7 @@
  * @module FFI
  */
 
-import { defaultPath } from "../fetch.ts";  // Fetches the correct path to the DuckDB shared library
+import { getDuckDBLibraryPath } from "../fetch.ts";  // Fetches the correct path to the DuckDB shared library
 import symbols from "./symbols/index.ts";            // Defines the symbols (functions and their signatures) available in the library
 
 /**
@@ -18,7 +18,7 @@ import symbols from "./symbols/index.ts";            // Defines the symbols (fun
  * 
  * @returns {Deno.DynamicLibrary<any>} A dynamically loaded library with access to the defined symbols.
  */
-export default Deno.dlopen(
-  defaultPath,  // Path to the DuckDB library, resolved at runtime
+export const ffi = Deno.dlopen(
+  await getDuckDBLibraryPath(),  // Path to the DuckDB library, resolved at runtime
   symbols       // Native function signatures defined in the symbols object
 );

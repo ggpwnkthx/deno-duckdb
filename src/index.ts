@@ -1,7 +1,6 @@
 // File: src/index.ts
-export { init } from "./fetch.ts";
+const { ffi } = await import("./ffi/index.ts");
 import { duckdb_error_type, duckdb_result_type, duckdb_state, duckdb_statement_type, duckdb_type } from "./ffi/enums.ts";
-import ffi from "./ffi/index.ts";
 export { rows } from "./helpers.ts"
 
 export function open(path: string = ":memory:", options?: Record<string, string>): Deno.PointerObject {

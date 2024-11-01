@@ -2,10 +2,8 @@
   "version": "4",
   "specifiers": {
     "jsr:@luca/esbuild-deno-loader@0.11": "0.11.0",
-    "jsr:@std/assert@1": "1.0.6",
     "jsr:@std/bytes@^1.0.2": "1.0.3",
     "jsr:@std/encoding@^1.0.5": "1.0.5",
-    "jsr:@std/internal@^1.0.4": "1.0.4",
     "jsr:@std/path@^1.0.6": "1.0.8",
     "npm:@types/node@*": "22.5.4",
     "npm:esbuild@0.20.2": "0.20.2"
@@ -19,20 +17,11 @@
         "jsr:@std/path"
       ]
     },
-    "@std/assert@1.0.6": {
-      "integrity": "1904c05806a25d94fe791d6d883b685c9e2dcd60e4f9fc30f4fc5cf010c72207",
-      "dependencies": [
-        "jsr:@std/internal"
-      ]
-    },
     "@std/bytes@1.0.3": {
       "integrity": "e5d5b9e685966314e4edb4be60dfc4bd7624a075bfd4ec8109252b4320f76452"
     },
     "@std/encoding@1.0.5": {
       "integrity": "ecf363d4fc25bd85bd915ff6733a7e79b67e0e7806334af15f4645c569fefc04"
-    },
-    "@std/internal@1.0.4": {
-      "integrity": "62e8e4911527e5e4f307741a795c0b0a9e6958d0b3790716ae71ce085f755422"
     },
     "@std/path@1.0.8": {
       "integrity": "548fa456bb6a04d3c1a1e7477986b6cffbce95102d0bb447c67c4ee70e0364be"
@@ -313,10 +302,5 @@
     "https://deno.land/x/zipjs@v2.7.52/lib/core/zip-writer.js": "751bbd9764b1c6c3add86d63855f8f7c5f2ccd0f98737394fc2f6fa5e9d1b98a",
     "https://deno.land/x/zipjs@v2.7.52/lib/z-worker-inline.js": "72b10e78e518dae68527a9ad47045db0e8c4747302b47024de781f389dc61315",
     "https://deno.land/x/zipjs@v2.7.52/lib/zip-fs.js": "c18ebfe158361827beaa9aac7ad27f7535bcd1d118e1888bf948067363df1b47"
-  },
-  "workspace": {
-    "dependencies": [
-      "jsr:@std/assert@1"
-    ]
   }
 }

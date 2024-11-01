@@ -93,10 +93,11 @@ export async function downloadLatestRelease(fileName: string): Promise<void> {
   }
 }
 
-export async function init() {
+export async function getDuckDBLibraryPath(): Promise<string> {
   const { archiveName } = getFileNames();
   if (!(libraryExists(defaultPath))) {
     console.debug(`${defaultPath} not found. Downloading ${archiveName}...`);
     await downloadLatestRelease(archiveName);
   }
+  return defaultPath;
 }

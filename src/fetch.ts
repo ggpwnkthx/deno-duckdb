@@ -91,12 +91,7 @@ export async function downloadLatestRelease(fileName: string): Promise<void> {
     if (entry.filename.endsWith(libraryName)) {
       const outputFilePath = join(defaultDir, libraryName);
       if (!entry.directory && entry.getData) {
-        const file = await Deno.open(outputFilePath, {
-          write: true,
-          create: true,
-        });
-        await entry.getData(file);
-        file.close();
+        await entry.getData(await Deno.open(outputFilePath, { write: true, create: true }));
         found = true;
         break;
       }

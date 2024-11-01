@@ -1,5 +1,12 @@
 // File: src/index.ts
-import ffi from "./ffi/index.ts";
+import { getDuckDBLibraryPath } from "./fetch.ts";
+import symbols from "./ffi/symbols/index.ts";
+
+const ffi = Deno.dlopen(
+  await getDuckDBLibraryPath(),
+  symbols
+)
+
 import { duckdb_error_type, duckdb_result_type, duckdb_state, duckdb_statement_type, duckdb_type } from "./ffi/enums.ts";
 export { rows } from "./helpers.ts"
 

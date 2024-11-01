@@ -10,7 +10,8 @@ import DuckDB from "https://raw.githubusercontent.com/ggpwnkthx/deno-duckdb/main
 const db = DuckDB.open()
 const conn = DuckDB.connect(db);
 const result = DuckDB.query(conn, `SELECT 42 AS answer`)
-const data = DuckDB.rows(result).toArray();
+
+console.log(DuckDB.rows(result).toArray());
 
 DuckDB.destroy_result(result);
 DuckDB.disconnect(conn);
@@ -18,7 +19,7 @@ DuckDB.close(db);
 ```
 
 ```bash
-deno run --allow-import --allow-read myApp.ts
+deno run --allow-read --allow-ffi myApp.ts
 ```
 
 ### Basic Usage

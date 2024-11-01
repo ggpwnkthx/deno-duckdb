@@ -1,8 +1,7 @@
 // File: src/index.ts
-import init from "./ffi/index.ts";
-const ffi = await init()
-
+export { init } from "./fetch.ts";
 import { duckdb_error_type, duckdb_result_type, duckdb_state, duckdb_statement_type, duckdb_type } from "./ffi/enums.ts";
+import ffi from "./ffi/index.ts";
 export { rows } from "./helpers.ts"
 
 export function open(path: string = ":memory:", options?: Record<string, string>): Deno.PointerObject {
@@ -53,7 +52,7 @@ export function get_config_flag(index: bigint) {
   name = new Deno.UnsafePointerView(name).getPointer()
   description = new Deno.UnsafePointerView(description).getPointer()
   return [
-    name && Deno.UnsafePointerView.getCString(name), 
+    name && Deno.UnsafePointerView.getCString(name),
     description && Deno.UnsafePointerView.getCString(description)
   ]
 }

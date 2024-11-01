@@ -25,9 +25,7 @@ import symbols from "./symbols/index.ts";            // Defines the symbols (fun
  * 
  * @returns {Deno.DynamicLibrary<any>} A dynamically loaded library with access to the defined symbols.
  */
-export default async function init() {
-  return Deno.dlopen(
-    await getDuckDBLibraryPath(),  // Path to the DuckDB library, resolved at runtime
-    symbols                        // Native function signatures defined in the symbols object
-  );
-}
+export default Deno.dlopen(
+  await getDuckDBLibraryPath(),  // Path to the DuckDB library, resolved at runtime
+  symbols                        // Native function signatures defined in the symbols object
+);

@@ -53,7 +53,7 @@ const db = DuckDB.open("path/to/duck.db", {
 ```
 To see available configuration options, use:
 ```typescript
-console.debug(DuckDBConfigurationKeys);
+console.debug(get_config_flags());
 ```
 
 ## API Reference

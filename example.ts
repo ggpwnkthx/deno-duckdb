@@ -1,4 +1,4 @@
-import { DuckDBConfigurationKeys, rows } from "./src/helpers.ts";
+import { rows } from "./src/helpers.ts";
 import {
    close,
    connect,
@@ -11,13 +11,14 @@ import {
    column_name,
    column_type,
    result_return_type,
-   result_statement_type
+   result_statement_type,
+   get_config_flags,
 } from "./src/index.ts";
 
 console.debug(`DuckDB Library Version: ${ library_version()}`);
 
 // Complete list of configuration options:
-// console.debug(DuckDBConfigurationKeys)
+// console.debug(get_config_flags())
 
 // Open a connection to the database with configuration options
 const db =  open("duck.db", {

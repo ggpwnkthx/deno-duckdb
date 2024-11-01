@@ -201,3 +201,12 @@ export function get_type_id(type: ArrayBuffer) {
 export function destroy_data_chunk(chunk: ArrayBuffer) {
   return ffi.symbols.duckdb_destroy_data_chunk(Deno.UnsafePointer.of(chunk))
 }
+
+export function get_config_flags() {
+  return Array.from({ length: Number(ffi.symbols.duckdb_config_count()) }, (_, i) => {
+    return get_config_flag(BigInt(i));
+  }).reduce((acc, [name, description]) => {
+    if (name) Object.assign(acc, { [name]: description })
+    return acc;
+  }, {});
+} 

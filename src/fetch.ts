@@ -1,7 +1,7 @@
 // File: src/fetch.ts
 
 import { configure, ZipReader } from "https://deno.land/x/zipjs@v2.7.52/index.js";
-import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
+import { join, resolve } from "https://deno.land/std@0.224.0/path/mod.ts";
 
 configure({
   terminateWorkerTimeout: 0,
@@ -47,7 +47,7 @@ export const defaultDir = join(
   Deno.build.os,
   Deno.build.arch
 )
-export const defaultPath = join(defaultDir, getFileNames().libraryName)
+export const defaultPath = resolve(defaultDir, getFileNames().libraryName);
 
 export function libraryExists(path?: string): boolean {
   try {
@@ -78,18 +78,33 @@ export async function downloadLatestRelease(fileName: string): Promise<void> {
 
   const downloadUrl = asset.browser_download_url;
   const res = await fetch(downloadUrl);
-  await Deno.mkdir(defaultDir, { recursive: true })
+  await Deno.mkdir(defaultDir, { recursive: true });
+
+  const { libraryName } = getFileNames();
 
   const zip = new ZipReader((await res.blob()).stream());
-  for (const entry of await zip.getEntries()) {
-    const outputFilePath = join(defaultDir, entry.filename);
-    if (!entry.directory && entry.getData) {
-      await entry.getData(
-        await Deno.open(outputFilePath, { write: true, create: true }),
-      );
-    } else {
-      await Deno.mkdir(outputFilePath, { recursive: true });
+  const entries = await zip.getEntries();
+
+  let found = false;
+  for (const entry of entries) {
+    // Extract only the libraryName file
+    if (entry.filename.endsWith(libraryName)) {
+      const outputFilePath = join(defaultDir, libraryName);
+      if (!entry.directory && entry.getData) {
+        const file = await Deno.open(outputFilePath, {
+          write: true,
+          create: true,
+        });
+        await entry.getData(file);
+        file.close();
+        found = true;
+        break;
+      }
     }
+  }
+
+  if (!found) {
+    throw new Error(`Library file ${libraryName} not found in the archive.`);
   }
 }
 

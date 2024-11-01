@@ -16,8 +16,10 @@ import {
 
 console.debug(`DuckDB Library Version: ${ library_version()}`);
 
+// Complete list of configuration options:
+// console.debug(DuckDBConfigurationKeys)
+
 // Open a connection to the database with configuration options
-// Run console.debug(DuckDBConfigurationKeys) for all config keys
 const db =  open("duck.db", {
   "max_memory": "1GB",
   "threads": "4"

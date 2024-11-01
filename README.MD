@@ -1,11 +1,32 @@
 # Deno DuckDB CAPI Wrapper
 A TypeScript library to enable interaction with DuckDB, optimized for Deno 2.0 and built with a functional programming approach. This project provides an interface to DuckDB through a low-level, synchronous API, supporting fundamental operations for embedding SQL-based analytical processing directly within your Deno application.
 
->Notes:
->- This library is a work-in-progress, but the core functionality is mostly operational for queries and data manipulation via DuckDB. 
->- The fetching mechanism to get the apporpriate DuckDB library is asynchronous.
+## Features
+- **Low-Level C API Access**: Enables high-performance, synchronous operations directly with DuckDB.
+- **Cross-platform Support**: Automated fetching and loading of DuckDB libraries based on OS and architecture.
+- **Functional Programming**: Built with functional patterns to maintain readability and performance.
+- **Streamlined Query Processing**: Easily handle large query results through chunked data retrieval with the DuckDB.rows generator.
+- **Asynchronous Library Loading**: Background downloading of the necessary library files (DuckDB itself) for efficient setup.
 
 ## Getting Started
+
+### Installation
+To use Deno DuckDB, import it directly from this repository:
+```typescript
+import DuckDB from "https://raw.githubusercontent.com/ggpwnkthx/deno-duckdb/main/mod.ts";
+```
+
+### Permissions
+This module requires the following permissions to operate:
+- `--allow-read` for reading local DuckDB files.
+- `--allow-ffi` for using the Foreign Function Interface.
+Run your application as follows:
+```bash
+deno run --allow-read --allow-ffi your_script.ts
+```
+
+### Example Usage
+The following example demonstrates connecting to DuckDB, executing a query, and processing the results.
 ```typescript
 import DuckDB from "https://raw.githubusercontent.com/ggpwnkthx/deno-duckdb/main/mod.ts";
 
@@ -20,15 +41,34 @@ DuckDB.disconnect(conn);
 DuckDB.close(db);
 ```
 
-```bash
-deno run --allow-read --allow-ffi myApp.ts
+### Advanced Configuration
+The `DuckDB.open` function allows setting DuckDB configuration options, for example memory allocation and threading:
+```typescript
+const db = DuckDB.open("path/to/duck.db", {
+  max_memory: "1GB",
+  threads: "4",
+});
+```
+To see available configuration options, use:
+```typescript
+console.debug(DuckDBConfigurationKeys);
 ```
 
-### Basic Usage
-There are no deprecated functions used in the low-level interface. The results of a query are chunked internally by DuckDB. To access the resulting data, the `DuckDB.rows` generator function has been provided that yeilds each row with a value per column of the appropriate native data type.
+## API Reference
+- `DuckDB.open(path, {config})`: Opens a new DuckDB instance, optionally accepting a path to a DuckDB file and configuration options.
+- `DuckDB.connect(db)`: Establishes a connection to a specified DuckDB instance.
+- `DuckDB.query(conn, query)`: Executes a SQL query.
+- `DuckDB.rows(result)`: A generator function to iterate through rows in a result set.
+- `DuckDB.destroy_result(result)`: Cleans up memory used to store query result.
+- `DuckDB.disconnect(conn)`: Closes the connection to the DuckDB instance.
+- `DuckDB.close(db)`: Closes the DuckDB instance.
+For a complete list of functions and configuration options, refer to the `src/index.ts` file.
 
 ## Development
-This project is structured with modularity in mind, allowing contributions focused on isolated components. You can contribute by adding new functionality, improving the API, or optimizing the DuckDB integration.
+This project is structured with modularity in mind, allowing contributions focused on isolated components. The project includes a DevContainer configuration for a consistent development environment. It installs necessary dependencies
+
+## Contributions
+You can contribute by adding new functionality, improving the API, or optimizing the DuckDB integration.
 1. Fork the repository
 2. Create your feature branch `git checkout -b feature/AmazingFeature`
 3. Commit your changes `git commit -m 'Add some AmazingFeature'`

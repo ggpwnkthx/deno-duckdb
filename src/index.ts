@@ -137,6 +137,18 @@ export function column_logical_type(result: Deno.PointerObject, index: bigint | 
   return type
 }
 
+export function decimal_width(type: ArrayBuffer) {
+  return ffi.symbols.duckdb_decimal_width(type)
+}
+
+export function decimal_scale(type: ArrayBuffer) {
+  return ffi.symbols.duckdb_decimal_scale(type)
+}
+
+export function decimal_internal_type(type: ArrayBuffer) {
+  return ffi.symbols.duckdb_decimal_internal_type(type)
+}
+
 export function column_count(result: Deno.PointerObject): bigint {
   return ffi.symbols.duckdb_column_count(result)
 }
@@ -209,4 +221,4 @@ export function get_config_flags() {
     if (name) Object.assign(acc, { [name]: description })
     return acc;
   }, {});
-} 
+}

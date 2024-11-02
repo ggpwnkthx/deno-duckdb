@@ -37,7 +37,40 @@ export default {
    * @return `DuckDBSuccess` on success, or `DuckDBError` on failure.
    */
   duckdb_register_logical_type: {
-    parameters: [duckdb_connection, duckdb_logical_type, "pointer"], // duckdb_connection, duckdb_logical_type, duckdb_create_type_info
-    result: "i32",                                 // duckdb_state (int32_t)
+    parameters: [duckdb_connection, duckdb_logical_type, "pointer"],
+    result: "i32",
   },
+  
+  /**
+   * Retrieves the width of a decimal type.
+   * 
+   * @param type A pointer to the `duckdb_logical_type` to register.
+   * @return  The width of the decimal type.
+   */
+  duckdb_decimal_width: {
+    parameters: [duckdb_logical_type],
+    result: "u8"
+  },
+  /**
+   * Retrieves the scale of a decimal type.
+   * 
+   * @param type A pointer to the `duckdb_logical_type` to register.
+   * @return The scale of the decimal type.
+   */
+  duckdb_decimal_scale: {
+    parameters: [duckdb_logical_type],
+    result: "u8"
+  },
+  /**
+   * Retrieves the internal storage type of a decimal type.
+   * 
+   * @param type A pointer to the `duckdb_logical_type` to register.
+   * @return The internal type of the decimal type.
+   */
+  duckdb_decimal_internal_type: {
+    parameters: [duckdb_logical_type],
+    result: "i32"
+  }
+
+
 } as const satisfies Deno.ForeignLibraryInterface;

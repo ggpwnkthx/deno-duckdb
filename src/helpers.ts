@@ -1,8 +1,9 @@
 import { duckdb_type } from "./ffi/enums.ts";
-import { data_chunk_get_column_count, data_chunk_get_size, data_chunk_get_vector, destroy_data_chunk, fetch_chunk, get_type_id, validity_row_is_valid, vector_get_column_type, vector_get_data, vector_get_validity } from "./index.ts";
+import { data_chunk_get_column_count, data_chunk_get_size, data_chunk_get_vector,  decimal_scale, decimal_width, destroy_data_chunk, fetch_chunk, get_type_id, validity_row_is_valid, vector_get_column_type, vector_get_data, vector_get_validity } from "./index.ts";
 
-export function decodeDuckDBValue({ pointer, type, rowIndex }: { pointer: Deno.PointerObject, type: duckdb_type, rowIndex: number }) {
-  const view = new Deno.UnsafePointerView(pointer)
+export function decodeDuckDBValue({ column, rowIndex }: { column: { data: Deno.PointerObject, type: ArrayBuffer }, rowIndex: number }) {
+  const type = get_type_id(column.type)
+  const view = new Deno.UnsafePointerView(column.data)
   switch (type) {
     case duckdb_type.DUCKDB_TYPE_INVALID:
       return undefined
@@ -22,7 +23,6 @@ export function decodeDuckDBValue({ pointer, type, rowIndex }: { pointer: Deno.P
     case duckdb_type.DUCKDB_TYPE_BIGINT:
       return view.getBigInt64(rowIndex * 8);
     case duckdb_type.DUCKDB_TYPE_HUGEINT:
-    case duckdb_type.DUCKDB_TYPE_UUID:
       return {
         lower: view.getBigUint64(rowIndex * 16),
         upper: view.getBigInt64(rowIndex * 16 + 8),
@@ -46,8 +46,28 @@ export function decodeDuckDBValue({ pointer, type, rowIndex }: { pointer: Deno.P
       return view.getFloat32(rowIndex * 4);
     case duckdb_type.DUCKDB_TYPE_DOUBLE:
       return view.getFloat64(rowIndex * 8);
-    case duckdb_type.DUCKDB_TYPE_DECIMAL:
-      return view.getArrayBuffer(rowIndex * 16)
+    case duckdb_type.DUCKDB_TYPE_DECIMAL: {
+      const width = decimal_width(column.type);
+      const scale = decimal_scale(column.type);
+      let value: bigint;
+      if (width <= 4) {
+        value = BigInt(view.getInt16(rowIndex * 2));
+      } else if (width <= 9) {
+        value = BigInt(view.getInt32(rowIndex * 4));
+      } else if (width <= 18) {
+        value = view.getBigInt64(rowIndex * 8);
+      } else if (width <= 38) {
+        const low = view.getBigUint64(rowIndex * 16);
+        const high = view.getBigInt64(rowIndex * 16 + 8);
+        value = high << 64n | low;
+      } else {
+        throw new Error(`Unsupported decimal width: ${width}`);
+      }
+      const scaled = 10n ** BigInt(scale);
+      const high = value / scaled;
+      const low = value % scaled;
+      return [high, low];
+    }
 
     case duckdb_type.DUCKDB_TYPE_TIME:          // in microseconds
     case duckdb_type.DUCKDB_TYPE_TIMESTAMP:     // in microseconds
@@ -56,8 +76,11 @@ export function decodeDuckDBValue({ pointer, type, rowIndex }: { pointer: Deno.P
     case duckdb_type.DUCKDB_TYPE_TIMESTAMP_NS:  // in nanoseconds
     case duckdb_type.DUCKDB_TYPE_TIMESTAMP_TZ:
       return view.getBigUint64(rowIndex * 8)
-    case duckdb_type.DUCKDB_TYPE_DATE:          // duckdb_date
-      return view.getUint32(rowIndex * 4)
+    case duckdb_type.DUCKDB_TYPE_DATE: {        // duckdb_date
+      const date = new Date("1970-01-01")
+      date.setDate(date.getDate() + view.getUint32(rowIndex * 4))
+      return date
+    }
     case duckdb_type.DUCKDB_TYPE_INTERVAL:      // duckdb_interval
       return {
         months: view.getUint32(rowIndex * 16),
@@ -90,6 +113,12 @@ export function decodeDuckDBValue({ pointer, type, rowIndex }: { pointer: Deno.P
         pointer,
         Number(view.getBigUint64(rowIndex * 16 + 8))
       )
+    }
+
+    case duckdb_type.DUCKDB_TYPE_UUID: {
+      const hex2 = view.getBigUint64(rowIndex * 16).toString(16).padStart(16, '0'); // Second 64 bits
+      const hex1 = view.getBigUint64(rowIndex * 16 + 8).toString(16).padStart(16, '0'); // First 64 bits
+      return `${hex1.substring(0, 8)}-${hex1.substring(8, 12)}-${hex1.substring(12, 16)}-${hex2.substring(0, 4)}-${hex2.substring(4)}`;
     }
 
     case duckdb_type.DUCKDB_TYPE_ENUM:
@@ -127,8 +156,7 @@ export function* rows(query: Deno.PointerObject) {
       const row = Array.from({ length: Number(column_count) }, (_, column_index) => {
         if (validity_row_is_valid(columns[column_index].validity, BigInt(rowIndex))) {
           return decodeDuckDBValue({
-            pointer: columns[column_index].data,
-            type: get_type_id(columns[column_index].type),
+            column: columns[column_index],
             rowIndex
           });
         }

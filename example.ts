@@ -32,22 +32,28 @@ const conn =  connect(db);
 // Execute a query
 const result = query(conn, `
   SELECT
-    IF (j % 2, TRUE, FALSE) AS bool,                      -- BOOLEAN
-    CONCAT(i, ' this is a string') AS string,             -- VARCHAR (string)
-    i::TINYINT AS tiny_int,                               -- TINYINT
-    j::SMALLINT AS small_int,                             -- SMALLINT
-    (hash(i * 10 + j) % 9223372036854775807) AS big_int,                  -- BIGINT
-    (i / NULLIF(j, 0))::FLOAT AS float_val,               -- FLOAT
-    (i / NULLIF(j, 0))::DOUBLE AS double_val,             -- DOUBLE
-    DATE '2024-01-01' + (j * INTERVAL '1 day') AS date,   -- DATE
-    TIME '12:34:56' + (i * INTERVAL '1 second') AS time,  -- TIME
-    TIMESTAMP '2024-01-01 12:00:00' + (j * INTERVAL '1 second') AS timestamp, -- TIMESTAMP
-    to_hex(hash(i * j)) AS blob_val,                          -- BLOB (hexadecimal string representation)
-    INTERVAL '1 day' * j AS interval_val                      -- INTERVAL
-  FROM generate_series(1, 100) s(i)
-  CROSS JOIN generate_series(1, 5) t(j)
+    TRUE AS bool_col,                                                                 -- BOOLEAN
+    'Sample Text' AS varchar_col,                                                     -- VARCHAR
+    42::TINYINT AS tinyint_col,                                                       -- TINYINT
+    1000::SMALLINT AS smallint_col,                                                   -- SMALLINT
+    123456::INTEGER AS integer_col,                                                   -- INTEGER
+    9223372036854775807::BIGINT AS bigint_col,                                        -- BIGINT
+    3.1415926535897932384626433832795028841971::FLOAT AS float_col,                   -- FLOAT
+    3.1415926535897932384626433832795028841971::DOUBLE AS double_col,                 -- DOUBLE
+    3.1415926535897932384626433832795028841971::DECIMAL(4, 3) AS small_decimal_col,   -- DECIMAL
+    3.1415926535897932384626433832795028841971::DECIMAL(9, 8) AS decimal_col,         -- DECIMAL
+    3.1415926535897932384626433832795028841971::DECIMAL(16, 15) AS big_decimal_col,   -- DECIMAL
+    -3.1415926535897932384626433832795028841971::DECIMAL(38, 37) AS huge_decimal_col, -- DECIMAL
+    DATE '2010-10-01' AS date_col,                                                    -- DATE
+    TIME '12:34:56' AS time_col,                                                      -- TIME
+    TIMESTAMP '2024-01-01 12:00:00' AS timestamp_col,                                 -- TIMESTAMP
+    INTERVAL '2 days' AS interval_col,                                                -- INTERVAL
+    uuid() AS uuid_col,                                                               -- UUID
+    --to_hex(hash(12345)) AS blob_col,                                                  -- BLOB
+    --ARRAY[1, 2, 3] AS list_col,                                                       -- LIST
+    --MAP(['key1', 'key2'], ['value1', 'value2']) AS map_col,                           -- MAP
+    --'Simple Enum'::ENUM('Simple Enum', 'Another Enum') AS enum_col                    -- ENUM
 `);
-
 
 // Get meta data from the results
 const metadata = {

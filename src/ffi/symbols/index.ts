@@ -38,21 +38,28 @@ import validity_mask from "./validity_mask.ts";                   // Symbols for
  * this export consolidates all DuckDB-related FFI symbols into a single object for ease
  * of use.
  */
-export default {
+const synchronous = {
   ...open_connect,
   ...configuration,
   ...query_execution,
   ...result,
-  // ...helpers,
-  // ...prepared_statements,
   ...interfaces,
   ...validity_mask,
-  // ...scalar,
-  // ...aggregate,
-  // ...table,
-  // ...replacement_scans,
-  // ...profiling_info,
-  // ...appender,
-  // ...threading,
-  // ...cast
 } as const satisfies Deno.ForeignLibraryInterface;
+
+type AsyncForeignLibraryInterface<T> = {
+  [K in keyof T]: T[K] & { nonblocking: true };
+};
+
+const asynchronous: AsyncForeignLibraryInterface<typeof synchronous> = Object.entries(synchronous).reduce(
+  (accumulator, [key, value]) => {
+    const newValue = { ...value, nonblocking: true };
+    return {
+      ...accumulator,
+      [key]: newValue,
+    };
+  },
+  {} as AsyncForeignLibraryInterface<typeof synchronous>
+);
+
+export const symbols = { synchronous, asynchronous }

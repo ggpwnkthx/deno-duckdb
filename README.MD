@@ -1,10 +1,9 @@
-# DuckDB CAPI Wrapper for Deno
-A TypeScript library to enable interaction with [DuckDB](https://duckdb.org/), optimized for [Deno 2.0](https://deno.com/) and built with a functional programming approach. This project provides an interface to DuckDB through a low-level, synchronous API, supporting fundamental operations for embedding SQL-based analytical processing directly within your Deno application.
+# DuckDB C API Wrapper for Deno
+A TypeScript library to enable interaction with [DuckDB](https://duckdb.org/), optimized for [Deno 2.0](https://deno.com/) and built with a functional programming approach. This project provides an interface to DuckDB through its [C API](https://duckdb.org/docs/api/c/overview), supporting fundamental operations for embedding SQL-based analytical processing directly within your Deno application.
 
 ## Features
-- **Low-Level C API Access**: Enables high-performance, synchronous operations directly with DuckDB.
+- **A/Sync Functional API**: Enables high-performance operations directly with DuckDB via functional patterns.
 - **Cross-platform Support**: Automated fetching and loading of DuckDB libraries based on OS and architecture.
-- **Functional Programming**: Built with functional patterns to maintain readability and performance.
 - **Streamlined Query Processing**: Easily handle large query results through chunked data retrieval with the `DuckDB.rows` generator.
 
 ## Getting Started

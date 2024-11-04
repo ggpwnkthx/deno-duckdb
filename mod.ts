@@ -1,3 +1,3 @@
 // File: mod.ts
-import * as duckdb from "./src/index.ts";
-export default duckdb
+import * as duckdbSync from "./src/functional/sync.ts";
+export default duckdbSync

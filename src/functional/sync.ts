@@ -1,14 +1,11 @@
 // File: src/index.ts
-import { getDuckDBLibraryPath } from "./fetch.ts";
-import symbols from "./ffi/symbols/index.ts";
+import { getDuckDBLibraryPath } from "../fetch.ts";
+import { symbols } from "../ffi/symbols/index.ts";
 
-const ffi = Deno.dlopen(
-  await getDuckDBLibraryPath(),
-  symbols
-)
+const ffi = Deno.dlopen(await getDuckDBLibraryPath(), symbols.synchronous)
 
-import { duckdb_error_type, duckdb_result_type, duckdb_state, duckdb_statement_type, duckdb_type } from "./ffi/enums.ts";
-export { rows } from "./helpers.ts"
+import { duckdb_error_type, duckdb_result_type, duckdb_state, duckdb_statement_type, duckdb_type } from "../ffi/enums.ts";
+export { rows } from "../helpers.ts"
 
 export function open(path: string = ":memory:", options?: Record<string, string>): Deno.PointerObject {
   const database = Deno.UnsafePointer.of(new ArrayBuffer(8))

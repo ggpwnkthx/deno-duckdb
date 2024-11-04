@@ -1,4 +1,4 @@
-import { rows } from "./src/helpers.ts";
+import { rows } from "../src/helpers.ts";
 import {
    close,
    connect,
@@ -13,7 +13,7 @@ import {
    result_return_type,
    result_statement_type,
    get_config_flags,
-} from "./src/index.ts";
+} from "../src/functional/sync.ts";
 
 console.debug(`DuckDB Library Version: ${ library_version()}`);
 
@@ -21,13 +21,13 @@ console.debug(`DuckDB Library Version: ${ library_version()}`);
 // console.debug(get_config_flags())
 
 // Open a connection to the database with configuration options
-const db =  open("duck.db", {
+const db = open("duck.db", {
   "max_memory": "1GB",
   "threads": "4"
 });
 
 // Connect to the database
-const conn =  connect(db);
+const conn = connect(db);
 
 // Execute a query
 const result = query(conn, `
@@ -57,11 +57,11 @@ const result = query(conn, `
 
 // Get meta data from the results
 const metadata = {
-  statement_type:  result_statement_type(result),
-  result_type:  result_return_type(result),
+  statement_type: result_statement_type(result),
+  result_type: result_return_type(result),
   columns: Array.from({ length: Number( column_count(result)) }, (_, i) => ({
-    name:  column_name(result, i),
-    type:  column_type(result, i)
+    name: column_name(result, i),
+    type: column_type(result, i)
   }))
 }
 console.debug({ metadata })

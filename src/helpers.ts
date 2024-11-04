@@ -1,5 +1,5 @@
 import { duckdb_type } from "./ffi/enums.ts";
-import { data_chunk_get_column_count, data_chunk_get_size, data_chunk_get_vector,  decimal_scale, decimal_width, destroy_data_chunk, fetch_chunk, get_type_id, validity_row_is_valid, vector_get_column_type, vector_get_data, vector_get_validity } from "./index.ts";
+import { data_chunk_get_column_count, data_chunk_get_size, data_chunk_get_vector,  decimal_scale, decimal_width, destroy_data_chunk, fetch_chunk, get_type_id, validity_row_is_valid, vector_get_column_type, vector_get_data, vector_get_validity } from "./functional/sync.ts";
 
 export function decodeDuckDBValue({ column, rowIndex }: { column: { data: Deno.PointerObject, type: ArrayBuffer }, rowIndex: number }) {
   const type = get_type_id(column.type)

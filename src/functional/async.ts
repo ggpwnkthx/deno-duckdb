@@ -11,9 +11,9 @@ export async function open(path: string = ":memory:", options?: Record<string, s
   const database = Deno.UnsafePointer.of(new ArrayBuffer(8))
   const error = Deno.UnsafePointer.of(new ArrayBuffer(8))
   const config = await create_config()
-  options && Object.entries(options).forEach(([name, value]) => {
+  options && await Promise.all(Object.entries(options).map(([name, value]) => {
     set_config(config, name, value)
-  })
+  }))
   const state = await ffi.symbols.duckdb_open_ext(
     new TextEncoder().encode(path + "\0"),
     database,
@@ -66,7 +66,7 @@ export async function set_config(config: ArrayBuffer, name: string, value: strin
 }
 
 export async function destroy_config(config: Deno.PointerObject) {
-  ffi.symbols.duckdb_destroy_config(config)
+  await ffi.symbols.duckdb_destroy_config(config)
 }
 
 export async function connect(database: Deno.PointerObject): Promise<Deno.PointerObject> {

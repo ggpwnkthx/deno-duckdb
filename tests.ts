@@ -1,7 +1,6 @@
 // File: main_test.ts
 
-import { assert } from "https://deno.land/std@0.224.0/assert/assert.ts";
-import { assertEquals } from "https://deno.land/std@0.224.0/assert/assert_equals.ts";
+import { assert, assertEquals } from "jsr:@std/assert";
 import {
   libraryExists,
   downloadLatestRelease,

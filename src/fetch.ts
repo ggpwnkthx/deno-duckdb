@@ -1,7 +1,7 @@
 // File: src/fetch.ts
 
 import { configure, ZipReader } from "https://deno.land/x/zipjs@v2.7.52/index.js";
-import { join, resolve } from "https://deno.land/std@0.224.0/path/mod.ts";
+import { join, resolve } from "jsr:@std/path";
 
 configure({
   terminateWorkerTimeout: 0,

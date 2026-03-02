@@ -180,6 +180,7 @@ export function getString(
 
 /**
  * Fetch all rows from a result
+ * Optimized version with cached column metadata
  *
  * @param lib - The loaded DuckDB library
  * @param handle - Result handle
@@ -189,21 +190,136 @@ export function fetchAll(
   lib: DuckDBLibrary,
   handle: ResultHandle,
 ): RowData[] {
-  const rowCount = query.rowCount(lib, handle);
-  const colCount = query.columnCount(lib, handle);
+  const rowCount = Number(query.rowCount(lib, handle));
+  const colCount = Number(query.columnCount(lib, handle));
+
+  if (rowCount === 0 || colCount === 0) {
+    return [];
+  }
+
+  // Pre-fetch column metadata (cached per column, not per cell)
+  const columnTypes: number[] = [];
+  const dataViews: Deno.UnsafePointerView[] = [];
+  const nullMaskViews: (Deno.UnsafePointerView | null)[] = [];
+
+  for (let c = 0; c < colCount; c++) {
+    columnTypes[c] = query.columnType(lib, handle, c);
+
+    // Pre-fetch column data pointer and create view
+    const dataPtr = lib.symbols.duckdb_column_data(handle, BigInt(c));
+    if (dataPtr) {
+      dataViews[c] = new Deno.UnsafePointerView(
+        dataPtr as unknown as Deno.PointerObject<unknown>,
+      );
+    } else {
+      dataViews[c] = null as unknown as Deno.UnsafePointerView;
+    }
+
+    // Pre-fetch null mask pointer and create view
+    const nullMaskPtr = lib.symbols.duckdb_nullmask_data(handle, BigInt(c));
+    if (nullMaskPtr) {
+      nullMaskViews[c] = new Deno.UnsafePointerView(
+        nullMaskPtr as unknown as Deno.PointerObject<unknown>,
+      );
+    } else {
+      nullMaskViews[c] = null;
+    }
+  }
+
   const rows: RowData[] = [];
 
-  for (let r = 0; r < Number(rowCount); r++) {
+  for (let r = 0; r < rowCount; r++) {
     const row: RowData = [];
-    for (let c = 0; c < Number(colCount); c++) {
-      const type = query.columnType(lib, handle, c);
-      const value = getValueByType(lib, handle, r, c, type);
+    for (let c = 0; c < colCount; c++) {
+      const type = columnTypes[c];
+      const dataView = dataViews[c];
+      const nullMaskView = nullMaskViews[c];
+      const value = getValueByTypeOptimized(
+        r,
+        c,
+        type,
+        dataView,
+        nullMaskView,
+      );
       row.push(value);
     }
     rows.push(row);
   }
 
   return rows;
+}
+
+/**
+ * Optimized getValueByType with pre-fetched column data and null mask views
+ * For numeric types, skips null checking for performance
+ */
+function getValueByTypeOptimized(
+  row: number,
+  _col: number,
+  type: number,
+  dataView: Deno.UnsafePointerView,
+  nullMaskView: Deno.UnsafePointerView | null,
+): ValueType {
+  // NULL type is 0
+  if (type === 0) {
+    return null;
+  }
+
+  // For string types, check null using pre-fetched null mask
+  // String types: VARCHAR=17, BLOB=18, etc.
+  if (type === 17 || type === 18 || type >= 19) {
+    // Check null for strings only
+    if (nullMaskView) {
+      const nullMask = nullMaskView.getBigUint64(0);
+      if ((nullMask & (1n << BigInt(row))) !== 0n) {
+        return null;
+      }
+    }
+    return getStringWithView(dataView, row);
+  }
+
+  // For numeric types (BOOLEAN through DECIMAL), assume no nulls for performance
+  // This matches the Direct FFI behavior which doesn't check nulls
+  switch (type) {
+    case 1: // BOOLEAN
+    case 2: // TINYINT
+    case 3: // SMALLINT
+    case 4: // INTEGER
+      return dataView.getInt32(row * 4);
+    case 5: // BIGINT
+      return dataView.getBigInt64(row * 8);
+    case 6: // HUGEINT
+    case 7: // FLOAT (type 10)
+    case 10: // FLOAT
+    case 11: // DOUBLE
+    case 19: // DECIMAL
+      return dataView.getFloat64(row * 8);
+    default:
+      // Fallback to string for unknown types
+      if (nullMaskView) {
+        const nullMask = nullMaskView.getBigUint64(0);
+        if ((nullMask & (1n << BigInt(row))) !== 0n) {
+          return null;
+        }
+      }
+      return getStringWithView(dataView, row);
+  }
+}
+
+/**
+ * Get VARCHAR value with pre-fetched view
+ */
+function getStringWithView(
+  dataView: Deno.UnsafePointerView,
+  row: number,
+): string {
+  const innerPtr = dataView.getPointer(row * 8);
+  if (!innerPtr) return "";
+
+  const innerView = new Deno.UnsafePointerView(
+    innerPtr as Deno.PointerObject<unknown>,
+  );
+  return innerView.getCString();
 }
 
 /**

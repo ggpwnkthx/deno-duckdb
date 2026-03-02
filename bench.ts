@@ -49,20 +49,28 @@ Deno.bench("Direct FFI", () => {
   lib.symbols.duckdb_query(connPtr, sqlPtr, resultHandle);
 
   // Fetch all rows (materialize the result)
-  const rowCount = lib.symbols.duckdb_row_count(resultHandle);
-  const colCount = lib.symbols.duckdb_column_count(resultHandle);
+  const rowCount = Number(lib.symbols.duckdb_row_count(resultHandle));
+  const colCount = Number(lib.symbols.duckdb_column_count(resultHandle));
 
-  // Read the data (materialize)
+  // Pre-fetch column data pointers and create views once per column
+  const dataViews: Deno.UnsafePointerView[] = [];
+  for (let c = 0; c < colCount; c++) {
+    const dataPtr = lib.symbols.duckdb_column_data(resultHandle, BigInt(c));
+    if (dataPtr) {
+      dataViews[c] = new Deno.UnsafePointerView(
+        dataPtr as unknown as Deno.PointerObject<unknown>,
+      );
+    }
+  }
+
+  // Read the data using pre-fetched views
   const rows: unknown[][] = [];
-  for (let r = 0; r < Number(rowCount); r++) {
+  for (let r = 0; r < rowCount; r++) {
     const row: unknown[] = [];
-    for (let c = 0; c < Number(colCount); c++) {
-      const dataPtr = lib.symbols.duckdb_column_data(resultHandle, BigInt(c));
-      if (dataPtr) {
-        const ptrObj = dataPtr as unknown as Deno.PointerObject<unknown>;
-        const view = new Deno.UnsafePointerView(ptrObj);
-        const offset = r * 8;
-        const val = view.getBigInt64(offset);
+    for (let c = 0; c < colCount; c++) {
+      const view = dataViews[c];
+      if (view) {
+        const val = view.getBigInt64(r * 8);
         row.push(val);
       }
     }

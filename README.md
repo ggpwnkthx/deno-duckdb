@@ -1,12 +1,8 @@
 # deno-duckdb
-
 [![JSR](https://jsr.io/badges/@ggpwnkthx/duckdb)](https://jsr.io/@ggpwnkthx/duckdb)
 
 Type-safe DuckDB FFI bindings for Deno. Wraps [`@ggpwnkthx/libduckdb`](https://jsr.io/@ggpwnkthx/libduckdb) with two
 distinct APIs for working with DuckDB databases.
-
-[![Deno](https://img.shields.io/badge/deno-2.6+-fff?style=flat&logo=deno)](https://deno.land)
-[![DuckDB](https://img.shields.io/badge/DuckDB-1.4.4-fff?style=flat&logo=duckdb)](https://www.duckdb.org/)
 
 ## Installation
 
@@ -24,8 +20,8 @@ import { ... } from "jsr:@ggpwnkthx/duckdb/objective";
 
 ## Requirements
 
-- Deno 1.40+
-- DuckDB 1.4.4
+- [![Deno](https://img.shields.io/badge/deno-2.0+-fff?style=flat&logo=deno)](https://deno.land)
+- [![DuckDB](https://img.shields.io/badge/DuckDB-1.4.4-fff?style=flat&logo=duckdb)](https://www.duckdb.org/)
 
 ## Quick Start
 

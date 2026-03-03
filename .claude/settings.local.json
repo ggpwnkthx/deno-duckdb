@@ -7,9 +7,9 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:jsr.io)",
       "WebFetch(domain:docs.deno.com)",
+      "WebFetch(domain:duckdb.org)",
       "mcp__ide__getDiagnostics",
-      "Bash(deno:*)",
-      "Bash(unzip:*)"
+      "Bash(deno:*)"
     ]
   },
   "hooks": {

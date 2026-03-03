@@ -1,0 +1,6 @@
+INSERT INTO customers (id, name, email, city) VALUES
+(1, 'Alice Johnson', 'alice@example.com', 'New York'),
+(2, 'Bob Smith', 'bob@example.com', 'Los Angeles'),
+(3, 'Carol White', 'carol@example.com', 'Chicago'),
+(4, 'David Brown', 'david@example.com', 'Houston'),
+(5, 'Eve Davis', 'eve@example.com', 'Phoenix');

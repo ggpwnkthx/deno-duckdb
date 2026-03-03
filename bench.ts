@@ -52,26 +52,74 @@ Deno.bench("Direct FFI", () => {
   const rowCount = Number(lib.symbols.duckdb_row_count(resultHandle));
   const colCount = Number(lib.symbols.duckdb_column_count(resultHandle));
 
-  // Pre-fetch column data pointers and create views once per column
-  const dataViews: Deno.UnsafePointerView[] = [];
+  // Pre-fetch column types and data pointers once per column
+  const columnTypes: number[] = [];
+  const dataViews: (Deno.UnsafePointerView | null)[] = [];
+
   for (let c = 0; c < colCount; c++) {
+    // Get column type (INTEGER=4, BIGINT=5, DOUBLE=11, VARCHAR=17)
+    columnTypes[c] = lib.symbols.duckdb_column_type(
+      resultHandle,
+      BigInt(c),
+    ) as number;
+
+    // Pre-fetch column data pointer and create view
     const dataPtr = lib.symbols.duckdb_column_data(resultHandle, BigInt(c));
     if (dataPtr) {
       dataViews[c] = new Deno.UnsafePointerView(
         dataPtr as unknown as Deno.PointerObject<unknown>,
       );
+    } else {
+      dataViews[c] = null;
     }
   }
 
-  // Read the data using pre-fetched views
+  // Read the data using type-specific reads
   const rows: unknown[][] = [];
   for (let r = 0; r < rowCount; r++) {
     const row: unknown[] = [];
     for (let c = 0; c < colCount; c++) {
+      const type = columnTypes[c];
       const view = dataViews[c];
-      if (view) {
-        const val = view.getBigInt64(r * 8);
-        row.push(val);
+
+      if (!view) {
+        row.push(null);
+        continue;
+      }
+
+      // Use type-specific reads matching the functional API
+      switch (type) {
+        case 1: // BOOLEAN
+        case 2: // TINYINT
+        case 3: // SMALLINT
+        case 4: // INTEGER
+          row.push(view.getInt32(r * 4));
+          break;
+        case 5: // BIGINT
+          row.push(view.getBigInt64(r * 8));
+          break;
+        case 6: // HUGEINT
+        case 7: // FLOAT (type 10)
+        case 10: // FLOAT
+        case 11: // DOUBLE
+        case 19: // DECIMAL
+          row.push(view.getFloat64(r * 8));
+          break;
+        case 17: // VARCHAR
+        case 18: // BLOB
+        default: {
+          // String types: read pointer first, then dereference
+          const innerPtr = view.getPointer(r * 8);
+          if (innerPtr) {
+            const innerView = new Deno.UnsafePointerView(
+              innerPtr as Deno.PointerObject<unknown>,
+            );
+            row.push(innerView.getCString());
+          } else {
+            row.push("");
+          }
+          break;
+        }
       }
     }
     rows.push(row);

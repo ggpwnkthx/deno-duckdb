@@ -2,13 +2,24 @@
  * Object-Oriented Connection class
  */
 
-import type { ConnectionHandle, DuckDBLibrary, RowData } from "../types.ts";
+import type {
+  ConnectionHandle,
+  DuckDBLibrary,
+  PreparedStatementHandle,
+  RowData,
+} from "../types.ts";
 import * as conn from "../functional/connection.ts";
 import * as query from "../functional/query.ts";
 import * as prep from "../functional/prepared.ts";
 import type { Database } from "./database.ts";
 import { QueryResult as QueryResultClass } from "./query.ts";
 import { PreparedStatement } from "./prepared.ts";
+
+/** Cache for prepared statements - maps SQL string to handle */
+const preparedStatementCache = new Map<string, PreparedStatementHandle>();
+
+/** Maximum cached prepared statements */
+const MAX_CACHED_STATEMENTS = 100;
 
 /**
  * Connection class - represents a connection to a DuckDB database
@@ -61,16 +72,31 @@ export class Connection {
 
   /**
    * Prepare a statement
+   * Uses caching to avoid re-parsing the same SQL
    *
    * @param sql - SQL statement to prepare
    * @returns PreparedStatement instance
    */
   prepare(sql: string): PreparedStatement {
     this.checkNotClosed();
+
+    // Check cache first
+    const cached = preparedStatementCache.get(sql);
+    if (cached) {
+      return new PreparedStatement(this.lib, cached, this);
+    }
+
+    // Prepare new statement
     const result = prep.prepare(this.lib, this.handle!, sql);
     if (!result.success) {
       throw new Error(result.error ?? "Failed to prepare statement");
     }
+
+    // Cache if under limit
+    if (preparedStatementCache.size < MAX_CACHED_STATEMENTS) {
+      preparedStatementCache.set(sql, result.handle);
+    }
+
     return new PreparedStatement(this.lib, result.handle, this);
   }
 
@@ -79,6 +105,13 @@ export class Connection {
    */
   close(): void {
     if (this.closed || !this.handle) return;
+
+    // Clear prepared statement cache on connection close
+    for (const cachedHandle of preparedStatementCache.values()) {
+      prep.destroyPrepared(this.lib, cachedHandle);
+    }
+    preparedStatementCache.clear();
+
     conn.closeConnection(this.lib, this.handle);
     this.handle = null;
     this.closed = true;

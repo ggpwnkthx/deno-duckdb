@@ -9,8 +9,8 @@ import type {
   QueryResult,
 } from "../types.ts";
 import {
-  createResultBuffer,
   getPointer,
+  getResultBuffer,
   isValidHandle,
   stringToPointer,
 } from "../helpers.ts";
@@ -29,7 +29,7 @@ export function execute(
   connHandle: ConnectionHandle,
   sql: string,
 ): QueryResult {
-  const handle = createResultBuffer();
+  const handle = getResultBuffer();
   const connPtr = getPointer(connHandle);
   const sqlPtr = stringToPointer(sql);
 

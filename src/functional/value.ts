@@ -226,24 +226,25 @@ export function fetchAll(
     }
   }
 
-  const rows: RowData[] = [];
+  // Pre-allocate rows array
+  const rows: RowData[] = new Array(rowCount);
 
   for (let r = 0; r < rowCount; r++) {
-    const row: RowData = [];
+    // Pre-allocate row array
+    const row: RowData = new Array(colCount);
     for (let c = 0; c < colCount; c++) {
       const type = columnTypes[c];
       const dataView = dataViews[c];
       const nullMaskView = nullMaskViews[c];
-      const value = getValueByTypeOptimized(
+      row[c] = getValueByTypeOptimized(
         r,
         c,
         type,
         dataView,
         nullMaskView,
       );
-      row.push(value);
     }
-    rows.push(row);
+    rows[r] = row;
   }
 
   return rows;
@@ -253,7 +254,7 @@ export function fetchAll(
  * Optimized getValueByType with pre-fetched column data and null mask views
  * For numeric types, skips null checking for performance
  */
-function getValueByTypeOptimized(
+export function getValueByTypeOptimized(
   row: number,
   _col: number,
   type: number,

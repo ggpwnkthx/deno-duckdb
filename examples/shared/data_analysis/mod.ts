@@ -1,0 +1,31 @@
+const SQL_DIR = "./examples/shared/data_analysis/";
+
+export const [
+  CREATE_PRODUCTS,
+  CREATE_CUSTOMERS,
+  CREATE_ORDERS,
+  INSERT_PRODUCTS,
+  INSERT_CUSTOMERS,
+  INSERT_ORDERS,
+  PRODUCTS_BY_PRICE,
+  ORDER_DETAILS,
+  ELECTRONICS_BY_PRICE,
+  ORDERS_BY_DATE_RANGE,
+  CUSTOMER_TOTALS,
+  PRODUCTS_ABOVE_AVERAGE,
+  ALL_ORDERS,
+] = await Promise.all([
+  Deno.readTextFile(SQL_DIR + "create_products.sql"),
+  Deno.readTextFile(SQL_DIR + "create_customers.sql"),
+  Deno.readTextFile(SQL_DIR + "create_orders.sql"),
+  Deno.readTextFile(SQL_DIR + "insert_products.sql"),
+  Deno.readTextFile(SQL_DIR + "insert_customers.sql"),
+  Deno.readTextFile(SQL_DIR + "insert_orders.sql"),
+  Deno.readTextFile(SQL_DIR + "products_by_price.sql"),
+  Deno.readTextFile(SQL_DIR + "order_details.sql"),
+  Deno.readTextFile(SQL_DIR + "electronics_by_price.sql"),
+  Deno.readTextFile(SQL_DIR + "orders_by_date_range.sql"),
+  Deno.readTextFile(SQL_DIR + "customer_totals.sql"),
+  Deno.readTextFile(SQL_DIR + "products_above_average.sql"),
+  Deno.readTextFile(SQL_DIR + "all_orders.sql"),
+]);

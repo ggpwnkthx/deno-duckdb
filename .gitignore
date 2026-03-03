@@ -1,4 +1,5 @@
-/lib
-duck.db
-gpt.ts
-deno-duckdb-repo.json
+/lib*
+/gen*
+.env
+CLAUDE.md
+core

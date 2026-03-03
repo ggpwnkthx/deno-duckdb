@@ -1,0 +1,59 @@
+/**
+ * Functional connection operations
+ */
+
+import type { ConnectionHandle, DatabaseHandle } from "../types.ts";
+import { createPointerBuffer, getPointer, isValidHandle } from "../helpers.ts";
+import { DatabaseError } from "../errors.ts";
+import { getLibrary } from "../lib.ts";
+
+/**
+ * Create a connection to a database
+ *
+ * @param dbHandle - Database handle
+ * @returns ConnectionHandle
+ * @throws DatabaseError if connection fails
+ */
+export async function create(
+  dbHandle: DatabaseHandle,
+): Promise<ConnectionHandle> {
+  const lib = await getLibrary();
+  const handle = createPointerBuffer();
+  const dbPtr = getPointer(dbHandle);
+
+  const result = lib.symbols.duckdb_connect(dbPtr, handle);
+
+  if (result !== 0) {
+    throw new DatabaseError("Failed to connect to database");
+  }
+
+  return handle;
+}
+
+/**
+ * Close a connection
+ *
+ * @param handle - Connection handle to close
+ */
+export async function closeConnection(
+  handle: ConnectionHandle,
+): Promise<void> {
+  const lib = await getLibrary();
+  if (isValidHandle(handle)) {
+    lib.symbols.duckdb_disconnect(handle);
+  }
+}
+
+/**
+ * Check if a connection handle is valid
+ */
+export function isValidConnection(handle: ConnectionHandle): boolean {
+  return isValidHandle(handle);
+}
+
+/**
+ * Get the connection pointer value
+ */
+export function getPointerValueConnection(handle: ConnectionHandle): bigint {
+  return getPointer(handle);
+}

@@ -2,37 +2,47 @@
  * Object-Oriented Database class
  */
 
-import type {
-  DatabaseConfig,
-  DatabaseHandle,
-  DuckDBLibrary,
-} from "../types.ts";
+import type { DatabaseConfig, DatabaseHandle } from "../types.ts";
 import * as db from "../functional/database.ts";
 import * as conn from "../functional/connection.ts";
 import { Connection } from "./connection.ts";
+import { getLibrary } from "../lib.ts";
 
 /**
  * Database class - represents a DuckDB database
  */
 export class Database {
-  private lib: DuckDBLibrary;
+  private lib: Awaited<ReturnType<typeof getLibrary>> | null = null;
   private handle: DatabaseHandle | null = null;
   private closed = false;
   private connections: Connection[] = [];
+  private _config?: DatabaseConfig;
 
   /**
    * Create a new Database instance
    *
-   * @param lib - The loaded DuckDB library
    * @param config - Database configuration
    */
-  constructor(lib: DuckDBLibrary, config?: DatabaseConfig) {
-    this.lib = lib;
-    const result = db.open(lib, config);
-    if (!result.success) {
-      throw new Error(result.error ?? "Failed to open database");
+  constructor(config?: DatabaseConfig) {
+    this._config = config;
+  }
+
+  /**
+   * Internal: Ensure library is loaded
+   */
+  private async ensureLib(): Promise<NonNullable<typeof this.lib>> {
+    if (!this.lib) {
+      this.lib = await getLibrary();
     }
-    this.handle = result.handle;
+    return this.lib;
+  }
+
+  /**
+   * Internal: Open the database (called lazily)
+   */
+  async open(): Promise<void> {
+    this.lib = await this.ensureLib();
+    this.handle = await db.open(this._config);
   }
 
   /**
@@ -41,16 +51,16 @@ export class Database {
    * @returns Connection instance
    * @throws Error if connection fails
    */
-  connect(): Connection {
+  async connect(): Promise<Connection> {
+    if (!this.lib) {
+      await this.open();
+    }
     this.checkNotClosed();
     if (!this.handle) {
       throw new Error("Database is closed");
     }
-    const result = conn.create(this.lib, this.handle);
-    if (!result.success) {
-      throw new Error(result.error ?? "Failed to connect");
-    }
-    const connection = new Connection(this.lib, result.handle, this);
+    const handle = await conn.create(this.handle);
+    const connection = new Connection(this.lib!, handle, this);
     this.connections.push(connection);
     return connection;
   }
@@ -58,14 +68,14 @@ export class Database {
   /**
    * Close the database
    */
-  close(): void {
+  async close(): Promise<void> {
     if (this.closed || !this.handle) return;
     // Close all child connections
     for (const connection of this.connections) {
-      connection.close();
+      await connection.close();
     }
     this.connections = [];
-    db.closeDatabase(this.lib, this.handle);
+    await db.closeDatabase(this.handle);
     this.handle = null;
     this.closed = true;
   }

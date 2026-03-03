@@ -2,237 +2,238 @@
  * Functional value extraction operations tests
  */
 
-import { assertEquals, assertExists } from "@std/assert";
-import { load } from "@ggpwnkthx/libduckdb";
-import type {
-  ConnectionHandle,
-  DatabaseHandle,
-  DuckDBLibrary,
-} from "@ggpwnkthx/duckdb";
+import { assertEquals } from "@std/assert";
 import { functional as duckdb } from "@ggpwnkthx/duckdb";
 
-let lib: DuckDBLibrary;
-let dbHandle: DatabaseHandle;
-let connHandle: ConnectionHandle;
+let dbHandle: Awaited<ReturnType<typeof duckdb.open>>;
+let connHandle: Awaited<ReturnType<typeof duckdb.create>>;
 
 Deno.test({
-  name: "setup: load library, open database, create connection",
+  name: "setup: open database, create connection",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
-    lib = await load();
-    const dbResult = duckdb.open(lib);
-    assertExists(dbResult.handle);
-    dbHandle = dbResult.handle;
-
-    const connResult = duckdb.create(lib, dbHandle);
-    assertExists(connResult.handle);
-    connHandle = connResult.handle;
+    dbHandle = await duckdb.open();
+    connHandle = await duckdb.create(dbHandle);
   },
 });
 
-Deno.test("isNull: detects NULL values", () => {
-  // Create table with NULL value
-  duckdb.execute(
-    lib,
-    connHandle,
-    "CREATE TABLE null_test(id INTEGER, val TEXT)",
-  );
-  duckdb.execute(lib, connHandle, "INSERT INTO null_test VALUES (1, NULL)");
+Deno.test({
+  name: "isNull: detects NULL values",
+  async fn() {
+    // Create table with NULL value
+    await duckdb.execute(
+      connHandle,
+      "CREATE TABLE null_test(id INTEGER, val TEXT)",
+    );
+    await duckdb.execute(connHandle, "INSERT INTO null_test VALUES (1, NULL)");
 
-  const result = duckdb.execute(lib, connHandle, "SELECT * FROM null_test");
-  assertEquals(result.success, true);
+    const handle = await duckdb.execute(connHandle, "SELECT * FROM null_test");
 
-  // The second column (index 1) should be NULL
-  const isNull = duckdb.isNull(lib, result.handle, 0, 1);
-  assertEquals(isNull, true);
+    // The second column (index 1) should be NULL
+    const isNull = await duckdb.isNull(handle, 0, 1);
+    assertEquals(isNull, true);
 
-  duckdb.destroyResult(lib, result.handle);
+    await duckdb.destroyResult(handle);
+  },
 });
 
-Deno.test("isNull: returns false for non-NULL values", () => {
-  duckdb.execute(
-    lib,
-    connHandle,
-    "CREATE TABLE non_null_test(id INTEGER, val TEXT)",
-  );
-  duckdb.execute(
-    lib,
-    connHandle,
-    "INSERT INTO non_null_test VALUES (1, 'hello')",
-  );
+Deno.test({
+  name: "isNull: returns false for non-NULL values",
+  async fn() {
+    await duckdb.execute(
+      connHandle,
+      "CREATE TABLE non_null_test(id INTEGER, val TEXT)",
+    );
+    await duckdb.execute(
+      connHandle,
+      "INSERT INTO non_null_test VALUES (1, 'hello')",
+    );
 
-  const result = duckdb.execute(lib, connHandle, "SELECT * FROM non_null_test");
-  assertEquals(result.success, true);
+    const handle = await duckdb.execute(
+      connHandle,
+      "SELECT * FROM non_null_test",
+    );
 
-  // The second column should NOT be NULL
-  const isNull = duckdb.isNull(lib, result.handle, 0, 1);
-  assertEquals(isNull, false);
+    // The second column should NOT be NULL
+    const isNull = await duckdb.isNull(handle, 0, 1);
+    assertEquals(isNull, false);
 
-  duckdb.destroyResult(lib, result.handle);
+    await duckdb.destroyResult(handle);
+  },
 });
 
-Deno.test("getInt32: extracts INTEGER values", () => {
-  const result = duckdb.execute(lib, connHandle, "SELECT 42 as num");
-  assertEquals(result.success, true);
+Deno.test({
+  name: "getInt32: extracts INTEGER values",
+  async fn() {
+    const handle = await duckdb.execute(connHandle, "SELECT 42 as num");
 
-  const intVal = duckdb.getInt32(lib, result.handle, 0, 0);
-  assertEquals(intVal, 42);
+    const intVal = await duckdb.getInt32(handle, 0, 0);
+    assertEquals(intVal, 42);
 
-  duckdb.destroyResult(lib, result.handle);
+    await duckdb.destroyResult(handle);
+  },
 });
 
-Deno.test("getInt64: extracts BIGINT values", () => {
-  const result = duckdb.execute(
-    lib,
-    connHandle,
-    "SELECT 9223372036854775807::BIGINT as num",
-  );
-  assertEquals(result.success, true);
+Deno.test({
+  name: "getInt64: extracts BIGINT values",
+  async fn() {
+    const handle = await duckdb.execute(
+      connHandle,
+      "SELECT 9223372036854775807::BIGINT as num",
+    );
 
-  const intVal = duckdb.getInt64(lib, result.handle, 0, 0);
-  assertEquals(intVal, 9223372036854775807n);
+    const intVal = await duckdb.getInt64(handle, 0, 0);
+    assertEquals(intVal, 9223372036854775807n);
 
-  duckdb.destroyResult(lib, result.handle);
+    await duckdb.destroyResult(handle);
+  },
 });
 
-Deno.test("getDouble: extracts DOUBLE values", () => {
-  const result = duckdb.execute(
-    lib,
-    connHandle,
-    "SELECT 3.14159::DOUBLE as num",
-  );
-  assertEquals(result.success, true);
+Deno.test({
+  name: "getDouble: extracts DOUBLE values",
+  async fn() {
+    const handle = await duckdb.execute(
+      connHandle,
+      "SELECT 3.14159::DOUBLE as num",
+    );
 
-  const doubleVal = duckdb.getDouble(lib, result.handle, 0, 0);
-  assertEquals(doubleVal, 3.14159);
+    const doubleVal = await duckdb.getDouble(handle, 0, 0);
+    assertEquals(doubleVal, 3.14159);
 
-  duckdb.destroyResult(lib, result.handle);
+    await duckdb.destroyResult(handle);
+  },
 });
 
-Deno.test("getString: extracts VARCHAR values", () => {
-  const result = duckdb.execute(lib, connHandle, "SELECT 'hello world' as str");
-  assertEquals(result.success, true);
+Deno.test({
+  name: "getString: extracts VARCHAR values",
+  async fn() {
+    const handle = await duckdb.execute(
+      connHandle,
+      "SELECT 'hello world' as str",
+    );
 
-  const strVal = duckdb.getString(lib, result.handle, 0, 0);
-  assertEquals(strVal, "hello world");
+    const strVal = await duckdb.getString(handle, 0, 0);
+    assertEquals(strVal, "hello world");
 
-  duckdb.destroyResult(lib, result.handle);
+    await duckdb.destroyResult(handle);
+  },
 });
 
-Deno.test("fetchAll: fetches all rows from result", () => {
-  duckdb.execute(
-    lib,
-    connHandle,
-    "CREATE TABLE fetch_test(id INTEGER, name TEXT)",
-  );
-  duckdb.execute(
-    lib,
-    connHandle,
-    "INSERT INTO fetch_test VALUES (1, 'a'), (2, 'b'), (3, 'c')",
-  );
+Deno.test({
+  name: "fetchAll: fetches all rows from result",
+  async fn() {
+    await duckdb.execute(
+      connHandle,
+      "CREATE TABLE fetch_test(id INTEGER, name TEXT)",
+    );
+    await duckdb.execute(
+      connHandle,
+      "INSERT INTO fetch_test VALUES (1, 'a'), (2, 'b'), (3, 'c')",
+    );
 
-  const result = duckdb.execute(
-    lib,
-    connHandle,
-    "SELECT * FROM fetch_test ORDER BY id",
-  );
-  assertEquals(result.success, true);
+    const handle = await duckdb.execute(
+      connHandle,
+      "SELECT * FROM fetch_test ORDER BY id",
+    );
 
-  const rows = duckdb.fetchAll(lib, result.handle);
-  assertEquals(rows.length, 3);
-  assertEquals(rows[0][0], 1);
-  assertEquals(rows[1][0], 2);
-  assertEquals(rows[2][0], 3);
+    const rows = await duckdb.fetchAll(handle);
+    assertEquals(rows.length, 3);
+    assertEquals(rows[0][0], 1);
+    assertEquals(rows[1][0], 2);
+    assertEquals(rows[2][0], 3);
 
-  duckdb.destroyResult(lib, result.handle);
+    await duckdb.destroyResult(handle);
+  },
 });
 
-Deno.test("fetchAll: handles NULL values", () => {
-  duckdb.execute(
-    lib,
-    connHandle,
-    "CREATE TABLE fetch_null_test(id INTEGER, val TEXT)",
-  );
-  duckdb.execute(
-    lib,
-    connHandle,
-    "INSERT INTO fetch_null_test VALUES (1, NULL), (2, 'test')",
-  );
+Deno.test({
+  name: "fetchAll: handles NULL values",
+  async fn() {
+    await duckdb.execute(
+      connHandle,
+      "CREATE TABLE fetch_null_test(id INTEGER, val TEXT)",
+    );
+    await duckdb.execute(
+      connHandle,
+      "INSERT INTO fetch_null_test VALUES (1, NULL), (2, 'test')",
+    );
 
-  const result = duckdb.execute(
-    lib,
-    connHandle,
-    "SELECT * FROM fetch_null_test ORDER BY id",
-  );
-  assertEquals(result.success, true);
+    const handle = await duckdb.execute(
+      connHandle,
+      "SELECT * FROM fetch_null_test ORDER BY id",
+    );
 
-  const rows = duckdb.fetchAll(lib, result.handle);
-  assertEquals(rows.length, 2);
-  assertEquals(rows[0][1], null);
-  assertEquals(rows[1][1], "test");
+    const rows = await duckdb.fetchAll(handle);
+    assertEquals(rows.length, 2);
+    assertEquals(rows[0][1], null);
+    assertEquals(rows[1][1], "test");
 
-  duckdb.destroyResult(lib, result.handle);
+    await duckdb.destroyResult(handle);
+  },
 });
 
-Deno.test("getValueByType: extracts value based on type", () => {
-  duckdb.execute(
-    lib,
-    connHandle,
-    "CREATE TABLE type_test(id INTEGER, val TEXT, num DOUBLE)",
-  );
-  duckdb.execute(
-    lib,
-    connHandle,
-    "INSERT INTO type_test VALUES (1, 'test', 1.5)",
-  );
+Deno.test({
+  name: "getValueByType: extracts value based on type",
+  async fn() {
+    await duckdb.execute(
+      connHandle,
+      "CREATE TABLE type_test(id INTEGER, val TEXT, num DOUBLE)",
+    );
+    await duckdb.execute(
+      connHandle,
+      "INSERT INTO type_test VALUES (1, 'test', 1.5)",
+    );
 
-  const result = duckdb.execute(lib, connHandle, "SELECT * FROM type_test");
-  assertEquals(result.success, true);
+    const handle = await duckdb.execute(connHandle, "SELECT * FROM type_test");
 
-  // Get column types
-  const idType = duckdb.columnType(lib, result.handle, 0);
-  const valType = duckdb.columnType(lib, result.handle, 1);
-  const numType = duckdb.columnType(lib, result.handle, 2);
+    // Get column types
+    const idType = await duckdb.columnType(handle, 0);
+    const valType = await duckdb.columnType(handle, 1);
+    const numType = await duckdb.columnType(handle, 2);
 
-  // Extract values by type
-  const idVal = duckdb.getValueByType(lib, result.handle, 0, 0, idType);
-  const valVal = duckdb.getValueByType(lib, result.handle, 0, 1, valType);
-  const numVal = duckdb.getValueByType(lib, result.handle, 0, 2, numType);
-  
-  assertEquals(idVal, 1);
-  assertEquals(valVal, "test");
-  assertEquals(numVal, 1.5);
+    // Extract values by type
+    const idVal = await duckdb.getValueByType(handle, 0, 0, idType);
+    const valVal = await duckdb.getValueByType(handle, 0, 1, valType);
+    const numVal = await duckdb.getValueByType(handle, 0, 2, numType);
 
-  duckdb.destroyResult(lib, result.handle);
+    assertEquals(idVal, 1);
+    assertEquals(valVal, "test");
+    assertEquals(numVal, 1.5);
+
+    await duckdb.destroyResult(handle);
+  },
 });
 
-Deno.test("getValueByType: handles NULL type", () => {
-  duckdb.execute(lib, connHandle, "CREATE TABLE null_type_test(val TEXT)");
-  duckdb.execute(lib, connHandle, "INSERT INTO null_type_test VALUES (NULL)");
+Deno.test({
+  name: "getValueByType: handles NULL type",
+  async fn() {
+    await duckdb.execute(connHandle, "CREATE TABLE null_type_test(val TEXT)");
+    await duckdb.execute(
+      connHandle,
+      "INSERT INTO null_type_test VALUES (NULL)",
+    );
 
-  const result = duckdb.execute(
-    lib,
-    connHandle,
-    "SELECT * FROM null_type_test",
-  );
-  assertEquals(result.success, true);
+    const handle = await duckdb.execute(
+      connHandle,
+      "SELECT * FROM null_type_test",
+    );
 
-  const valType = duckdb.columnType(lib, result.handle, 0);
-  const val = duckdb.getValueByType(lib, result.handle, 0, 0, valType);
+    const valType = await duckdb.columnType(handle, 0);
+    const val = await duckdb.getValueByType(handle, 0, 0, valType);
 
-  assertEquals(val, null);
+    assertEquals(val, null);
 
-  duckdb.destroyResult(lib, result.handle);
+    await duckdb.destroyResult(handle);
+  },
 });
 
 Deno.test({
   name: "cleanup: close connection and database",
   sanitizeResources: false,
   sanitizeOps: false,
-  fn() {
-    duckdb.closeConnection(lib, connHandle);
-    duckdb.closeDatabase(lib, dbHandle);
-    lib.close();
+  async fn() {
+    await duckdb.closeConnection(connHandle);
+    await duckdb.closeDatabase(dbHandle);
   },
 });

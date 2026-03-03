@@ -2,12 +2,7 @@
  * Functional database operations
  */
 
-import type {
-  DatabaseConfig,
-  DatabaseHandle,
-  DuckDBLibrary,
-  OpenResult,
-} from "../types.ts";
+import type { DatabaseConfig, DatabaseHandle } from "../types.ts";
 import {
   createPointerBuffer,
   getPointer,
@@ -15,67 +10,107 @@ import {
   stringToPointer,
 } from "../helpers.ts";
 import { DatabaseError } from "../errors.ts";
+import { getLibrary } from "../lib.ts";
 
 /**
  * Open a DuckDB database
  *
- * @param lib - The loaded DuckDB library
- * @param config - Database configuration options
- * @returns OpenResult with handle or error
- */
-export function open(
-  lib: DuckDBLibrary,
-  config?: DatabaseConfig,
-): OpenResult {
-  const handle = createPointerBuffer();
-  const path = config?.path ?? ":memory:";
-
-  const pathPtr = stringToPointer(path);
-  const result = lib.symbols.duckdb_open(pathPtr, handle);
-
-  if (result !== 0) {
-    return {
-      handle,
-      success: false,
-      error: "Failed to open database",
-    };
-  }
-
-  return {
-    handle,
-    success: true,
-  };
-}
-
-/**
- * Open a DuckDB database (throws on error)
- *
- * @param lib - The loaded DuckDB library
  * @param config - Database configuration options
  * @returns DatabaseHandle
  * @throws DatabaseError if opening fails
  */
-export function openOrThrow(
-  lib: DuckDBLibrary,
+export async function open(
   config?: DatabaseConfig,
-): DatabaseHandle {
-  const result = open(lib, config);
-  if (!result.success) {
-    throw new DatabaseError(result.error ?? "Failed to open database");
+): Promise<DatabaseHandle> {
+  const lib = await getLibrary();
+  const handle = createPointerBuffer();
+  const path = config?.path ?? ":memory:";
+  const pathPtr = stringToPointer(path);
+
+  // Determine if we need to use extended open API
+  // Use it properties other than 'path' when config has any
+  const configKeys = config
+    ? Object.keys(config).filter((k) => k !== "path")
+    : [];
+  const useExtendedApi = configKeys.length > 0;
+
+  if (useExtendedApi) {
+    const configPtrPtr = createPointerBuffer();
+    const configResult = lib.symbols.duckdb_create_config(configPtrPtr);
+
+    if (configResult !== 0) {
+      throw new DatabaseError("Failed to create database config");
+    }
+
+    // Get the actual config pointer from the output buffer
+    const configPtr = getPointer(configPtrPtr);
+
+    // Iterate through all config properties except 'path'
+    for (const key of configKeys) {
+      let name = key;
+      let value = config?.[key] ?? "";
+
+      // Handle special accessMode -> access_mode conversion
+      if (key === "accessMode") {
+        name = "access_mode";
+        value = value === "read_only" ? "READ_ONLY" : "READ_WRITE";
+      }
+
+      // Skip undefined or empty values
+      if (!value) continue;
+
+      const namePtr = stringToPointer(name);
+      const valuePtr = stringToPointer(value);
+
+      // duckdb_set_config(config, name, value)
+      const setConfigResult = lib.symbols.duckdb_set_config(
+        configPtr,
+        namePtr,
+        valuePtr,
+      );
+
+      if (setConfigResult !== 0) {
+        lib.symbols.duckdb_destroy_config(configPtrPtr);
+        throw new DatabaseError(`Failed to set config option: ${key}`);
+      }
+    }
+
+    // duckdb_open_ext(path, out_database, config, error)
+    const errorBuffer = createPointerBuffer();
+    const openResult = lib.symbols.duckdb_open_ext(
+      pathPtr,
+      handle,
+      configPtr,
+      errorBuffer,
+    );
+    lib.symbols.duckdb_destroy_config(configPtrPtr);
+
+    if (openResult !== 0) {
+      throw new DatabaseError("Failed to open database");
+    }
+
+    return handle;
   }
-  return result.handle;
+
+  // Use simple open API when no config options
+  const result = lib.symbols.duckdb_open(pathPtr, handle);
+
+  if (result !== 0) {
+    throw new DatabaseError("Failed to open database");
+  }
+
+  return handle;
 }
 
 /**
  * Close a DuckDB database
  *
- * @param lib - The loaded DuckDB library
  * @param handle - Database handle to close
  */
-export function closeDatabase(
-  lib: DuckDBLibrary,
+export async function closeDatabase(
   handle: DatabaseHandle,
-): void {
+): Promise<void> {
+  const lib = await getLibrary();
   if (isValidHandle(handle)) {
     lib.symbols.duckdb_close(handle);
   }

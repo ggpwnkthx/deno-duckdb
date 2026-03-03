@@ -23,8 +23,8 @@ export type PreparedStatementHandle = Uint8Array<ArrayBuffer>;
 export interface DatabaseConfig {
   /** Path to database file, or ":memory:" for in-memory database */
   path?: string;
-  /** Access mode: "read_write" or "read_only" */
-  accessMode?: "read_write" | "read_only";
+  /** Additional DuckDB config options (e.g., threads, max_memory, access_mode) */
+  [key: string]: string | undefined;
 }
 
 /** Options for query execution */

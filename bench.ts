@@ -1,8 +1,9 @@
 /**
- * Benchmark script comparing query performance across three API layers:
+ * Benchmark script comparing query performance across four API layers:
  * 1. @ggpwnkthx/libduckdb - Direct FFI calls
  * 2. Functional API - Pure functional style with explicit state
  * 3. Objective API - Object-oriented with automatic resource management
+ * 4. Streaming APIs - Lazy row-by-row iteration for memory efficiency
  *
  * Only measures query execution and fetch time, not setup/cleanup overhead.
  */
@@ -10,13 +11,13 @@
 import { load } from "@ggpwnkthx/libduckdb";
 import * as functional from "@ggpwnkthx/duckdb/functional";
 import * as objective from "@ggpwnkthx/duckdb/objective";
-import type { DuckDBLibrary } from "./src/types.ts";
 
 // Test query - generates 100,000 rows with two integer columns
 const QUERY = "select i, i as a from generate_series(1, 100000) s(i)";
 
 // Load library and set up connections once (not measured)
-const lib: DuckDBLibrary = await load();
+// Note: We still load explicitly to have direct FFI access for the benchmark
+const lib = await load();
 
 // Direct FFI setup
 const dbHandleFFI = new Uint8Array(new ArrayBuffer(8));
@@ -30,14 +31,12 @@ const dbPtr = new DataView(dbHandleFFI.buffer).getBigUint64(0, true);
 lib.symbols.duckdb_connect(dbPtr, connHandleFFI);
 
 // Functional API setup
-const dbResultFunc = functional.open(lib);
-if (!dbResultFunc.success) throw new Error("Failed to open database");
-const connResultFunc = functional.create(lib, dbResultFunc.handle);
-if (!connResultFunc.success) throw new Error("Failed to create connection");
+const dbHandleFunc = await functional.open();
+const connHandleFunc = await functional.create(dbHandleFunc);
 
 // Objective API setup
-const dbObj = new objective.Database(lib);
-const connObj = dbObj.connect();
+const dbObj = new objective.Database();
+const connObj = await dbObj.connect();
 
 Deno.bench("Direct FFI", () => {
   // Execute query
@@ -134,18 +133,15 @@ Deno.bench("Direct FFI", () => {
   }
 });
 
-Deno.bench("Functional API", () => {
+Deno.bench("Functional API", async () => {
   // Execute query
-  const queryResult = functional.execute(lib, connResultFunc.handle, QUERY);
-  if (!queryResult.success) {
-    throw new Error(`Query failed: ${queryResult.error}`);
-  }
+  const resultHandle = await functional.execute(connHandleFunc, QUERY);
 
   // Fetch all rows
-  const rows = functional.fetchAll(lib, queryResult.handle);
+  const rows = await functional.fetchAll(resultHandle);
 
   // Cleanup (not measured)
-  functional.destroyResult(lib, queryResult.handle);
+  await functional.destroyResult(resultHandle);
 
   // Verify we got the data
   if (rows.length !== 100000) {
@@ -153,18 +149,44 @@ Deno.bench("Functional API", () => {
   }
 });
 
-Deno.bench("Objective API", () => {
+Deno.bench("Objective API", async () => {
   // Execute query
-  const result = connObj.query(QUERY);
+  const result = await connObj.query(QUERY);
 
   // Fetch all rows
-  const rows = result.fetchAll();
+  const rows = await result.fetchAll();
 
   // Cleanup (not measured)
-  result.free();
+  await result.close();
 
   // Verify we got the data
   if (rows.length !== 100000) {
     throw new Error(`Expected 100000 rows, got ${rows.length}`);
+  }
+});
+
+Deno.bench("Functional API Streaming", async () => {
+  // Execute and stream rows
+  let count = 0;
+  for await (const _row of functional.stream(connHandleFunc, QUERY)) {
+    count++;
+  }
+
+  // Verify we got the data
+  if (count !== 100000) {
+    throw new Error(`Expected 100000 rows, got ${count}`);
+  }
+});
+
+Deno.bench("Objective API Streaming", async () => {
+  // Execute and stream rows
+  let count = 0;
+  for await (const _row of connObj.stream(QUERY)) {
+    count++;
+  }
+
+  // Verify we got the data
+  if (count !== 100000) {
+    throw new Error(`Expected 100000 rows, got ${count}`);
   }
 });

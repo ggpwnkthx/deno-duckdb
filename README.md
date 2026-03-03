@@ -1,9 +1,12 @@
 # deno-duckdb
 
-Type-safe DuckDB FFI bindings for Deno. Wraps `@ggpwnkthx/libduckdb` with two distinct APIs for working with DuckDB databases.
+[![JSR](https://jsr.io/badges/@ggpwnkthx/duckdb)](https://jsr.io/@ggpwnkthx/duckdb)
 
-[![Deno](https://img.shields.io/badge/deno-1.4+-ffffff?style=flat&logo=deno)](https://deno.land)
-[![DuckDB](https://img.shields.io/badge/DuckDB-1.4.4-fff?style=flat&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzNGN0UwMCI+PHBhdGggZD0iTTEwIDJoMTJ2MTBIMTBWMlpNMTIgNEg4djJoNHYyaDR2NEgxMnYtMmg0VjRoOHYzSDI0djEyaC04VjZoOHYyaC00VjhoOHYtMmg4VjR6Ii8+PC9zdmc+)
+Type-safe DuckDB FFI bindings for Deno. Wraps [`@ggpwnkthx/libduckdb`](https://jsr.io/@ggpwnkthx/libduckdb) with two
+distinct APIs for working with DuckDB databases.
+
+[![Deno](https://img.shields.io/badge/deno-2.6+-fff?style=flat&logo=deno)](https://deno.land)
+[![DuckDB](https://img.shields.io/badge/DuckDB-1.4.4-fff?style=flat&logo=duckdb)](https://www.duckdb.org/)
 
 ## Installation
 
@@ -31,17 +34,24 @@ import { ... } from "jsr:@ggpwnkthx/duckdb/objective";
 Pure functional style with explicit state passing:
 
 ```typescript
-import { load } from "jsr:@ggpwnkthx/libduckdb";
-import { open, close, create, close as closeConn, execute, destroy, fetchAll } from "jsr:@ggpwnkthx/duckdb/functional";
+import {
+  closeDatabase,
+  closeConnection,
+  create,
+  destroyResult,
+  execute,
+  fetchAll,
+  open,
+} from "jsr:@ggpwnkthx/duckdb/functional";
 
-const lib = await load();
-const { handle: db } = open(lib);
-const { handle: conn } = create(lib, db);
-const result = execute(lib, conn, "SELECT * FROM t");
-const rows = fetchAll(lib, result.handle);
-destroy(lib, result.handle);
-closeConn(lib, conn);
-close(lib, db);
+// Library loads automatically on first use
+const db = await open();
+const conn = await create(db);
+const resultHandle = await execute(conn, "SELECT * FROM t");
+const rows = await fetchAll(resultHandle);
+await destroyResult(resultHandle);
+await closeConnection(conn);
+await closeDatabase(db);
 ```
 
 ### Objective API
@@ -49,48 +59,52 @@ close(lib, db);
 Classes with encapsulated handles and automatic resource management:
 
 ```typescript
-import { load } from "jsr:@ggpwnkthx/libduckdb";
 import { Database } from "jsr:@ggpwnkthx/duckdb/objective";
 
-const lib = await load();
-const db = new Database(lib);
-const conn = db.connect();
-const result = conn.query("SELECT * FROM t");
-const rows = result.fetchAll();
-result.free();
-conn.close();
-db.close();
+// Library loads automatically on first use
+const db = new Database();
+await db.open();
+const conn = await db.connect();
+const result = await conn.query("SELECT * FROM t");
+const rows = await result.fetchAll();
+await result.close();
+await conn.close();
+await db.close();
 ```
 
 ## API Overview
 
-This library provides two parallel APIs that wrap the same underlying DuckDB FFI calls:
+This library provides two parallel APIs that wrap the same underlying DuckDB FFI
+calls:
 
 ### Functional API (`jsr:@ggpwnkthx/duckdb/functional`)
 
-Pure functional style with explicit state management. Functions return result objects containing handles that must be manually managed and destroyed.
+Pure functional style with explicit state management. Functions return result
+objects containing handles that must be manually managed and destroyed.
 
 **Entry point:** `src/functional/mod.ts`
 
 **Exports:**
-- `open` - Open a database
-- `close` - Close a database
+
+- `open` - Open a database (auto-loads library)
+- `closeDatabase` - Close a database
 - `create` - Create a connection
-- `close` (aliased) - Close a connection
+- `closeConnection` - Close a connection
 - `execute` - Execute a query
 - `prepare` - Prepare a statement
 - `executePrepared` - Execute a prepared statement
 - `fetchAll` - Fetch all rows from a result
-- `fetchRow` - Fetch a single row
-- `destroy` - Destroy a result handle
+- `destroyResult` - Destroy a result handle
 
 ### Objective API (`jsr:@ggpwnkthx/duckdb/objective`)
 
-Object-oriented API with classes that encapsulate DuckDB handles and provide automatic resource management.
+Object-oriented API with classes that encapsulate DuckDB handles and provide
+automatic resource management.
 
 **Entry point:** `src/objective/mod.ts`
 
 **Classes:**
+
 - `Database` - Represents a DuckDB database
 - `Connection` - Represents a database connection
 - `QueryResult` - Represents a query result set
@@ -100,6 +114,7 @@ Object-oriented API with classes that encapsulate DuckDB handles and provide aut
 
 - **Type-safe** - Full TypeScript type definitions
 - **Two APIs** - Choose between functional or object-oriented style
+- **Auto-loading** - Library loads automatically on first use
 - **Automatic cleanup** - Objective API handles resource management
 - **DuckDB 1.4.4** - Latest stable DuckDB support
 

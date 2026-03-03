@@ -2,106 +2,97 @@
  * Functional connection operations tests
  */
 
-import { assertEquals, assertExists } from "@std/assert";
-import { load } from "@ggpwnkthx/libduckdb";
-import type {
-  ConnectionHandle,
-  DatabaseHandle,
-  DuckDBLibrary,
-} from "@ggpwnkthx/duckdb";
+import { assertEquals, assertExists, assertRejects } from "@std/assert";
+import type { ConnectionHandle, DatabaseHandle } from "@ggpwnkthx/duckdb";
 import { functional as duckdb } from "@ggpwnkthx/duckdb";
 
-let lib: DuckDBLibrary;
-let dbHandle: DatabaseHandle;
-let connHandle: ConnectionHandle;
+let dbHandle: Awaited<ReturnType<typeof duckdb.open>>;
+let connHandle: Awaited<ReturnType<typeof duckdb.create>>;
 
 Deno.test({
-  name: "setup: load library, open database, and create connection",
+  name: "setup: open database and create connection",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
-    lib = await load();
-    const dbResult = duckdb.open(lib);
-    assertExists(dbResult.handle);
-    dbHandle = dbResult.handle;
-
-    const connResult = duckdb.create(lib, dbHandle);
-    assertExists(connResult.handle);
-    connHandle = connResult.handle;
+    dbHandle = await duckdb.open();
+    connHandle = await duckdb.create(dbHandle);
   },
 });
 
-Deno.test("create: creates connection to database", () => {
-  const result = duckdb.create(lib, dbHandle);
-  assertEquals(result.success, true);
-  assertExists(result.handle);
-  duckdb.closeConnection(lib, result.handle);
+Deno.test({
+  name: "create: creates connection to database",
+  async fn() {
+    const handle = await duckdb.create(dbHandle);
+    assertExists(handle);
+    await duckdb.closeConnection(handle);
+  },
 });
 
-Deno.test("create: returns error for invalid database handle", () => {
-  // Use an invalid handle
-  const invalidHandle = new Uint8Array(8);
-  const result = duckdb.create(lib, invalidHandle);
-  // Result should have expected structure
-  assertExists(result.handle);
+Deno.test({
+  name: "create: throws for invalid database handle",
+  async fn() {
+    // Use an invalid handle - should throw
+    const invalidHandle = new Uint8Array(8);
+    await assertRejects(
+      async () =>
+        await duckdb.create(invalidHandle as unknown as DatabaseHandle),
+      Error,
+    );
+  },
 });
 
-Deno.test("createOrThrow: throws on failure", () => {
-  // Since we need a valid database to create connection, test with invalid handle
-  const invalidDbHandle = new Uint8Array(8);
-  try {
-    duckdb.createOrThrow(lib, invalidDbHandle);
-    // If we get here, the operation succeeded unexpectedly or DuckDB handles it
-  } catch (e) {
-    // Expected to throw
-    assertExists(e);
-  }
+Deno.test({
+  name: "closeConnection: closes connection handle",
+  async fn() {
+    const handle = await duckdb.create(dbHandle);
+
+    // Should not throw
+    await duckdb.closeConnection(handle);
+  },
 });
 
-Deno.test("closeConnection: closes connection handle", () => {
-  const result = duckdb.create(lib, dbHandle);
-  assertEquals(result.success, true);
-
-  // Should not throw
-  duckdb.closeConnection(lib, result.handle);
-});
-
-Deno.test("closeConnection: handles invalid handle gracefully", () => {
+Deno.test("closeConnection: handles invalid handle gracefully", async () => {
   const invalidHandle = new Uint8Array(8);
 
   // Should not throw
-  duckdb.closeConnection(lib, invalidHandle);
+  await duckdb.closeConnection(invalidHandle as unknown as ConnectionHandle);
 });
 
-Deno.test("isValidConnection: returns true for valid handle", () => {
-  const result = duckdb.create(lib, dbHandle);
-  assertEquals(result.success, true);
-  assertEquals(duckdb.isValidConnection(result.handle), true);
-  duckdb.closeConnection(lib, result.handle);
+Deno.test({
+  name: "isValidConnection: returns true for valid handle",
+  async fn() {
+    const handle = await duckdb.create(dbHandle);
+    assertEquals(duckdb.isValidConnection(handle), true);
+    await duckdb.closeConnection(handle);
+  },
 });
 
 Deno.test("isValidConnection: returns false for invalid handle", () => {
   const invalidHandle = new Uint8Array(8);
-  assertEquals(duckdb.isValidConnection(invalidHandle), false);
+  assertEquals(
+    duckdb.isValidConnection(invalidHandle as unknown as ConnectionHandle),
+    false,
+  );
 });
 
-Deno.test("getPointerValueConnection: returns pointer bigint", () => {
-  const result = duckdb.create(lib, dbHandle);
-  assertEquals(result.success, true);
+Deno.test({
+  name: "getPointerValueConnection: returns pointer bigint",
+  async fn() {
+    const handle = await duckdb.create(dbHandle);
 
-  const pointer = duckdb.getPointerValueConnection(result.handle);
-  assertExists(pointer);
-  assertEquals(typeof pointer, "bigint");
+    const pointer = duckdb.getPointerValueConnection(handle);
+    assertExists(pointer);
+    assertEquals(typeof pointer, "bigint");
 
-  duckdb.closeConnection(lib, result.handle);
+    await duckdb.closeConnection(handle);
+  },
 });
 
 Deno.test({
   name: "cleanup: close connection",
   sanitizeResources: false,
   sanitizeOps: false,
-  fn() {
-    duckdb.closeConnection(lib, connHandle);
-    lib.close();
+  async fn() {
+    await duckdb.closeConnection(connHandle);
   },
 });

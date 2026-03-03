@@ -10,10 +10,18 @@ const POINTER_SIZE = 8;
 /** Size of duckdb_result struct */
 const RESULT_SIZE = 48;
 
-/** Pooled pointer buffer - reused across calls */
+/**
+ * Pooled pointer buffer - reused across calls
+ * Note: Deno FFI is single-threaded, so this is safe. Callers MUST copy
+ * data from the buffer immediately, as subsequent calls will overwrite it.
+ */
 const pooledPointerBuffer = new Uint8Array(new ArrayBuffer(POINTER_SIZE));
 
-/** Pooled result buffer - reused across calls */
+/**
+ * Pooled result buffer - reused across calls
+ * Note: Deno FFI is single-threaded, so this is safe. Callers MUST copy
+ * data from the buffer immediately, as subsequent calls will overwrite it.
+ */
 const pooledResultBuffer = new Uint8Array(new ArrayBuffer(RESULT_SIZE));
 
 /** TextEncoder instance - reused for string encoding */
@@ -25,7 +33,9 @@ const MAX_STRING_CACHE_SIZE = 1000;
 
 /**
  * Get a pooled 8-byte pointer buffer
- * Note: Not thread-safe, but Deno FFI is single-threaded
+ * @deprecated Use createPointerBuffer() for fresh buffers when you need to retain data
+ * Note: Deno FFI is single-threaded, so this is safe. Callers MUST copy
+ * data from the buffer immediately, as subsequent calls will overwrite it.
  */
 export function getPointerBuffer(): Uint8Array<ArrayBuffer> {
   return pooledPointerBuffer;
@@ -33,7 +43,9 @@ export function getPointerBuffer(): Uint8Array<ArrayBuffer> {
 
 /**
  * Get a pooled 48-byte result buffer
- * Note: Not thread-safe, but Deno FFI is single-threaded
+ * @deprecated Use createResultBuffer() for fresh buffers when you need to retain data
+ * Note: Deno FFI is single-threaded, so this is safe. Callers MUST copy
+ * data from the buffer immediately, as subsequent calls will overwrite it.
  */
 export function getResultBuffer(): Uint8Array<ArrayBuffer> {
   return pooledResultBuffer;
@@ -107,4 +119,45 @@ export function freeString(
   ptr: Deno.PointerValue<unknown>,
 ): void {
   lib.symbols.duckdb_free(ptr);
+}
+
+/**
+ * Get available DuckDB configuration options
+ * @param lib - The loaded DuckDB library
+ * @returns Array of valid config option names
+ */
+export function getConfigOptions(lib: DuckDBLibrary): string[] {
+  const count = lib.symbols.duckdb_config_count();
+  const options: string[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const nameBuffer = createPointerBuffer();
+    const descBuffer = createPointerBuffer();
+
+    lib.symbols.duckdb_get_config_flag(
+      BigInt(i),
+      nameBuffer,
+      descBuffer,
+    );
+
+    // Read the name pointer from the output buffer
+    const namePtr = getPointer(nameBuffer);
+    if (namePtr !== 0n) {
+      const view = new Deno.UnsafePointerView(
+        namePtr as unknown as Deno.PointerObject<unknown>,
+      );
+      const name = view.getCString();
+      if (name) {
+        options.push(name);
+      }
+    }
+
+    // Free the description string
+    const descPtr = getPointer(descBuffer);
+    if (descPtr !== 0n) {
+      lib.symbols.duckdb_free(descPtr as unknown as Deno.PointerValue<unknown>);
+    }
+  }
+
+  return options;
 }

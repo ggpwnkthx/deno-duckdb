@@ -2,7 +2,8 @@
  * Object-Oriented PreparedStatement class
  */
 
-import type { DuckDBLibrary, PreparedStatementHandle } from "../types.ts";
+import type { PreparedStatementHandle } from "../types.ts";
+import type { BindValue } from "../functional/prepared.ts";
 import * as prep from "../functional/prepared.ts";
 import type { Connection } from "./connection.ts";
 import { QueryResult } from "./query.ts";
@@ -11,7 +12,6 @@ import { QueryResult } from "./query.ts";
  * PreparedStatement class - represents a prepared SQL statement
  */
 export class PreparedStatement {
-  private lib: DuckDBLibrary;
   private handle: PreparedStatementHandle | null = null;
   private connection: Connection;
 
@@ -19,13 +19,22 @@ export class PreparedStatement {
    * Create a new PreparedStatement instance (internal use)
    */
   constructor(
-    lib: DuckDBLibrary,
     handle: PreparedStatementHandle,
     connection: Connection,
   ) {
-    this.lib = lib;
     this.handle = handle;
     this.connection = connection;
+  }
+
+  /**
+   * Bind parameters to the prepared statement
+   *
+   * @param params - Array of values to bind (in order)
+   * @throws Error if binding fails
+   */
+  async bind(params: BindValue[]): Promise<void> {
+    this.checkNotClosed();
+    await prep.bind(this.handle!, params);
   }
 
   /**
@@ -33,26 +42,34 @@ export class PreparedStatement {
    *
    * @returns QueryResult instance
    */
-  execute(): QueryResult {
+  async execute(): Promise<QueryResult> {
     this.checkNotClosed();
-    const result = prep.executePrepared(this.lib, this.handle!);
-    return new QueryResult(this.lib, result.handle, result, this.connection);
+    const handle = await prep.executePrepared(this.handle!);
+    return new QueryResult(handle, handle, this.connection);
   }
 
   /**
    * Get the number of columns in the result
    */
-  columnCount(): bigint {
+  async columnCount(): Promise<bigint> {
     this.checkNotClosed();
-    return prep.preparedColumnCount(this.lib, this.handle!);
+    return await prep.preparedColumnCount(this.handle!);
+  }
+
+  /**
+   * Get the number of parameters in the statement
+   */
+  async parameterCount(): Promise<bigint> {
+    this.checkNotClosed();
+    return await prep.preparedParameterCount(this.handle!);
   }
 
   /**
    * Close the prepared statement
    */
-  close(): void {
+  async close(): Promise<void> {
     if (this.handle) {
-      prep.destroyPrepared(this.lib, this.handle);
+      await prep.destroyPrepared(this.handle);
       this.handle = null;
     }
   }

@@ -2,87 +2,76 @@
  * Functional database operations tests
  */
 
-import { assertEquals, assertExists } from "@std/assert";
-import { load } from "@ggpwnkthx/libduckdb";
-import type { DatabaseHandle, DuckDBLibrary } from "@ggpwnkthx/duckdb";
+import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { functional as duckdb } from "@ggpwnkthx/duckdb";
 
-let lib: DuckDBLibrary;
-let dbHandle: DatabaseHandle;
+let dbHandle: Awaited<ReturnType<typeof duckdb.open>>;
 
 Deno.test({
-  name: "setup: load library and open database",
+  name: "setup: open database",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
-    lib = await load();
-    const result = duckdb.open(lib);
-    assertExists(result.handle);
-    assertEquals(result.success, true);
-    dbHandle = result.handle;
+    dbHandle = await duckdb.open();
+    assertExists(dbHandle);
   },
-});
-
-Deno.test("open: opens in-memory database", () => {
-  const result = duckdb.open(lib);
-  assertEquals(result.success, true);
-  assertExists(result.handle);
-  duckdb.closeDatabase(lib, result.handle);
-});
-
-Deno.test("open: opens with custom path config", () => {
-  const result = duckdb.open(lib, { path: ":memory:" });
-  assertEquals(result.success, true);
-  assertExists(result.handle);
-  duckdb.closeDatabase(lib, result.handle);
-});
-
-Deno.test("open: returns error for invalid path", () => {
-  // DuckDB may handle invalid paths differently, but we test the return structure
-  const result = duckdb.open(lib, { path: "/nonexistent/path/to/database.db" });
-  // Result should have the expected structure regardless of success
-  assertExists(result.handle);
-  // Check that success is a boolean
-  assertExists(result.success);
 });
 
 Deno.test({
-  name: "openOrThrow: throws on failure",
-  sanitizeResources: false,
-  sanitizeOps: false,
+  name: "open: opens in-memory database",
   async fn() {
-    // Create a temporary invalid database first
-    const invalidLib = await load();
-    // Try to open with invalid config - this should throw
-    // Since :memory: is always valid, we test with a new database
-    const result = duckdb.open(invalidLib);
-    assertEquals(result.success, true);
-    duckdb.closeDatabase(invalidLib, result.handle);
-    invalidLib.close();
+    const handle = await duckdb.open();
+    assertExists(handle);
+    await duckdb.closeDatabase(handle);
   },
 });
 
-Deno.test("closeDatabase: closes database handle", () => {
-  const result = duckdb.open(lib);
-  assertEquals(result.success, true);
-
-  // Should not throw
-  duckdb.closeDatabase(lib, result.handle);
+Deno.test({
+  name: "open: opens with custom path config",
+  async fn() {
+    const handle = await duckdb.open({ path: ":memory:" });
+    assertExists(handle);
+    await duckdb.closeDatabase(handle);
+  },
 });
 
-Deno.test("closeDatabase: handles invalid handle gracefully", () => {
+Deno.test({
+  name: "open: throws for invalid path",
+  async fn() {
+    // DuckDB may handle invalid paths differently - test that it throws
+    await assertRejects(
+      async () =>
+        await duckdb.open({ path: "/nonexistent/path/to/database.db" }),
+      Error,
+    );
+  },
+});
+
+Deno.test({
+  name: "closeDatabase: closes database handle",
+  async fn() {
+    const handle = await duckdb.open();
+
+    // Should not throw
+    await duckdb.closeDatabase(handle);
+  },
+});
+
+Deno.test("closeDatabase: handles invalid handle gracefully", async () => {
   // Create an invalid handle (zeros)
   const invalidHandle = new Uint8Array(8);
 
   // Should not throw
-  duckdb.closeDatabase(lib, invalidHandle);
+  await duckdb.closeDatabase(invalidHandle);
 });
 
-Deno.test("isValidDatabase: returns true for valid handle", () => {
-  const result = duckdb.open(lib);
-  assertEquals(result.success, true);
-  assertEquals(duckdb.isValidDatabase(result.handle), true);
-  duckdb.closeDatabase(lib, result.handle);
+Deno.test({
+  name: "isValidDatabase: returns true for valid handle",
+  async fn() {
+    const handle = await duckdb.open();
+    assertEquals(duckdb.isValidDatabase(handle), true);
+    await duckdb.closeDatabase(handle);
+  },
 });
 
 Deno.test("isValidDatabase: returns false for invalid handle", () => {
@@ -90,23 +79,24 @@ Deno.test("isValidDatabase: returns false for invalid handle", () => {
   assertEquals(duckdb.isValidDatabase(invalidHandle), false);
 });
 
-Deno.test("getPointerValue: returns pointer bigint", () => {
-  const result = duckdb.open(lib);
-  assertEquals(result.success, true);
+Deno.test({
+  name: "getPointerValue: returns pointer bigint",
+  async fn() {
+    const handle = await duckdb.open();
 
-  const pointer = duckdb.getPointerValue(result.handle);
-  assertExists(pointer);
-  assertEquals(typeof pointer, "bigint");
+    const pointer = duckdb.getPointerValue(handle);
+    assertExists(pointer);
+    assertEquals(typeof pointer, "bigint");
 
-  duckdb.closeDatabase(lib, result.handle);
+    await duckdb.closeDatabase(handle);
+  },
 });
 
 Deno.test({
   name: "cleanup: close database",
   sanitizeResources: false,
   sanitizeOps: false,
-  fn() {
-    duckdb.closeDatabase(lib, dbHandle);
-    lib.close();
+  async fn() {
+    await duckdb.closeDatabase(dbHandle);
   },
 });

@@ -1,7 +1,11 @@
 {
   "name": "@ggpwnkthx/duckdb",
   "version": "1.0.0",
-  "exports": "./mod.ts",
+  "exports": {
+    ".": "./src/mod.ts",
+    "./functional": "./src/functional/mod.ts",
+    "./objective": "./src/objective/mod.ts"
+  },
   "lock": false,
   "imports": {
     "@std/assert": "jsr:@std/assert@1",

@@ -38,3 +38,4 @@ export { Connection } from "./connection.ts";
 export { QueryResult } from "./query.ts";
 export { PreparedStatement } from "./prepared.ts";
 export type { Disposable } from "./disposable.ts";
+export type { RowStream, SyncRowStream } from "./connection.ts";

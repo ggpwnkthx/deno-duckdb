@@ -2,15 +2,10 @@
  * Object-Oriented QueryResult class
  */
 
-import type {
-  ColumnInfo,
-  DuckDBLibrary,
-  QueryResult as QueryResultData,
-  ResultHandle,
-  RowData,
-} from "../types.ts";
+import type { ColumnInfo, ResultHandle, RowData } from "../types.ts";
 import * as query from "../functional/query.ts";
 import * as value from "../functional/value.ts";
+import { getLibrarySync } from "../lib.ts";
 import type { Connection } from "./connection.ts";
 
 /** Cached column data for getRow optimization */
@@ -24,9 +19,8 @@ interface ColumnCache {
  * QueryResult class - represents query results
  */
 export class QueryResult {
-  private lib: DuckDBLibrary;
+  private lib: ReturnType<typeof getLibrarySync>;
   private handle: ResultHandle | null = null;
-  private resultData: QueryResultData | null = null;
   private connection: Connection;
   private columnCache: ColumnCache | null = null;
   private cachedRowCount = 0n;
@@ -37,14 +31,12 @@ export class QueryResult {
    * Create a new QueryResult instance (internal use)
    */
   constructor(
-    lib: DuckDBLibrary,
     handle: ResultHandle,
-    result: QueryResultData,
+    _result: ResultHandle, // Kept for backward compatibility signature
     connection: Connection,
   ) {
-    this.lib = lib;
+    this.lib = getLibrarySync();
     this.handle = handle;
-    this.resultData = result;
     this.connection = connection;
   }
 
@@ -54,7 +46,7 @@ export class QueryResult {
    *
    * @returns Array of rows
    */
-  fetchAll(): RowData[] {
+  async fetchAll(): Promise<RowData[]> {
     this.checkNotFreed();
     if (!this.handle) {
       throw new Error("Result has been freed");
@@ -66,7 +58,7 @@ export class QueryResult {
     }
 
     // Fetch and cache rows
-    this.cachedRows = value.fetchAll(this.lib, this.handle);
+    this.cachedRows = await value.fetchAll(this.handle);
 
     // Cache row/col counts
     this.cachedRowCount = BigInt(this.cachedRows.length);
@@ -85,7 +77,7 @@ export class QueryResult {
    * @param index - Row index (0-based)
    * @returns Row data
    */
-  getRow(index: number): RowData {
+  async getRow(index: number): Promise<RowData> {
     this.checkNotFreed();
     if (!this.handle) {
       throw new Error("Result has been freed");
@@ -101,8 +93,8 @@ export class QueryResult {
 
     // Cache row/col count on first call
     if (this.cachedRowCount === 0n) {
-      this.cachedRowCount = query.rowCount(this.lib, this.handle);
-      this.cachedColCount = query.columnCount(this.lib, this.handle);
+      this.cachedRowCount = await query.rowCount(this.handle);
+      this.cachedColCount = await query.columnCount(this.handle);
     }
 
     if (index < 0 || index >= Number(this.cachedRowCount)) {
@@ -111,16 +103,16 @@ export class QueryResult {
 
     // Build column cache on first call
     if (!this.columnCache) {
-      this.columnCache = this.buildColumnCache();
+      this.columnCache = await this.buildColumnCache();
     }
 
     const colCount = Number(this.cachedColCount);
     const row: RowData = [];
 
     for (let c = 0; c < colCount; c++) {
-      const type = this.columnCache.types[c];
-      const dataView = this.columnCache.dataViews[c];
-      const nullMaskView = this.columnCache.nullMaskViews[c];
+      const type = this.columnCache!.types[c];
+      const dataView = this.columnCache!.dataViews[c];
+      const nullMaskView = this.columnCache!.nullMaskViews[c];
       const val = value.getValueByTypeOptimized(
         index,
         c,
@@ -134,14 +126,20 @@ export class QueryResult {
   }
 
   /** Build column cache for getRow optimization */
-  private buildColumnCache(): ColumnCache {
+  private async buildColumnCache(): Promise<ColumnCache> {
     const colCount = Number(this.cachedColCount);
     const types: number[] = [];
     const dataViews: Deno.UnsafePointerView[] = [];
     const nullMaskViews: (Deno.UnsafePointerView | null)[] = [];
 
     for (let c = 0; c < colCount; c++) {
-      types[c] = query.columnType(this.lib, this.handle!, c);
+      types[c] = await query.columnType(this.handle!, c);
+
+      if (!this.lib) {
+        dataViews[c] = null as unknown as Deno.UnsafePointerView;
+        nullMaskViews[c] = null;
+        continue;
+      }
 
       const dataPtr = this.lib.symbols.duckdb_column_data(
         this.handle!,
@@ -176,9 +174,9 @@ export class QueryResult {
    *
    * @returns Array of objects with column names as keys
    */
-  toArrayOfObjects(): Record<string, unknown>[] {
-    const rows = this.fetchAll();
-    const cols = this.getColumnInfos();
+  async toArrayOfObjects(): Promise<Record<string, unknown>[]> {
+    const rows = await this.fetchAll();
+    const cols = await this.getColumnInfos();
     return rows.map((row) => {
       const obj: Record<string, unknown> = {};
       cols.forEach((col, i) => {
@@ -191,58 +189,58 @@ export class QueryResult {
   /**
    * Get number of rows
    */
-  rowCount(): bigint {
+  async rowCount(): Promise<bigint> {
     this.checkNotFreed();
     if (!this.handle) return 0n;
     // Use cached count if available
     if (this.cachedRowCount !== 0n) {
       return this.cachedRowCount;
     }
-    return query.rowCount(this.lib, this.handle);
+    return await query.rowCount(this.handle);
   }
 
   /**
    * Get number of columns
    */
-  columnCount(): bigint {
+  async columnCount(): Promise<bigint> {
     this.checkNotFreed();
     if (!this.handle) return 0n;
     // Use cached count if available
     if (this.cachedColCount !== 0n) {
       return this.cachedColCount;
     }
-    return query.columnCount(this.lib, this.handle);
+    return await query.columnCount(this.handle);
   }
 
   /**
    * Get column information
    */
-  getColumnInfos(): ColumnInfo[] {
+  async getColumnInfos(): Promise<ColumnInfo[]> {
     this.checkNotFreed();
     if (!this.handle) return [];
-    return query.columnInfos(this.lib, this.handle);
+    return await query.columnInfos(this.handle);
   }
 
   /**
-   * Check if query was successful
+   * Check if query was successful (always true if no exception thrown)
    */
   isSuccess(): boolean {
-    return this.resultData?.success ?? false;
+    return this.handle !== null;
   }
 
   /**
-   * Get error message if query failed
+   * Get error message if query failed (always undefined if no exception thrown)
    */
   getError(): string | undefined {
-    return this.resultData?.error;
+    return undefined;
   }
 
   /**
    * Close the result
    */
-  close(): void {
+  async close(): Promise<void> {
     if (this.handle) {
-      query.destroyResult(this.lib, this.handle);
+      await query.destroyResult(this.handle);
       this.handle = null;
     }
   }

@@ -2,29 +2,24 @@
  * Functional value extraction operations
  */
 
-import type {
-  DuckDBLibrary,
-  ResultHandle,
-  RowData,
-  ValueType,
-} from "../types.ts";
+import type { ResultHandle, RowData, ValueType } from "../types.ts";
 import * as query from "./query.ts";
+import { getLibrary } from "../lib.ts";
 
 /**
  * Check if a value at row and column is NULL
  *
- * @param lib - The loaded DuckDB library
  * @param handle - Result handle
  * @param row - Row index (0-based)
  * @param col - Column index (0-based)
  * @returns Whether the value is NULL
  */
-export function isNull(
-  lib: DuckDBLibrary,
+export async function isNull(
   handle: ResultHandle,
   row: number,
   col: number,
-): boolean {
+): Promise<boolean> {
+  const lib = await getLibrary();
   // Use duckdb_nullmask_data to get the null mask pointer
   const nullMaskPtr = lib.symbols.duckdb_nullmask_data(
     handle,
@@ -50,18 +45,17 @@ export function isNull(
 /**
  * Get an INT32 value from a result
  *
- * @param lib - The loaded DuckDB library
  * @param handle - Result handle
  * @param row - Row index (0-based)
  * @param col - Column index (0-based)
  * @returns INT32 value
  */
-export function getInt32(
-  lib: DuckDBLibrary,
+export async function getInt32(
   handle: ResultHandle,
   row: number,
   col: number,
-): number {
+): Promise<number> {
+  const lib = await getLibrary();
   // Use duckdb_column_data to get the actual column data
   const dataPtr = lib.symbols.duckdb_column_data(handle, BigInt(col));
   if (!dataPtr) {
@@ -79,18 +73,17 @@ export function getInt32(
 /**
  * Get an INT64 value from a result
  *
- * @param lib - The loaded DuckDB library
  * @param handle - Result handle
  * @param row - Row index (0-based)
  * @param col - Column index (0-based)
  * @returns INT64 value
  */
-export function getInt64(
-  lib: DuckDBLibrary,
+export async function getInt64(
   handle: ResultHandle,
   row: number,
   col: number,
-): bigint {
+): Promise<bigint> {
+  const lib = await getLibrary();
   // Use duckdb_column_data to get the actual column data
   const dataPtr = lib.symbols.duckdb_column_data(handle, BigInt(col));
   if (!dataPtr) {
@@ -108,18 +101,17 @@ export function getInt64(
 /**
  * Get a DOUBLE value from a result
  *
- * @param lib - The loaded DuckDB library
  * @param handle - Result handle
  * @param row - Row index (0-based)
  * @param col - Column index (0-based)
  * @returns DOUBLE value
  */
-export function getDouble(
-  lib: DuckDBLibrary,
+export async function getDouble(
   handle: ResultHandle,
   row: number,
   col: number,
-): number {
+): Promise<number> {
+  const lib = await getLibrary();
   // Use duckdb_column_data to get the actual column data
   const dataPtr = lib.symbols.duckdb_column_data(handle, BigInt(col));
   if (!dataPtr) {
@@ -138,20 +130,19 @@ export function getDouble(
  * Get a VARCHAR value from a result
  * Uses duckdb_column_data to get the actual string data
  *
- * @param lib - The loaded DuckDB library
  * @param handle - Result handle
  * @param row - Row index (0-based)
  * @param col - Column index (0-based)
  * @returns VARCHAR value
  */
-export function getString(
-  lib: DuckDBLibrary,
+export async function getString(
   handle: ResultHandle,
   row: number,
   col: number,
-): string {
+): Promise<string> {
+  const lib = await getLibrary();
   // Check if NULL first
-  if (isNull(lib, handle, row, col)) {
+  if (await isNull(handle, row, col)) {
     return "";
   }
 
@@ -182,20 +173,20 @@ export function getString(
  * Fetch all rows from a result
  * Optimized version with cached column metadata
  *
- * @param lib - The loaded DuckDB library
  * @param handle - Result handle
  * @returns Array of rows
  */
-export function fetchAll(
-  lib: DuckDBLibrary,
+export async function fetchAll(
   handle: ResultHandle,
-): RowData[] {
-  const rowCount = Number(query.rowCount(lib, handle));
-  const colCount = Number(query.columnCount(lib, handle));
+): Promise<RowData[]> {
+  const rowCount = Number(await query.rowCount(handle));
+  const colCount = Number(await query.columnCount(handle));
 
   if (rowCount === 0 || colCount === 0) {
     return [];
   }
+
+  const lib = await getLibrary();
 
   // Pre-fetch column metadata (cached per column, not per cell)
   const columnTypes: number[] = [];
@@ -203,7 +194,7 @@ export function fetchAll(
   const nullMaskViews: (Deno.UnsafePointerView | null)[] = [];
 
   for (let c = 0; c < colCount; c++) {
-    columnTypes[c] = query.columnType(lib, handle, c);
+    columnTypes[c] = await query.columnType(handle, c);
 
     // Pre-fetch column data pointer and create view
     const dataPtr = lib.symbols.duckdb_column_data(handle, BigInt(c));
@@ -328,22 +319,21 @@ function getStringWithView(
  * Note: String extraction from result sets has limited support
  * (requires vector API for full functionality)
  */
-export function getValueByType(
-  lib: DuckDBLibrary,
+export async function getValueByType(
   handle: ResultHandle,
   row: number,
   col: number,
   type: number,
-): ValueType {
+): Promise<ValueType> {
   // NULL type is 0, check for NULL values
-  if (type === 0 || isNull(lib, handle, row, col)) {
+  if (type === 0 || await isNull(handle, row, col)) {
     return null;
   }
 
   // String types: VARCHAR=17, BLOB=18, etc.
   // Also check for time-related types that return strings
   if (type === 17 || type === 18 || type >= 19) {
-    return getString(lib, handle, row, col);
+    return await getString(handle, row, col);
   }
 
   switch (type) {
@@ -351,17 +341,17 @@ export function getValueByType(
     case 2: // TINYINT
     case 3: // SMALLINT
     case 4: // INTEGER
-      return getInt32(lib, handle, row, col);
+      return await getInt32(handle, row, col);
     case 5: // BIGINT
-      return getInt64(lib, handle, row, col);
+      return await getInt64(handle, row, col);
     case 6: // HUGEINT
     case 7: // FLOAT (type 10)
     case 10: // FLOAT
     case 11: // DOUBLE
     case 19: // DECIMAL
-      return getDouble(lib, handle, row, col);
+      return await getDouble(handle, row, col);
     default:
       // Fallback to string for unknown types
-      return getString(lib, handle, row, col);
+      return await getString(handle, row, col);
   }
 }

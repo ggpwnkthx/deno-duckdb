@@ -2,73 +2,43 @@
  * Functional connection operations
  */
 
-import type {
-  ConnectionHandle,
-  ConnectResult,
-  DatabaseHandle,
-  DuckDBLibrary,
-} from "../types.ts";
+import type { ConnectionHandle, DatabaseHandle } from "../types.ts";
 import { createPointerBuffer, getPointer, isValidHandle } from "../helpers.ts";
+import { DatabaseError } from "../errors.ts";
+import { getLibrary } from "../lib.ts";
 
 /**
  * Create a connection to a database
  *
- * @param lib - The loaded DuckDB library
  * @param dbHandle - Database handle
- * @returns ConnectResult with handle or error
+ * @returns ConnectionHandle
+ * @throws DatabaseError if connection fails
  */
-export function create(
-  lib: DuckDBLibrary,
+export async function create(
   dbHandle: DatabaseHandle,
-): ConnectResult {
+): Promise<ConnectionHandle> {
+  const lib = await getLibrary();
   const handle = createPointerBuffer();
   const dbPtr = getPointer(dbHandle);
 
   const result = lib.symbols.duckdb_connect(dbPtr, handle);
 
   if (result !== 0) {
-    return {
-      handle,
-      success: false,
-      error: "Failed to connect to database",
-    };
+    throw new DatabaseError("Failed to connect to database");
   }
 
-  return {
-    handle,
-    success: true,
-  };
-}
-
-/**
- * Create a connection (throws on error)
- *
- * @param lib - The loaded DuckDB library
- * @param dbHandle - Database handle
- * @returns ConnectionHandle
- * @throws Error if connection fails
- */
-export function createOrThrow(
-  lib: DuckDBLibrary,
-  dbHandle: DatabaseHandle,
-): ConnectionHandle {
-  const result = create(lib, dbHandle);
-  if (!result.success) {
-    throw new Error(result.error ?? "Failed to connect to database");
-  }
-  return result.handle;
+  return handle;
 }
 
 /**
  * Close a connection
  *
- * @param lib - The loaded DuckDB library
  * @param handle - Connection handle to close
  */
-export function closeConnection(
-  lib: DuckDBLibrary,
+export async function closeConnection(
   handle: ConnectionHandle,
-): void {
+): Promise<void> {
+  const lib = await getLibrary();
   if (isValidHandle(handle)) {
     lib.symbols.duckdb_disconnect(handle);
   }

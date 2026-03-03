@@ -2,206 +2,202 @@
  * Functional query operations tests
  */
 
-import { assertEquals, assertExists, assertGreater } from "@std/assert";
-import { load } from "@ggpwnkthx/libduckdb";
-import type {
-  ConnectionHandle,
-  DatabaseHandle,
-  DuckDBLibrary,
-} from "@ggpwnkthx/duckdb";
+import {
+  assertEquals,
+  assertExists,
+  assertGreater,
+  assertRejects,
+} from "@std/assert";
 import { functional as duckdb } from "@ggpwnkthx/duckdb";
 
-let lib: DuckDBLibrary;
-let dbHandle: DatabaseHandle;
-let connHandle: ConnectionHandle;
+let dbHandle: Awaited<ReturnType<typeof duckdb.open>>;
+let connHandle: Awaited<ReturnType<typeof duckdb.create>>;
 
 Deno.test({
-  name: "setup: load library, open database, create connection",
+  name: "setup: open database, create connection",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
-    lib = await load();
-    const dbResult = duckdb.open(lib);
-    assertExists(dbResult.handle);
-    dbHandle = dbResult.handle;
-
-    const connResult = duckdb.create(lib, dbHandle);
-    assertExists(connResult.handle);
-    connHandle = connResult.handle;
+    dbHandle = await duckdb.open();
+    connHandle = await duckdb.create(dbHandle);
   },
 });
 
-Deno.test("execute: executes SELECT query", () => {
-  const result = duckdb.execute(lib, connHandle, "SELECT 1 as num");
-  assertEquals(result.success, true);
-  assertExists(result.handle);
-  assertEquals(result.query, "SELECT 1 as num");
+Deno.test({
+  name: "execute: executes SELECT query",
+  async fn() {
+    const handle = await duckdb.execute(connHandle, "SELECT 1 as num");
+    assertExists(handle);
 
-  duckdb.destroyResult(lib, result.handle);
+    await duckdb.destroyResult(handle);
+  },
 });
 
-Deno.test("execute: executes INSERT query", () => {
-  // Create a table first
-  duckdb.execute(
-    lib,
-    connHandle,
-    "CREATE TABLE test(id INTEGER, name VARCHAR)",
-  );
+Deno.test({
+  name: "execute: executes INSERT query",
+  async fn() {
+    // Create a table first
+    await duckdb.execute(
+      connHandle,
+      "CREATE TABLE test(id INTEGER, name VARCHAR)",
+    );
 
-  const result = duckdb.execute(
-    lib,
-    connHandle,
-    "INSERT INTO test VALUES (1, 'test')",
-  );
-  assertEquals(result.success, true);
-  assertExists(result.handle);
+    const handle = await duckdb.execute(
+      connHandle,
+      "INSERT INTO test VALUES (1, 'test')",
+    );
+    assertExists(handle);
 
-  duckdb.destroyResult(lib, result.handle);
+    await duckdb.destroyResult(handle);
+  },
 });
 
-Deno.test("execute: returns error for invalid SQL", () => {
-  const result = duckdb.execute(
-    lib,
-    connHandle,
-    "SELECT * FROM nonexistent_table",
-  );
-  assertEquals(result.success, false);
-  assertExists(result.error);
+Deno.test({
+  name: "execute: throws for invalid SQL",
+  async fn() {
+    await assertRejects(
+      async () =>
+        await duckdb.execute(
+          connHandle,
+          "SELECT * FROM nonexistent_table",
+        ),
+      Error,
+    );
+  },
 });
 
-Deno.test("executeOrThrow: throws on error", () => {
-  try {
-    duckdb.executeOrThrow(lib, connHandle, "SELECT * FROM nonexistent_table");
-    // Should not reach here
-    throw new Error("Expected error was not thrown");
-  } catch (e) {
-    assertExists(e);
-  }
+Deno.test({
+  name: "rowCount: returns correct row count",
+  async fn() {
+    // Create table and insert data
+    await duckdb.execute(connHandle, "CREATE TABLE row_count_test(id INTEGER)");
+    await duckdb.execute(
+      connHandle,
+      "INSERT INTO row_count_test VALUES (1), (2), (3)",
+    );
+
+    const handle = await duckdb.execute(
+      connHandle,
+      "SELECT * FROM row_count_test",
+    );
+
+    const count = await duckdb.rowCount(handle);
+    assertEquals(count, 3n);
+
+    await duckdb.destroyResult(handle);
+  },
 });
 
-Deno.test("rowCount: returns correct row count", () => {
-  // Create table and insert data
-  duckdb.execute(lib, connHandle, "CREATE TABLE row_count_test(id INTEGER)");
-  duckdb.execute(
-    lib,
-    connHandle,
-    "INSERT INTO row_count_test VALUES (1), (2), (3)",
-  );
+Deno.test({
+  name: "rowCount: returns 0 for empty result",
+  async fn() {
+    const handle = await duckdb.execute(
+      connHandle,
+      "SELECT * FROM (SELECT 1) WHERE 1=0",
+    );
 
-  const result = duckdb.execute(
-    lib,
-    connHandle,
-    "SELECT * FROM row_count_test",
-  );
-  assertEquals(result.success, true);
+    const count = await duckdb.rowCount(handle);
+    assertEquals(count, 0n);
 
-  const count = duckdb.rowCount(lib, result.handle);
-  assertEquals(count, 3n);
-
-  duckdb.destroyResult(lib, result.handle);
+    await duckdb.destroyResult(handle);
+  },
 });
 
-Deno.test("rowCount: returns 0 for empty result", () => {
-  const result = duckdb.execute(
-    lib,
-    connHandle,
-    "SELECT * FROM (SELECT 1) WHERE 1=0",
-  );
-  assertEquals(result.success, true);
+Deno.test({
+  name: "columnCount: returns column count",
+  async fn() {
+    const handle = await duckdb.execute(
+      connHandle,
+      "SELECT 1 as a, 2 as b, 3 as c",
+    );
 
-  const count = duckdb.rowCount(lib, result.handle);
-  assertEquals(count, 0n);
+    const count = await duckdb.columnCount(handle);
+    assertEquals(count, 3n);
 
-  duckdb.destroyResult(lib, result.handle);
+    await duckdb.destroyResult(handle);
+  },
 });
 
-Deno.test("columnCount: returns column count", () => {
-  const result = duckdb.execute(
-    lib,
-    connHandle,
-    "SELECT 1 as a, 2 as b, 3 as c",
-  );
-  assertEquals(result.success, true);
+Deno.test({
+  name: "columnName: returns column name",
+  async fn() {
+    const handle = await duckdb.execute(connHandle, "SELECT 1 as my_column");
 
-  const count = duckdb.columnCount(lib, result.handle);
-  assertEquals(count, 3n);
+    const name = await duckdb.columnName(handle, 0);
+    assertEquals(name, "my_column");
 
-  duckdb.destroyResult(lib, result.handle);
+    await duckdb.destroyResult(handle);
+  },
 });
 
-Deno.test("columnName: returns column name", () => {
-  const result = duckdb.execute(lib, connHandle, "SELECT 1 as my_column");
-  assertEquals(result.success, true);
+Deno.test({
+  name: "columnName: returns empty string for invalid index",
+  async fn() {
+    const handle = await duckdb.execute(connHandle, "SELECT 1");
 
-  const name = duckdb.columnName(lib, result.handle, 0);
-  assertEquals(name, "my_column");
+    const name = await duckdb.columnName(handle, 999);
+    assertEquals(name, "");
 
-  duckdb.destroyResult(lib, result.handle);
+    await duckdb.destroyResult(handle);
+  },
 });
 
-Deno.test("columnName: returns empty string for invalid index", () => {
-  const result = duckdb.execute(lib, connHandle, "SELECT 1");
-  assertEquals(result.success, true);
+Deno.test({
+  name: "columnType: returns column type",
+  async fn() {
+    const handle = await duckdb.execute(
+      connHandle,
+      "SELECT 1 as num, 'text' as str",
+    );
 
-  const name = duckdb.columnName(lib, result.handle, 999);
-  assertEquals(name, "");
+    // INTEGER type is 4
+    const intType = await duckdb.columnType(handle, 0);
+    assertGreater(intType, 0);
 
-  duckdb.destroyResult(lib, result.handle);
+    // VARCHAR type is 17
+    const strType = await duckdb.columnType(handle, 1);
+    assertGreater(strType, 0);
+
+    await duckdb.destroyResult(handle);
+  },
 });
 
-Deno.test("columnType: returns column type", () => {
-  const result = duckdb.execute(
-    lib,
-    connHandle,
-    "SELECT 1 as num, 'text' as str",
-  );
-  assertEquals(result.success, true);
+Deno.test({
+  name: "columnInfos: returns all column info",
+  async fn() {
+    const handle = await duckdb.execute(
+      connHandle,
+      "SELECT 1 as id, 'test' as name",
+    );
 
-  // INTEGER type is 4
-  const intType = duckdb.columnType(lib, result.handle, 0);
-  assertGreater(intType, 0);
+    const infos = await duckdb.columnInfos(handle);
+    assertEquals(infos.length, 2);
+    assertEquals(infos[0].name, "id");
+    assertEquals(infos[1].name, "name");
 
-  // VARCHAR type is 17
-  const strType = duckdb.columnType(lib, result.handle, 1);
-  assertGreater(strType, 0);
-
-  duckdb.destroyResult(lib, result.handle);
+    await duckdb.destroyResult(handle);
+  },
 });
 
-Deno.test("columnInfos: returns all column info", () => {
-  const result = duckdb.execute(
-    lib,
-    connHandle,
-    "SELECT 1 as id, 'test' as name",
-  );
-  assertEquals(result.success, true);
+Deno.test({
+  name: "destroyResult: frees result memory",
+  async fn() {
+    const handle = await duckdb.execute(connHandle, "SELECT 1");
 
-  const infos = duckdb.columnInfos(lib, result.handle);
-  assertEquals(infos.length, 2);
-  assertEquals(infos[0].name, "id");
-  assertEquals(infos[1].name, "name");
+    // Should not throw
+    await duckdb.destroyResult(handle);
 
-  duckdb.destroyResult(lib, result.handle);
-});
-
-Deno.test("destroyResult: frees result memory", () => {
-  const result = duckdb.execute(lib, connHandle, "SELECT 1");
-  assertEquals(result.success, true);
-
-  // Should not throw
-  duckdb.destroyResult(lib, result.handle);
-
-  // Destroying again should be safe
-  duckdb.destroyResult(lib, result.handle);
+    // Destroying again should be safe
+    await duckdb.destroyResult(handle);
+  },
 });
 
 Deno.test({
   name: "cleanup: close connection and database",
   sanitizeResources: false,
   sanitizeOps: false,
-  fn() {
-    duckdb.closeConnection(lib, connHandle);
-    duckdb.closeDatabase(lib, dbHandle);
-    lib.close();
+  async fn() {
+    await duckdb.closeConnection(connHandle);
+    await duckdb.closeDatabase(dbHandle);
   },
 });

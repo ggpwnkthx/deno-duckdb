@@ -1,171 +1,138 @@
 /**
  * Functional prepared statement operations tests
  */
-import { assertEquals, assertExists } from "@std/assert";
-import { load } from "@ggpwnkthx/libduckdb";
-import type {
-  ConnectionHandle,
-  DatabaseHandle,
-  DuckDBLibrary,
-} from "@ggpwnkthx/duckdb";
+import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { functional as duckdb } from "@ggpwnkthx/duckdb";
 
-let lib: DuckDBLibrary;
-let dbHandle: DatabaseHandle;
-let connHandle: ConnectionHandle;
+let dbHandle: Awaited<ReturnType<typeof duckdb.open>>;
+let connHandle: Awaited<ReturnType<typeof duckdb.create>>;
 
 Deno.test({
-  name: "setup: load library, open database, create connection",
+  name: "setup: open database, create connection",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
-    lib = await load();
-    const dbResult = duckdb.open(lib);
-    assertExists(dbResult.handle);
-    dbHandle = dbResult.handle;
-
-    const connResult = duckdb.create(lib, dbHandle);
-    assertExists(connResult.handle);
-    connHandle = connResult.handle;
+    dbHandle = await duckdb.open();
+    connHandle = await duckdb.create(dbHandle);
   },
 });
 
-Deno.test("prepare: prepares SELECT statement", () => {
-  // First create a table
-  duckdb.execute(
-    lib,
-    connHandle,
-    "CREATE TABLE prepare_test(id INTEGER, name VARCHAR)",
-  );
-  duckdb.execute(
-    lib,
-    connHandle,
-    "INSERT INTO prepare_test VALUES (1, 'test')",
-  );
+Deno.test({
+  name: "prepare: prepares SELECT statement",
+  async fn() {
+    // First create a table
+    await duckdb.execute(
+      connHandle,
+      "CREATE TABLE prepare_test(id INTEGER, name VARCHAR)",
+    );
+    await duckdb.execute(
+      connHandle,
+      "INSERT INTO prepare_test VALUES (1, 'test')",
+    );
 
-  const result = duckdb.prepare(
-    lib,
-    connHandle,
-    "SELECT * FROM prepare_test WHERE id = ?",
-  );
-  assertEquals(result.success, true);
-  assertExists(result.handle);
+    const handle = await duckdb.prepare(
+      connHandle,
+      "SELECT * FROM prepare_test WHERE id = ?",
+    );
+    assertExists(handle);
 
-  duckdb.destroyPrepared(lib, result.handle);
+    await duckdb.destroyPrepared(handle);
+  },
 });
 
-Deno.test("prepare: returns error for invalid SQL", () => {
-  const result = duckdb.prepare(
-    lib,
-    connHandle,
-    "SELECT * FROM nonexistent_table WHERE ?",
-  );
-  assertEquals(result.success, false);
-  assertExists(result.error);
+Deno.test({
+  name: "prepare: throws for invalid SQL",
+  async fn() {
+    await assertRejects(
+      async () =>
+        await duckdb.prepare(
+          connHandle,
+          "SELECT * FROM nonexistent_table WHERE ?",
+        ),
+      Error,
+    );
+  },
 });
 
-Deno.test("prepareOrThrow: throws on failure", () => {
-  try {
-    duckdb.prepareOrThrow(lib, connHandle, "invalid sql ???");
-    // Should not reach here
-    throw new Error("Expected error was not thrown");
-  } catch (e) {
-    assertExists(e);
-  }
+Deno.test({
+  name: "executePrepared: executes prepared statement",
+  async fn() {
+    const prepHandle = await duckdb.prepare(connHandle, "SELECT 1 as num");
+
+    const execHandle = await duckdb.executePrepared(prepHandle);
+    assertExists(execHandle);
+
+    await duckdb.destroyPrepared(prepHandle);
+    await duckdb.destroyResult(execHandle);
+  },
 });
 
-Deno.test("executePrepared: executes prepared statement", () => {
-  const prepResult = duckdb.prepare(lib, connHandle, "SELECT 1 as num");
-  assertEquals(prepResult.success, true);
+Deno.test({
+  name: "preparedColumnCount: returns column count",
+  async fn() {
+    const prepHandle = await duckdb.prepare(
+      connHandle,
+      "SELECT 1 as a, 2 as b, 3 as c",
+    );
 
-  const execResult = duckdb.executePrepared(lib, prepResult.handle);
-  assertEquals(execResult.success, true);
-  assertExists(execResult.handle);
+    const count = await duckdb.preparedColumnCount(prepHandle);
+    assertEquals(count, 3n);
 
-  duckdb.destroyPrepared(lib, prepResult.handle);
-  duckdb.destroyResult(lib, execResult.handle);
+    await duckdb.destroyPrepared(prepHandle);
+  },
 });
 
-Deno.test("executePreparedOrThrow: throws on error", () => {
-  const prepResult = duckdb.prepare(lib, connHandle, "SELECT 1");
-  assertEquals(prepResult.success, true);
+Deno.test({
+  name: "destroyPrepared: frees prepared statement",
+  async fn() {
+    const handle = await duckdb.prepare(connHandle, "SELECT 1");
 
-  // Execute with invalid state - should throw
-  // Actually, prepared statements with no parameters need to be executed differently
-  // Let's just verify the basic flow works
-  const execResult = duckdb.executePreparedOrThrow(lib, prepResult.handle);
-  assertEquals(execResult.success, true);
+    // Should not throw
+    await duckdb.destroyPrepared(handle);
 
-  duckdb.destroyPrepared(lib, prepResult.handle);
-  duckdb.destroyResult(lib, execResult.handle);
+    // Destroying again should be safe
+    await duckdb.destroyPrepared(handle);
+  },
 });
 
-Deno.test("preparedColumnCount: returns column count", () => {
-  const prepResult = duckdb.prepare(
-    lib,
-    connHandle,
-    "SELECT 1 as a, 2 as b, 3 as c",
-  );
-  assertEquals(prepResult.success, true);
+Deno.test({
+  name: "full workflow: prepare, execute, and fetch results",
+  async fn() {
+    // Create and populate table
+    await duckdb.execute(
+      connHandle,
+      "CREATE TABLE workflow_test(id INTEGER, value TEXT)",
+    );
+    await duckdb.execute(
+      connHandle,
+      "INSERT INTO workflow_test VALUES (1, 'a'), (2, 'b'), (3, 'c')",
+    );
 
-  const count = duckdb.preparedColumnCount(lib, prepResult.handle);
-  assertEquals(count, 3n);
+    // Prepare statement - no parameter
+    const prepHandle = await duckdb.prepare(
+      connHandle,
+      "SELECT * FROM workflow_test WHERE id > 0",
+    );
 
-  duckdb.destroyPrepared(lib, prepResult.handle);
-});
+    // Execute
+    const execHandle = await duckdb.executePrepared(prepHandle);
 
-Deno.test("destroyPrepared: frees prepared statement", () => {
-  const result = duckdb.prepare(lib, connHandle, "SELECT 1");
-  assertEquals(result.success, true);
+    // Verify results
+    const rowCount = await duckdb.rowCount(execHandle);
+    assertEquals(rowCount, 3n);
 
-  // Should not throw
-  duckdb.destroyPrepared(lib, result.handle);
-
-  // Destroying again should be safe
-  duckdb.destroyPrepared(lib, result.handle);
-});
-
-Deno.test("full workflow: prepare, execute, and fetch results", () => {
-  // Create and populate table
-  duckdb.execute(
-    lib,
-    connHandle,
-    "CREATE TABLE workflow_test(id INTEGER, value TEXT)",
-  );
-  duckdb.execute(
-    lib,
-    connHandle,
-    "INSERT INTO workflow_test VALUES (1, 'a'), (2, 'b'), (3, 'c')",
-  );
-
-  // Prepare statement - no parameter
-  const prepResult = duckdb.prepare(
-    lib,
-    connHandle,
-    "SELECT * FROM workflow_test WHERE id > 0",
-  );
-  assertEquals(prepResult.success, true);
-
-  // Execute
-  const execResult = duckdb.executePrepared(lib, prepResult.handle);
-  assertEquals(execResult.success, true);
-
-  // Verify results
-  const rowCount = duckdb.rowCount(lib, execResult.handle);
-  assertEquals(rowCount, 3n);
-
-  // Cleanup
-  duckdb.destroyPrepared(lib, prepResult.handle);
-  duckdb.destroyResult(lib, execResult.handle);
+    // Cleanup
+    await duckdb.destroyPrepared(prepHandle);
+    await duckdb.destroyResult(execHandle);
+  },
 });
 
 Deno.test({
   name: "cleanup: close connection and database",
   sanitizeResources: false,
   sanitizeOps: false,
-  fn() {
-    duckdb.closeConnection(lib, connHandle);
-    duckdb.closeDatabase(lib, dbHandle);
-    lib.close();
+  async fn() {
+    await duckdb.closeConnection(connHandle);
+    await duckdb.closeDatabase(dbHandle);
   },
 });

@@ -1,4 +1,3 @@
-# deno-duckdb
 [![JSR](https://jsr.io/badges/@ggpwnkthx/duckdb)](https://jsr.io/@ggpwnkthx/duckdb)
 
 Type-safe DuckDB FFI bindings for Deno. Wraps [`@ggpwnkthx/libduckdb`](https://jsr.io/@ggpwnkthx/libduckdb) with two

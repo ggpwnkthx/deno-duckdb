@@ -56,17 +56,25 @@ export const DuckDBType = {
 /** Type alias for DuckDB type constants */
 export type DuckDBTypeValue = typeof DuckDBType[keyof typeof DuckDBType];
 
+/**
+ * Helper to create a branded type with exact byte size
+ */
+type SizedHandle<T, N extends number> = T & {
+  __byteSize: N;
+  __brand: never;
+};
+
 /** 8-byte pointer buffer for database handle */
-export type DatabaseHandle = Uint8Array<ArrayBuffer>;
+export type DatabaseHandle = SizedHandle<Uint8Array<ArrayBuffer>, 8>;
 
 /** 8-byte pointer buffer for connection handle */
-export type ConnectionHandle = Uint8Array<ArrayBuffer>;
+export type ConnectionHandle = SizedHandle<Uint8Array<ArrayBuffer>, 8>;
 
 /** 48-byte buffer for query result */
-export type ResultHandle = Uint8Array<ArrayBuffer>;
+export type ResultHandle = SizedHandle<Uint8Array<ArrayBuffer>, 48>;
 
 /** 8-byte pointer buffer for prepared statement */
-export type PreparedStatementHandle = Uint8Array<ArrayBuffer>;
+export type PreparedStatementHandle = SizedHandle<Uint8Array<ArrayBuffer>, 8>;
 
 /** Database configuration options */
 export interface DatabaseConfig {

@@ -15,25 +15,9 @@ import {
   BYTE_SIZE_32,
   BYTE_SIZE_64,
   createPointerView,
+  isNullFromMask,
   isStringType,
 } from "../helpers.ts";
-
-/**
- * Check if a value at the given row index is null according to the null mask
- * @param nullMaskView - Pointer view to the null mask (can be null)
- * @param rowIndex - Row index to check
- * @returns true if the value is null, false otherwise
- */
-function isNullValue(
-  nullMaskView: Deno.UnsafePointerView | null,
-  rowIndex: number,
-): boolean {
-  if (!nullMaskView) {
-    return false;
-  }
-  const nullMask = nullMaskView.getBigUint64(0);
-  return (nullMask & (1n << BigInt(rowIndex))) !== 0n;
-}
 
 /**
  * Stream rows from a query result lazily
@@ -96,7 +80,7 @@ export async function* stream(
         // Use shared helper for string type check
         if (isStringType(type)) {
           // String types: VARCHAR, BLOB, etc. - check null
-          if (isNullValue(nullMaskView, r)) {
+          if (isNullFromMask(nullMaskView, r)) {
             row[c] = null;
             continue;
           }
@@ -116,14 +100,14 @@ export async function* stream(
           type === DuckDBType.SMALLINT || type === DuckDBType.INTEGER
         ) {
           // BOOLEAN, TINYINT, SMALLINT, INTEGER - check null
-          if (isNullValue(nullMaskView, r)) {
+          if (isNullFromMask(nullMaskView, r)) {
             row[c] = null;
             continue;
           }
           row[c] = dataView ? dataView.getInt32(r * BYTE_SIZE_32) : 0;
         } else if (type === DuckDBType.BIGINT) {
           // BIGINT - check null
-          if (isNullValue(nullMaskView, r)) {
+          if (isNullFromMask(nullMaskView, r)) {
             row[c] = null;
             continue;
           }
@@ -133,14 +117,14 @@ export async function* stream(
           type === DuckDBType.DOUBLE
         ) {
           // HUGEINT, FLOAT, DOUBLE - check null
-          if (isNullValue(nullMaskView, r)) {
+          if (isNullFromMask(nullMaskView, r)) {
             row[c] = null;
             continue;
           }
           row[c] = dataView ? dataView.getFloat64(r * BYTE_SIZE_64) : 0;
         } else {
           // Fallback - check null
-          if (isNullValue(nullMaskView, r)) {
+          if (isNullFromMask(nullMaskView, r)) {
             row[c] = null;
             continue;
           }

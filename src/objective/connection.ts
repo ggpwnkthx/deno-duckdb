@@ -51,6 +51,9 @@ export class Connection {
    */
   async query(sql: string): Promise<QueryResultClass> {
     this.checkNotClosed();
+    if (!sql || !sql.trim()) {
+      throw new DatabaseError("SQL query cannot be empty");
+    }
     const handle = await query.execute(this.handle!, sql);
     return new QueryResultClass(handle, this);
   }
@@ -88,6 +91,9 @@ export class Connection {
     mapper?: (row: RowData, columns: string[]) => T,
   ): Promise<T[]> {
     this.checkNotClosed();
+    if (!sql || !sql.trim()) {
+      throw new DatabaseError("SQL query cannot be empty");
+    }
     const handle = await query.execute(this.handle!, sql);
 
     try {
@@ -135,6 +141,9 @@ export class Connection {
    */
   async *stream(sql: string): RowStream {
     this.checkNotClosed();
+    if (!sql || !sql.trim()) {
+      throw new DatabaseError("SQL query cannot be empty");
+    }
     // Delegate to functional stream
     yield* stream(this.handle!, sql);
   }
@@ -147,6 +156,9 @@ export class Connection {
    */
   async prepare(sql: string): Promise<PreparedStatement> {
     this.checkNotClosed();
+    if (!sql || !sql.trim()) {
+      throw new DatabaseError("SQL statement cannot be empty");
+    }
 
     // Prepare new statement - throws on error
     const handle = await prep.prepare(this.handle!, sql);

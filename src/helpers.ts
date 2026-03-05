@@ -3,6 +3,12 @@
  */
 
 import type { DuckDBLibrary } from "./lib.ts";
+import type {
+  ConnectionHandle,
+  DatabaseHandle,
+  PreparedStatementHandle,
+  ResultHandle,
+} from "./types.ts";
 import { DuckDBType, type DuckDBTypeValue } from "./types.ts";
 
 /** Size of a pointer in bytes (64-bit) */
@@ -43,17 +49,33 @@ const stringCache = new Map<string, Deno.PointerObject<unknown>>();
 const MAX_STRING_CACHE_SIZE = 1000;
 
 /**
- * Create an 8-byte pointer buffer (for cases where you need a fresh buffer)
+ * Create an 8-byte pointer buffer for database/connection/prepared handles
  */
-export function createPointerBuffer(): Uint8Array<ArrayBuffer> {
-  return new Uint8Array(new ArrayBuffer(POINTER_SIZE));
+export function createPointerBuffer(): DatabaseHandle {
+  return new Uint8Array(new ArrayBuffer(POINTER_SIZE)) as DatabaseHandle;
 }
 
 /**
- * Create a 48-byte result buffer (for cases where you need a fresh buffer)
+ * Create an 8-byte connection handle buffer
  */
-export function createResultBuffer(): Uint8Array<ArrayBuffer> {
-  return new Uint8Array(new ArrayBuffer(RESULT_SIZE));
+export function createConnectionBuffer(): ConnectionHandle {
+  return new Uint8Array(new ArrayBuffer(POINTER_SIZE)) as ConnectionHandle;
+}
+
+/**
+ * Create an 8-byte prepared statement handle buffer
+ */
+export function createPreparedBuffer(): PreparedStatementHandle {
+  return new Uint8Array(
+    new ArrayBuffer(POINTER_SIZE),
+  ) as PreparedStatementHandle;
+}
+
+/**
+ * Create a 48-byte result buffer
+ */
+export function createResultBuffer(): ResultHandle {
+  return new Uint8Array(new ArrayBuffer(RESULT_SIZE)) as ResultHandle;
 }
 
 /**
@@ -67,11 +89,9 @@ export function getPointer(buffer: Uint8Array): bigint {
  * Convert string to FFI pointer
  * Uses LRU caching to avoid repeated encoding of the same strings
  * @param str - The string to convert
- * @param lib - Optional DuckDB library for freeing evicted cache entries
  */
 export function stringToPointer(
   str: string,
-  _lib?: DuckDBLibrary,
 ): Deno.PointerObject<unknown> {
   // Check cache first
   const cached = stringCache.get(str);
@@ -121,13 +141,13 @@ export function freeString(
 
 /**
  * Convert Deno.PointerValue to Deno.PointerObject safely
+ * Returns null for null pointer values
  */
 export function pointerValueToObject(
   ptr: Deno.PointerValue<unknown>,
-): Deno.PointerObject<unknown> {
+): Deno.PointerObject<unknown> | null {
   if (!ptr) {
-    // Return null pointer for null case
-    return null as unknown as Deno.PointerObject<unknown>;
+    return null;
   }
   return ptr as Deno.PointerObject<unknown>;
 }
@@ -140,4 +160,21 @@ export function createPointerView(
 ): Deno.UnsafePointerView | null {
   if (!ptr) return null;
   return new Deno.UnsafePointerView(ptr as Deno.PointerObject<unknown>);
+}
+
+/**
+ * Check if a value at the given row index is null according to the null mask
+ * @param nullMaskView - Pointer view to the null mask (can be null)
+ * @param rowIndex - Row index to check
+ * @returns true if the value is null, false otherwise
+ */
+export function isNullFromMask(
+  nullMaskView: Deno.UnsafePointerView | null,
+  rowIndex: number,
+): boolean {
+  if (!nullMaskView) {
+    return false;
+  }
+  const nullMask = nullMaskView.getBigUint64(0);
+  return (nullMask & (1n << BigInt(rowIndex))) !== 0n;
 }

@@ -32,6 +32,13 @@ export function execute(
   connHandle: ConnectionHandle,
   sql: string,
 ): ResultHandle {
+  if (!isValidHandle(connHandle)) {
+    throw new QueryError("Invalid connection handle", sql);
+  }
+  if (!sql || !sql.trim()) {
+    throw new QueryError("SQL query cannot be empty", sql);
+  }
+
   const lib = getLibraryFast();
   const handle = createResultBuffer();
   const connPtr = getPointer(connHandle);
@@ -81,7 +88,7 @@ export function executeAndFetchAll(
  * @returns Number of rows
  */
 export function rowCount(
-  handle: Uint8Array<ArrayBuffer>,
+  handle: ResultHandle,
 ): bigint {
   const lib = getLibraryFast();
   return lib.symbols.duckdb_row_count(handle);
@@ -94,7 +101,7 @@ export function rowCount(
  * @returns Number of columns
  */
 export function columnCount(
-  handle: Uint8Array<ArrayBuffer>,
+  handle: ResultHandle,
 ): bigint {
   const lib = getLibraryFast();
   return lib.symbols.duckdb_column_count(handle);
@@ -108,7 +115,7 @@ export function columnCount(
  * @returns Column name
  */
 export function columnName(
-  handle: Uint8Array<ArrayBuffer>,
+  handle: ResultHandle,
   index: number,
 ): string {
   const lib = getLibraryFast();
@@ -129,7 +136,7 @@ export function columnName(
  * @returns Column type enum value
  */
 export function columnType(
-  handle: Uint8Array<ArrayBuffer>,
+  handle: ResultHandle,
   index: number,
 ): DuckDBTypeValue {
   const lib = getLibraryFast();
@@ -146,7 +153,7 @@ export function columnType(
  * @returns Array of ColumnInfo
  */
 export function columnInfos(
-  handle: Uint8Array<ArrayBuffer>,
+  handle: ResultHandle,
 ): ColumnInfo[] {
   const count = Number(columnCount(handle));
   const infos: ColumnInfo[] = [];
@@ -167,7 +174,7 @@ export function columnInfos(
  * @param handle - Result handle to destroy
  */
 export function destroyResult(
-  handle: Uint8Array<ArrayBuffer>,
+  handle: ResultHandle,
 ): void {
   const lib = getLibraryFast();
   if (isValidHandle(handle)) {
@@ -181,7 +188,7 @@ export function destroyResult(
  * @param handle - Result handle to destroy
  */
 export function destroyResultSync(
-  handle: Uint8Array<ArrayBuffer>,
+  handle: ResultHandle,
 ): void {
   // Use getLibrarySync - returns null if library not loaded
   const lib = getLibrarySync();

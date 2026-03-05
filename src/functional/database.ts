@@ -89,12 +89,19 @@ export async function open(
 
     if (openResult !== 0) {
       const errorPtr = getPointer(errorBuffer);
-      const errorView = errorPtr
-        ? createPointerView(errorPtr as unknown as Deno.PointerValue<unknown>)
-        : null;
-      const errorMsg = errorView
-        ? errorView.getCString()
-        : "Failed to open database";
+      let errorMsg = "Failed to open database";
+      if (errorPtr !== 0n) {
+        const errorView = createPointerView(
+          errorPtr as unknown as Deno.PointerValue<unknown>,
+        );
+        if (errorView) {
+          errorMsg = errorView.getCString();
+        }
+        // Free the error message allocated by DuckDB
+        lib.symbols.duckdb_free(
+          errorPtr as unknown as Deno.PointerValue<unknown>,
+        );
+      }
       throw new DatabaseError(errorMsg);
     }
 

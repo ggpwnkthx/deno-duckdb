@@ -59,7 +59,9 @@ Deno.test({
 
 Deno.test("closeDatabase: handles invalid handle gracefully", async () => {
   // Create an invalid handle (zeros)
-  const invalidHandle = new Uint8Array(8);
+  const invalidHandle = new Uint8Array(8) as unknown as Awaited<
+    ReturnType<typeof duckdb.open>
+  >;
 
   // Should not throw
   await duckdb.closeDatabase(invalidHandle);
@@ -75,7 +77,9 @@ Deno.test({
 });
 
 Deno.test("isValidDatabase: returns false for invalid handle", () => {
-  const invalidHandle = new Uint8Array(8);
+  const invalidHandle = new Uint8Array(8) as unknown as Awaited<
+    ReturnType<typeof duckdb.open>
+  >;
   assertEquals(duckdb.isValidDatabase(invalidHandle), false);
 });
 

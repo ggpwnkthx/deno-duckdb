@@ -1,6 +1,6 @@
 {
   "name": "@ggpwnkthx/duckdb",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "exports": {
     ".": "./src/mod.ts",
     "./functional": "./src/functional/mod.ts",
@@ -9,7 +9,7 @@
   "lock": false,
   "imports": {
     "@std/assert": "jsr:@std/assert@1",
-    "@ggpwnkthx/libduckdb": "jsr:@ggpwnkthx/libduckdb@1.0.12",
+    "@ggpwnkthx/libduckdb": "jsr:@ggpwnkthx/libduckdb@1.0.13",
     "@ggpwnkthx/duckdb": "./src/mod.ts",
     "@ggpwnkthx/duckdb/functional": "./src/functional/mod.ts",
     "@ggpwnkthx/duckdb/objective": "./src/objective/mod.ts"

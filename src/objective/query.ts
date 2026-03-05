@@ -55,10 +55,7 @@ export class QueryResult {
    * @returns Array of rows
    */
   fetchAll(): RowData[] {
-    this.checkNotFreed();
-    if (!this.handle) {
-      throw new InvalidResourceError("Result has been freed");
-    }
+    const handle = this.checkNotFreed();
 
     // Return cached rows if available
     if (this.cachedRows) {
@@ -66,7 +63,7 @@ export class QueryResult {
     }
 
     // Fetch rows (now synchronous)
-    const rows = value.fetchAll(this.handle);
+    const rows = value.fetchAll(handle);
 
     // Only cache if below size limit
     if (rows.length <= MAX_CACHED_ROWS) {
@@ -97,10 +94,7 @@ export class QueryResult {
    * @returns Row data
    */
   getRow(index: number): RowData {
-    this.checkNotFreed();
-    if (!this.handle) {
-      throw new InvalidResourceError("Result has been freed");
-    }
+    const handle = this.checkNotFreed();
 
     // Use cached rows if available
     if (this.cachedRows) {
@@ -112,8 +106,8 @@ export class QueryResult {
 
     // Cache row/col count on first call (now synchronous)
     if (this.cachedRowCount === 0n) {
-      this.cachedRowCount = query.rowCount(this.handle);
-      this.cachedColCount = query.columnCount(this.handle);
+      this.cachedRowCount = query.rowCount(handle);
+      this.cachedColCount = query.columnCount(handle);
     }
 
     if (index < 0 || index >= Number(this.cachedRowCount)) {
@@ -145,6 +139,7 @@ export class QueryResult {
 
   /** Build column cache for getRow optimization */
   private buildColumnCache(): ColumnCache {
+    const handle = this.checkNotFreed();
     const colCount = Number(this.cachedColCount);
     const lib = getLibraryFast();
     const types: DuckDBTypeValue[] = [];
@@ -152,18 +147,12 @@ export class QueryResult {
     const nullMaskViews: (Deno.UnsafePointerView | null)[] = [];
 
     for (let c = 0; c < colCount; c++) {
-      types[c] = query.columnType(this.handle!, c);
+      types[c] = query.columnType(handle, c);
 
-      const dataPtr = lib.symbols.duckdb_column_data(
-        this.handle!,
-        BigInt(c),
-      );
+      const dataPtr = lib.symbols.duckdb_column_data(handle, BigInt(c));
       dataViews[c] = dataPtr ? createPointerView(dataPtr) : null;
 
-      const nullMaskPtr = lib.symbols.duckdb_nullmask_data(
-        this.handle!,
-        BigInt(c),
-      );
+      const nullMaskPtr = lib.symbols.duckdb_nullmask_data(handle, BigInt(c));
       nullMaskViews[c] = nullMaskPtr ? createPointerView(nullMaskPtr) : null;
     }
 
@@ -192,12 +181,11 @@ export class QueryResult {
    */
   rowCount(): bigint {
     this.checkNotFreed();
-    if (!this.handle) return 0n;
     // Use cached count if available
     if (this.cachedRowCount !== 0n) {
       return this.cachedRowCount;
     }
-    this.cachedRowCount = query.rowCount(this.handle);
+    this.cachedRowCount = query.rowCount(this.handle!);
     return this.cachedRowCount;
   }
 
@@ -206,12 +194,11 @@ export class QueryResult {
    */
   columnCount(): bigint {
     this.checkNotFreed();
-    if (!this.handle) return 0n;
     // Use cached count if available
     if (this.cachedColCount !== 0n) {
       return this.cachedColCount;
     }
-    this.cachedColCount = query.columnCount(this.handle);
+    this.cachedColCount = query.columnCount(this.handle!);
     return this.cachedColCount;
   }
 
@@ -220,12 +207,11 @@ export class QueryResult {
    */
   getColumnInfos(): ColumnInfo[] {
     this.checkNotFreed();
-    if (!this.handle) return [];
     // Use cached column infos if available
     if (this.cachedColumnInfos) {
       return this.cachedColumnInfos;
     }
-    this.cachedColumnInfos = query.columnInfos(this.handle);
+    this.cachedColumnInfos = query.columnInfos(this.handle!);
     return this.cachedColumnInfos;
   }
 
@@ -260,9 +246,14 @@ export class QueryResult {
     this.close();
   }
 
-  private checkNotFreed(): void {
+  /**
+   * Check if result is freed and return handle
+   * @throws InvalidResourceError if result has been freed
+   */
+  private checkNotFreed(): ResultHandle {
     if (!this.handle) {
       throw new InvalidResourceError("Result has been freed");
     }
+    return this.handle;
   }
 }

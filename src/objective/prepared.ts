@@ -33,9 +33,9 @@ export class PreparedStatement {
    * @param params - Array of values to bind (in order)
    * @throws Error if binding fails
    */
-  async bind(params: BindValue[]): Promise<void> {
+  bind(params: BindValue[]): void {
     const handle = this.getHandle();
-    await prep.bind(handle, params);
+    prep.bind(handle, params);
   }
 
   /**
@@ -43,26 +43,26 @@ export class PreparedStatement {
    *
    * @returns QueryResult instance
    */
-  async execute(): Promise<QueryResult> {
+  execute(): QueryResult {
     const handle = this.getHandle();
-    const resultHandle = await prep.executePrepared(handle);
+    const resultHandle = prep.executePrepared(handle);
     return new QueryResult(resultHandle, this.connection);
   }
 
   /**
    * Get the number of columns in the result
    */
-  async columnCount(): Promise<bigint> {
+  columnCount(): bigint {
     const handle = this.getHandle();
-    return await prep.preparedColumnCount(handle);
+    return prep.preparedColumnCount(handle);
   }
 
   /**
    * Get the number of parameters in the statement
    */
-  async parameterCount(): Promise<bigint> {
+  parameterCount(): bigint {
     const handle = this.getHandle();
-    return await prep.preparedParameterCount(handle);
+    return prep.preparedParameterCount(handle);
   }
 
   /**

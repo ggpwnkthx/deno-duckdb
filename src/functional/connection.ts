@@ -3,7 +3,11 @@
  */
 
 import type { ConnectionHandle, DatabaseHandle } from "../types.ts";
-import { createPointerBuffer, getPointer, isValidHandle } from "../helpers.ts";
+import {
+  createConnectionBuffer,
+  getPointer,
+  isValidHandle,
+} from "../helpers.ts";
 import { DatabaseError } from "../errors.ts";
 import { getLibrary, getLibraryFast } from "../lib.ts";
 
@@ -18,7 +22,7 @@ export async function create(
   dbHandle: DatabaseHandle,
 ): Promise<ConnectionHandle> {
   const lib = await getLibrary();
-  const handle = createPointerBuffer();
+  const handle = createConnectionBuffer();
   const dbPtr = getPointer(dbHandle);
 
   const result = lib.symbols.duckdb_connect(dbPtr, handle);

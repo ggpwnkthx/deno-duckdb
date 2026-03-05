@@ -8,8 +8,8 @@ import type {
   ResultHandle,
 } from "../types.ts";
 import {
-  createPointerBuffer,
   createPointerView,
+  createPreparedBuffer,
   createResultBuffer,
   getPointer,
   isValidHandle,
@@ -34,7 +34,7 @@ export function prepare(
   sql: string,
 ): PreparedStatementHandle {
   const lib = getLibraryFast();
-  const handle = createPointerBuffer();
+  const handle = createPreparedBuffer();
   const connPtr = getPointer(connHandle);
   const sqlPtr = stringToPointer(sql);
 
@@ -46,7 +46,7 @@ export function prepare(
     const view = createPointerView(errorPtr);
     const errorMsg = view ? view.getCString() : "Failed to prepare statement";
     lib.symbols.duckdb_destroy_prepare(handle);
-    throw new DatabaseError(errorMsg ?? "Failed to prepare statement");
+    throw new DatabaseError(errorMsg);
   }
 
   return handle;
@@ -73,7 +73,7 @@ export function executePrepared(
     const view = createPointerView(errorPtr);
     const errorMsg = view ? view.getCString() : "Execution failed";
     lib.symbols.duckdb_destroy_result(handle);
-    throw new DatabaseError(errorMsg ?? "Execution failed");
+    throw new DatabaseError(errorMsg);
   }
 
   return handle;

@@ -13,6 +13,7 @@ import {
   BYTE_SIZE_32,
   BYTE_SIZE_64,
   createPointerView,
+  isNullFromMask,
   isStringType,
 } from "../helpers.ts";
 import * as query from "./query.ts";
@@ -42,20 +43,8 @@ export function isNull(
     return false;
   }
 
-  // The null mask is a bitmap where each bit indicates if the value is NULL
   const view = createPointerView(nullMaskPtr);
-  if (!view) {
-    return false;
-  }
-
-  // Read the null mask as Uint64 (the null mask is stored as uint64_t array)
-  // Each bit in the mask represents whether a value is NULL
-  const nullMask = view.getBigUint64(0);
-
-  // Check if the bit for this row is set.
-  // (1n << BigInt(row)) creates a bitmask with a 1 at position 'row'.
-  // If that bit is set in nullMask, the value at this row is NULL.
-  return (nullMask & (1n << BigInt(row))) !== 0n;
+  return isNullFromMask(view, row);
 }
 
 /**
@@ -295,11 +284,9 @@ export function getValueByTypeOptimized(
     return null;
   }
 
-  // Helper to check null mask
+  // Use shared helper for null mask check
   const isNullValue = (): boolean => {
-    if (!checkNull || !nullMaskView) return false;
-    const nullMask = nullMaskView.getBigUint64(0);
-    return (nullMask & (1n << BigInt(row))) !== 0n;
+    return checkNull && isNullFromMask(nullMaskView, row);
   };
 
   // Use shared helper for string type check

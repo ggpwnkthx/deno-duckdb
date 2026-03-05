@@ -23,7 +23,7 @@ export class QueryError extends DuckDBError {
   /** The query that caused the error */
   public readonly query: string;
 
-  constructor(query: string, message: string) {
+  constructor(message: string, query: string) {
     super(message);
     this.name = "QueryError";
     this.query = query;

@@ -5,21 +5,23 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { Database } from "../../src/objective/mod.ts";
 
-let db: Database;
-
+// Warm-up test to trigger library loading once for all tests
 Deno.test({
-  name: "setup: create database",
+  name: "warmup: load library",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
-    db = new Database();
+    const db = new Database();
     await db.open();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "query: executes SELECT query successfully",
   async fn() {
+    const db = new Database();
+    await db.open();
     const conn = await db.connect();
     const result = await conn.query("SELECT 1 as val");
 
@@ -28,34 +30,49 @@ Deno.test({
 
     await result.close();
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "query: executes INSERT query successfully",
   async fn() {
+    const db = new Database();
+    await db.open();
     const conn = await db.connect();
 
-    // Create a table and insert data
-    await conn.query("CREATE TABLE test (id INTEGER, name TEXT)");
+    // Create a table and insert data - close result after each
+    const createResult = await conn.query(
+      "CREATE TABLE test (id INTEGER, name TEXT)",
+    );
+    await createResult.close();
+
     const insertResult = await conn.query(
       "INSERT INTO test VALUES (1, 'test')",
     );
-
     assertEquals(insertResult.isSuccess(), true);
+    await insertResult.close();
 
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "queryAll: returns all rows",
   async fn() {
+    const db = new Database();
+    await db.open();
     const conn = await db.connect();
 
-    // Create table and insert data
-    await conn.query("CREATE TABLE test_all (id INTEGER)");
-    await conn.query("INSERT INTO test_all VALUES (1), (2), (3)");
+    // Create table and insert data - close results
+    const createResult = await conn.query("CREATE TABLE test_all (id INTEGER)");
+    await createResult.close();
+
+    const insertResult = await conn.query(
+      "INSERT INTO test_all VALUES (1), (2), (3)",
+    );
+    await insertResult.close();
 
     const rows = await conn.queryAll("SELECT * FROM test_all ORDER BY id");
 
@@ -65,12 +82,15 @@ Deno.test({
     assertEquals(rows[2][0], 3);
 
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "prepare: creates PreparedStatement",
   async fn() {
+    const db = new Database();
+    await db.open();
     const conn = await db.connect();
     const stmt = await conn.prepare("SELECT ? as val");
 
@@ -78,12 +98,15 @@ Deno.test({
 
     await stmt.close();
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "prepare: returns PreparedStatement for valid SQL",
   async fn() {
+    const db = new Database();
+    await db.open();
     const conn = await db.connect();
     const stmt = await conn.prepare("SELECT 1 as val");
 
@@ -92,44 +115,56 @@ Deno.test({
 
     await stmt.close();
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "close: closes connection",
   async fn() {
+    const db = new Database();
+    await db.open();
     const conn = await db.connect();
     assertEquals(conn.isClosed(), false);
 
     await conn.close();
     assertEquals(conn.isClosed(), true);
+    await db.close();
   },
 });
 
 Deno.test({
   name: "close: is idempotent",
   async fn() {
+    const db = new Database();
+    await db.open();
     const conn = await db.connect();
     await conn.close();
     await conn.close(); // Should not throw
     assertEquals(conn.isClosed(), true);
+    await db.close();
   },
 });
 
 Deno.test({
   name: "isClosed: returns correct state",
   async fn() {
+    const db = new Database();
+    await db.open();
     const conn = await db.connect();
     assertEquals(conn.isClosed(), false);
 
     await conn.close();
     assertEquals(conn.isClosed(), true);
+    await db.close();
   },
 });
 
 Deno.test({
   name: "query: throws when connection is closed",
   async fn() {
+    const db = new Database();
+    await db.open();
     const conn = await db.connect();
     await conn.close();
 
@@ -139,12 +174,15 @@ Deno.test({
     } catch (e) {
       assertEquals((e as Error).message, "Connection is closed");
     }
+    await db.close();
   },
 });
 
 Deno.test({
   name: "queryAll: throws when connection is closed",
   async fn() {
+    const db = new Database();
+    await db.open();
     const conn = await db.connect();
     await conn.close();
 
@@ -154,12 +192,15 @@ Deno.test({
     } catch (e) {
       assertEquals((e as Error).message, "Connection is closed");
     }
+    await db.close();
   },
 });
 
 Deno.test({
   name: "prepare: throws when connection is closed",
   async fn() {
+    const db = new Database();
+    await db.open();
     const conn = await db.connect();
     await conn.close();
 
@@ -169,44 +210,43 @@ Deno.test({
     } catch (e) {
       assertEquals((e as Error).message, "Connection is closed");
     }
+    await db.close();
   },
 });
 
 Deno.test({
   name: "close: throws when connection is closed",
   async fn() {
+    const db = new Database();
+    await db.open();
     const conn = await db.connect();
     await conn.close();
 
     // Should not throw, close is idempotent
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "query: can execute multiple queries sequentially",
   async fn() {
+    const db = new Database();
+    await db.open();
     const conn = await db.connect();
 
-    await conn.query("CREATE TABLE multi_test (id INTEGER)");
-    await conn.query("INSERT INTO multi_test VALUES (1)");
-    await conn.query("INSERT INTO multi_test VALUES (2)");
+    const r1 = await conn.query("CREATE TABLE multi_test (id INTEGER)");
+    await r1.close();
+    const r2 = await conn.query("INSERT INTO multi_test VALUES (1)");
+    await r2.close();
+    const r3 = await conn.query("INSERT INTO multi_test VALUES (2)");
+    await r3.close();
 
     const result = await conn.query("SELECT * FROM multi_test ORDER BY id");
     assertEquals(await result.rowCount(), 2n);
 
     await result.close();
     await conn.close();
-  },
-});
-
-Deno.test({
-  name: "cleanup: close database",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  async fn() {
-    if (db && !db.isClosed()) {
-      await db.close();
-    }
+    await db.close();
   },
 });

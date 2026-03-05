@@ -21,7 +21,7 @@ export * from "./errors.ts";
 export * from "./helpers.ts";
 
 // Re-export functional API
-export * as functional from "@ggpwnkthx/duckdb/functional";
+export * as functional from "./functional/mod.ts";
 
 // Re-export objective API
-export * as objective from "@ggpwnkthx/duckdb/objective";
+export * as objective from "./objective/mod.ts";

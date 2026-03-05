@@ -5,30 +5,31 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { Database } from "../../src/objective/mod.ts";
 
-let db: Database;
-
+// Warm-up test to trigger library loading once for all tests
 Deno.test({
-  name: "setup: create database",
+  name: "warmup: load library",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
-    db = new Database();
+    const db = new Database();
     await db.open();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "constructor: opens database successfully",
-  fn() {
-    assertExists(db);
+  async fn() {
+    const db = new Database();
+    await db.open();
     assertEquals(db.isClosed(), false);
+    await db.close();
   },
 });
 
 Deno.test({
   name: "constructor: defaults to in-memory database when no path provided",
   async fn() {
-    // This should work without explicit path - defaults to in-memory
     const testDb = new Database();
     await testDb.open();
     const conn = await testDb.connect();
@@ -45,16 +46,21 @@ Deno.test({
 Deno.test({
   name: "connect: creates a new Connection",
   async fn() {
+    const db = new Database();
+    await db.open();
     const conn = await db.connect();
     assertExists(conn);
     assertEquals(conn.isClosed(), false);
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "connect: multiple connections work independently",
   async fn() {
+    const db = new Database();
+    await db.open();
     const conn1 = await db.connect();
     const conn2 = await db.connect();
 
@@ -72,6 +78,7 @@ Deno.test({
 
     await conn1.close();
     await conn2.close();
+    await db.close();
   },
 });
 
@@ -129,22 +136,14 @@ Deno.test({
 Deno.test({
   name: "query: can execute queries after connect",
   async fn() {
+    const db = new Database();
+    await db.open();
     const conn = await db.connect();
     const result = await conn.query("SELECT 42 as answer");
     assertEquals(result.isSuccess(), true);
     assertEquals(await result.rowCount(), 1n);
     await result.close();
     await conn.close();
-  },
-});
-
-Deno.test({
-  name: "cleanup: close database",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  async fn() {
-    if (db && !db.isClosed()) {
-      await db.close();
-    }
+    await db.close();
   },
 });

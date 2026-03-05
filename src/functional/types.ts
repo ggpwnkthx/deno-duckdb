@@ -5,7 +5,11 @@
  * duplicated across value.ts and stream.ts.
  */
 
-import { DuckDBType, type DuckDBTypeValue, type ResultHandle } from "../types.ts";
+import {
+  DuckDBType,
+  type DuckDBTypeValue,
+  type ResultHandle,
+} from "../types.ts";
 import {
   BYTE_SIZE_32,
   BYTE_SIZE_64,

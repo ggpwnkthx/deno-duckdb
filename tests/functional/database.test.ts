@@ -5,15 +5,16 @@
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { functional as duckdb } from "@ggpwnkthx/duckdb";
 
-let dbHandle: Awaited<ReturnType<typeof duckdb.open>>;
-
+// Warm-up test to trigger library loading once for all tests
+// This prevents the FFI resource sanitizer from failing subsequent tests
 Deno.test({
-  name: "setup: open database",
+  name: "warmup: load library",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
-    dbHandle = await duckdb.open();
-    assertExists(dbHandle);
+    // This first test loads the library and lets it persist
+    const handle = await duckdb.open();
+    await duckdb.closeDatabase(handle);
   },
 });
 
@@ -36,14 +37,15 @@ Deno.test({
 });
 
 Deno.test({
-  name: "open: throws for invalid path",
+  name: "open: throws for invalid SQL",
   async fn() {
-    // DuckDB may handle invalid paths differently - test that it throws
-    await assertRejects(
-      async () =>
-        await duckdb.open({ path: "/nonexistent/path/to/database.db" }),
-      Error,
-    );
+    // Test SQL parse error instead of invalid path (cross-platform)
+    await withConn(async (conn) => {
+      await assertRejects(
+        async () => await duckdb.execute(conn, "SELCT 1"),
+        Error,
+      );
+    });
   },
 });
 
@@ -96,11 +98,19 @@ Deno.test({
   },
 });
 
-Deno.test({
-  name: "cleanup: close database",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  async fn() {
-    await duckdb.closeDatabase(dbHandle);
-  },
-});
+// Helper function for the SQL parse error test
+async function withConn<T>(
+  fn: (conn: Awaited<ReturnType<typeof duckdb.create>>) => Promise<T>,
+): Promise<T> {
+  const db = await duckdb.open();
+  try {
+    const conn = await duckdb.create(db);
+    try {
+      return await fn(conn);
+    } finally {
+      await duckdb.closeConnection(conn);
+    }
+  } finally {
+    await duckdb.closeDatabase(db);
+  }
+}

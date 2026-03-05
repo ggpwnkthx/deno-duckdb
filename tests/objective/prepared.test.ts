@@ -5,29 +5,42 @@
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { Database } from "../../src/objective/mod.ts";
 
-let db: Database;
-
+// Warm-up test to trigger library loading once for all tests
 Deno.test({
-  name: "setup: create database",
+  name: "warmup: load library",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
-    db = new Database();
+    const db = new Database();
     await db.open();
-
-    // Create test table
-    const conn = await db.connect();
-    await conn.query("CREATE TABLE prep_test (id INTEGER, name TEXT)");
-    await conn.query(
-      "INSERT INTO prep_test VALUES (1, 'one'), (2, 'two'), (3, 'three')",
-    );
-    await conn.close();
+    await db.close();
   },
 });
+
+// Helper to set up a fresh database with test data for each test
+async function setupTestDb(): Promise<Database> {
+  const db = new Database();
+  await db.open();
+
+  const conn = await db.connect();
+  const createResult = await conn.query(
+    "CREATE TABLE prep_test (id INTEGER, name TEXT)",
+  );
+  await createResult.close();
+
+  const insertResult = await conn.query(
+    "INSERT INTO prep_test VALUES (1, 'one'), (2, 'two'), (3, 'three')",
+  );
+  await insertResult.close();
+
+  await conn.close();
+  return db;
+}
 
 Deno.test({
   name: "execute: returns QueryResult for SELECT",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const stmt = await conn.prepare("SELECT * FROM prep_test ORDER BY id");
 
@@ -40,12 +53,14 @@ Deno.test({
     await result.close();
     await stmt.close();
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "execute: for query with filter",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const stmt = await conn.prepare("SELECT * FROM prep_test WHERE id = 1");
 
@@ -58,12 +73,14 @@ Deno.test({
     await result.close();
     await stmt.close();
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "columnCount: returns column count for SELECT",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const stmt = await conn.prepare("SELECT id, name FROM prep_test");
 
@@ -71,12 +88,14 @@ Deno.test({
 
     await stmt.close();
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "columnCount: returns column count for INSERT",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const stmt = await conn.prepare("INSERT INTO prep_test VALUES (4, 'four')");
 
@@ -85,12 +104,14 @@ Deno.test({
 
     await stmt.close();
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "close: frees the statement",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const stmt = await conn.prepare("SELECT * FROM prep_test");
 
@@ -105,12 +126,14 @@ Deno.test({
     }
 
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "close: is idempotent",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const stmt = await conn.prepare("SELECT * FROM prep_test");
 
@@ -118,12 +141,14 @@ Deno.test({
     await stmt.close(); // Should not throw
 
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "execute: throws when statement is closed",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const stmt = await conn.prepare("SELECT * FROM prep_test");
     await stmt.close();
@@ -136,12 +161,14 @@ Deno.test({
     }
 
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "columnCount: throws when statement is closed",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const stmt = await conn.prepare("SELECT * FROM prep_test");
     await stmt.close();
@@ -154,12 +181,14 @@ Deno.test({
     }
 
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "prepare: with unbound parameter placeholder",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
 
     // Note: Prepared statements with unbound parameters will fail at execute time
@@ -176,12 +205,14 @@ Deno.test({
 
     await stmt.close();
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "prepare: creates statement that can be executed multiple times",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const stmt = await conn.prepare("SELECT * FROM prep_test WHERE id = 1");
 
@@ -198,16 +229,25 @@ Deno.test({
 
     await stmt.close();
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "prepare: handles JOIN query",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     // Create another table for join
-    await conn.query("CREATE TABLE prep_join (id INTEGER, value TEXT)");
-    await conn.query("INSERT INTO prep_join VALUES (1, 'a'), (2, 'b')");
+    const createResult = await conn.query(
+      "CREATE TABLE prep_join (id INTEGER, value TEXT)",
+    );
+    await createResult.close();
+
+    const insertResult = await conn.query(
+      "INSERT INTO prep_join VALUES (1, 'a'), (2, 'b')",
+    );
+    await insertResult.close();
 
     const stmt = await conn.prepare(
       "SELECT p.id, p.name, j.value FROM prep_test p JOIN prep_join j ON p.id = j.id",
@@ -221,12 +261,14 @@ Deno.test({
     await result.close();
     await stmt.close();
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "execute: handles empty result",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const stmt = await conn.prepare("SELECT * FROM prep_test WHERE id = 999");
 
@@ -239,16 +281,6 @@ Deno.test({
     await result.close();
     await stmt.close();
     await conn.close();
-  },
-});
-
-Deno.test({
-  name: "cleanup: close database",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  async fn() {
-    if (db && !db.isClosed()) {
-      await db.close();
-    }
+    await db.close();
   },
 });

@@ -5,31 +5,42 @@
 import { assertEquals } from "@std/assert";
 import { Database } from "../../src/objective/mod.ts";
 
-let db: Database;
-
+// Warm-up test to trigger library loading once for all tests
 Deno.test({
-  name: "setup: create database",
+  name: "warmup: load library",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
-    db = new Database();
+    const db = new Database();
     await db.open();
-
-    // Create test table
-    const conn = await db.connect();
-    await conn.query(
-      "CREATE TABLE test_data (id INTEGER, name TEXT, value DOUBLE)",
-    );
-    await conn.query(
-      "INSERT INTO test_data VALUES (1, 'one', 1.5), (2, 'two', 2.5), (3, 'three', 3.5)",
-    );
-    await conn.close();
+    await db.close();
   },
 });
+
+// Helper to set up a fresh database with test data for each test
+async function setupTestDb(): Promise<Database> {
+  const db = new Database();
+  await db.open();
+
+  const conn = await db.connect();
+  const createResult = await conn.query(
+    "CREATE TABLE test_data (id INTEGER, name TEXT, value DOUBLE)",
+  );
+  await createResult.close();
+
+  const insertResult = await conn.query(
+    "INSERT INTO test_data VALUES (1, 'one', 1.5), (2, 'two', 2.5), (3, 'three', 3.5)",
+  );
+  await insertResult.close();
+
+  await conn.close();
+  return db;
+}
 
 Deno.test({
   name: "fetchAll: returns row data",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const result = await conn.query("SELECT * FROM test_data ORDER BY id");
 
@@ -42,12 +53,14 @@ Deno.test({
 
     await result.close();
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "getRow: returns single row by index",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const result = await conn.query("SELECT * FROM test_data ORDER BY id");
 
@@ -62,12 +75,14 @@ Deno.test({
 
     await result.close();
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "getRow: throws on out of bounds index",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const result = await conn.query("SELECT * FROM test_data");
 
@@ -80,12 +95,14 @@ Deno.test({
 
     await result.close();
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "getRow: throws on negative index",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const result = await conn.query("SELECT * FROM test_data");
 
@@ -98,12 +115,14 @@ Deno.test({
 
     await result.close();
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "toArrayOfObjects: returns objects with column names",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const result = await conn.query("SELECT * FROM test_data ORDER BY id");
 
@@ -120,12 +139,14 @@ Deno.test({
 
     await result.close();
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "rowCount: returns correct count",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const result = await conn.query("SELECT * FROM test_data");
 
@@ -133,12 +154,14 @@ Deno.test({
 
     await result.close();
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "columnCount: returns column count",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const result = await conn.query("SELECT * FROM test_data");
 
@@ -146,12 +169,14 @@ Deno.test({
 
     await result.close();
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "getColumnInfos: returns column metadata",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const result = await conn.query("SELECT * FROM test_data");
 
@@ -164,12 +189,14 @@ Deno.test({
 
     await result.close();
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "isSuccess: returns query success",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const result = await conn.query("SELECT * FROM test_data");
 
@@ -177,12 +204,14 @@ Deno.test({
 
     await result.close();
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "getError: returns undefined for successful query",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const result = await conn.query("SELECT * FROM test_data");
 
@@ -190,12 +219,14 @@ Deno.test({
 
     await result.close();
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "free: releases memory",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const result = await conn.query("SELECT * FROM test_data");
 
@@ -210,12 +241,14 @@ Deno.test({
     }
 
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "free: is idempotent",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const result = await conn.query("SELECT * FROM test_data");
 
@@ -223,12 +256,14 @@ Deno.test({
     await result.close(); // Should not throw
 
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "rowCount: throws after free",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const result = await conn.query("SELECT * FROM test_data");
 
@@ -242,12 +277,14 @@ Deno.test({
     }
 
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "columnCount: throws after free",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const result = await conn.query("SELECT * FROM test_data");
 
@@ -261,12 +298,14 @@ Deno.test({
     }
 
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "getColumnInfos: throws after free",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const result = await conn.query("SELECT * FROM test_data");
 
@@ -280,12 +319,14 @@ Deno.test({
     }
 
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "toArrayOfObjects: throws after free",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const result = await conn.query("SELECT * FROM test_data");
 
@@ -299,12 +340,14 @@ Deno.test({
     }
 
     await conn.close();
+    await db.close();
   },
 });
 
 Deno.test({
   name: "query: handles empty result set",
   async fn() {
+    const db = await setupTestDb();
     const conn = await db.connect();
     const result = await conn.query("SELECT * FROM test_data WHERE id = 999");
 
@@ -313,16 +356,6 @@ Deno.test({
 
     await result.close();
     await conn.close();
-  },
-});
-
-Deno.test({
-  name: "cleanup: close database",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  async fn() {
-    if (db && !db.isClosed()) {
-      await db.close();
-    }
+    await db.close();
   },
 });

@@ -54,6 +54,7 @@ export class Connection {
     if (!sql || !sql.trim()) {
       throw new DatabaseError("SQL query cannot be empty");
     }
+    // Note: query.execute is synchronous, but we keep async for backward compatibility
     const handle = await query.execute(this.handle!, sql);
     return new QueryResultClass(handle, this);
   }
@@ -94,10 +95,11 @@ export class Connection {
     if (!sql || !sql.trim()) {
       throw new DatabaseError("SQL query cannot be empty");
     }
+    // Note: query.execute is synchronous, but we keep async for backward compatibility
     const handle = await query.execute(this.handle!, sql);
 
     try {
-      const rows = await value.fetchAll(handle);
+      const rows = value.fetchAll(handle);
       const columns = (await query.columnInfos(handle)).map(
         (c) => c.name,
       );
@@ -160,7 +162,7 @@ export class Connection {
       throw new DatabaseError("SQL statement cannot be empty");
     }
 
-    // Prepare new statement - throws on error
+    // Note: prep.prepare is synchronous, but we keep async for backward compatibility
     const handle = await prep.prepare(this.handle!, sql);
 
     return new PreparedStatement(handle, this);

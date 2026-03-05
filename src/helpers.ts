@@ -44,8 +44,14 @@ export { BYTE_SIZE_32, BYTE_SIZE_64, POINTER_SIZE, RESULT_SIZE };
 /** TextEncoder instance - reused for string encoding */
 const encoder = new TextEncoder();
 
+/** Cache entry that stores both bytes and pointer to prevent use-after-free */
+interface CacheEntry {
+  bytes: Uint8Array;
+  ptr: Deno.PointerObject<unknown>;
+}
+
 /** Cache for encoded SQL strings - LRU with max size */
-const stringCache = new Map<string, Deno.PointerObject<unknown>>();
+const stringCache = new Map<string, CacheEntry>();
 const MAX_STRING_CACHE_SIZE = 1000;
 
 /**
@@ -99,7 +105,7 @@ export function stringToPointer(
     // Move to end (most recently used)
     stringCache.delete(str);
     stringCache.set(str, cached);
-    return cached;
+    return cached.ptr;
   }
 
   // Encode string with null terminator
@@ -118,7 +124,8 @@ export function stringToPointer(
     }
   }
 
-  stringCache.set(str, ptr);
+  // Store both bytes and pointer to keep memory alive
+  stringCache.set(str, { bytes: encoded, ptr: ptr });
   return ptr;
 }
 
@@ -235,6 +242,11 @@ export function isNullFromMask(
   if (!nullMaskView) {
     return false;
   }
-  const nullMask = nullMaskView.getBigUint64(0);
-  return (nullMask & (1n << BigInt(rowIndex))) !== 0n;
+  // The null mask is a bitmap stored as uint64_t array
+  // Each bit indicates if the corresponding row is NULL
+  // wordIndex = row / 64, bitIndex = row % 64
+  const wordIndex = rowIndex >>> 6; // rowIndex / 64
+  const bitIndex = rowIndex & 63; // rowIndex % 64
+  const nullMask = nullMaskView.getBigUint64(wordIndex * 8);
+  return (nullMask & (1n << BigInt(bitIndex))) !== 0n;
 }

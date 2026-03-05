@@ -5,6 +5,7 @@
 import type { DatabaseConfig, DatabaseHandle } from "../types.ts";
 import {
   createPointerBuffer,
+  createPointerView,
   getPointer,
   isValidHandle,
   stringToPointer,
@@ -86,7 +87,14 @@ export async function open(
     lib.symbols.duckdb_destroy_config(configPtrPtr);
 
     if (openResult !== 0) {
-      throw new DatabaseError("Failed to open database");
+      const errorPtr = getPointer(errorBuffer);
+      const errorView = errorPtr
+        ? createPointerView(errorPtr as unknown as Deno.PointerValue<unknown>)
+        : null;
+      const errorMsg = errorView
+        ? errorView.getCString()
+        : "Failed to open database";
+      throw new DatabaseError(errorMsg);
     }
 
     return handle;

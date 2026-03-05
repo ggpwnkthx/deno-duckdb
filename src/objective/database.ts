@@ -3,8 +3,8 @@
  */
 
 import type { DatabaseConfig, DatabaseHandle } from "../types.ts";
-import * as db from "../functional/database.ts";
-import * as conn from "../functional/connection.ts";
+import { isValidHandle } from "../helpers.ts";
+import { DatabaseError } from "../errors.ts";
 import { Connection } from "./connection.ts";
 import { getLibrary } from "../lib.ts";
 
@@ -42,7 +42,8 @@ export class Database {
    */
   async open(): Promise<void> {
     this.lib = await this.ensureLib();
-    this.handle = await db.open(this._config);
+    const { open } = await import("../functional/database.ts");
+    this.handle = await open(this._config);
   }
 
   /**
@@ -57,25 +58,37 @@ export class Database {
     }
     this.checkNotClosed();
     if (!this.handle) {
-      throw new Error("Database is closed");
+      throw new DatabaseError("Database is closed");
     }
-    const handle = await conn.create(this.handle);
+    const { create, isValidConnection } = await import(
+      "../functional/connection.ts"
+    );
+    const handle = await create(this.handle);
+
+    // Validate handle before adding to connections array to prevent memory leaks
+    if (!isValidConnection(handle)) {
+      throw new DatabaseError("Failed to create valid connection handle");
+    }
+
     const connection = new Connection(this.lib!, handle, this);
     this.connections.push(connection);
     return connection;
   }
 
   /**
-   * Close the database
+   * Close the database (synchronous for use with Symbol.dispose)
    */
-  async close(): Promise<void> {
+  close(): void {
     if (this.closed || !this.handle) return;
-    // Close all child connections
+    // Close all child connections synchronously
     for (const connection of this.connections) {
-      await connection.close();
+      connection.close();
     }
     this.connections = [];
-    await db.closeDatabase(this.handle);
+    // Call FFI directly - synchronous since library is already loaded
+    if (this.lib && isValidHandle(this.handle)) {
+      this.lib.symbols.duckdb_close(this.handle);
+    }
     this.handle = null;
     this.closed = true;
   }
@@ -106,7 +119,7 @@ export class Database {
 
   private checkNotClosed(): void {
     if (this.closed) {
-      throw new Error("Database is closed");
+      throw new DatabaseError("Database is closed");
     }
   }
 }

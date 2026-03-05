@@ -2,17 +2,17 @@
  * Object-Oriented API for DuckDB
  *
  * Classes for working with DuckDB in an object-oriented style.
+ * The library loads automatically on first use.
  *
  * @example
  * ```typescript
- * import { load } from "jsr:@ggpwnkthx/libduckdb";
  * import { Database } from "jsr:@ggpwnkthx/duckdb/objective";
  *
- * const lib = await load();
- * const db = new Database(lib);
- * const conn = db.connect();
- * const result = conn.query("SELECT * FROM t");
- * const rows = result.fetchAll();
+ * const db = new Database();
+ * await db.open();
+ * const conn = await db.connect();
+ * const result = await conn.query("SELECT * FROM t");
+ * const rows = await result.fetchAll();
  * result.close();
  * conn.close();
  * db.close();
@@ -21,14 +21,13 @@
  * @example
  * ```typescript
  * // Using Symbol.dispose for automatic cleanup
- * import { load } from "jsr:@ggpwnkthx/libduckdb";
  * import { Database } from "jsr:@ggpwnkthx/duckdb/objective";
  *
- * const lib = await load();
- * using db = new Database(lib);
- * using conn = db.connect();
- * const result = conn.query("SELECT * FROM t");
- * const rows = result.fetchAll();
+ * using db = new Database();
+ * await db.open();
+ * using conn = await db.connect();
+ * const result = await conn.query("SELECT * FROM t");
+ * const rows = await result.fetchAll();
  * // Auto-cleanup at end of scope
  * ```
  */
@@ -38,4 +37,12 @@ export { Connection } from "./connection.ts";
 export { QueryResult } from "./query.ts";
 export { PreparedStatement } from "./prepared.ts";
 export type { Disposable } from "./disposable.ts";
-export type { RowStream, SyncRowStream } from "./connection.ts";
+export type { RowStream } from "./connection.ts";
+
+// Re-export error classes for convenience
+export {
+  DatabaseError,
+  DuckDBError,
+  InvalidResourceError,
+  QueryError,
+} from "../errors.ts";

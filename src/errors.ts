@@ -37,14 +37,3 @@ export class InvalidResourceError extends DuckDBError {
     this.name = "InvalidResourceError";
   }
 }
-
-/** Extract error message from DuckDB error pointer */
-export function getErrorMessage(
-  errorPtr: Deno.PointerValue<unknown> | null,
-): string | null {
-  if (!errorPtr) return null;
-  // duckdb_result_error returns a pointer that needs to be read as C string
-  const ptr = errorPtr as unknown as Deno.PointerObject<unknown>;
-  const view = new Deno.UnsafePointerView(ptr);
-  return view.getCString();
-}

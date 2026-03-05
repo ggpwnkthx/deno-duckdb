@@ -4,6 +4,7 @@
 
 import type { PreparedStatementHandle } from "../types.ts";
 import type { BindValue } from "../functional/prepared.ts";
+import { DatabaseError } from "../errors.ts";
 import * as prep from "../functional/prepared.ts";
 import type { Connection } from "./connection.ts";
 import { QueryResult } from "./query.ts";
@@ -33,8 +34,8 @@ export class PreparedStatement {
    * @throws Error if binding fails
    */
   async bind(params: BindValue[]): Promise<void> {
-    this.checkNotClosed();
-    await prep.bind(this.handle!, params);
+    const handle = this.getHandle();
+    await prep.bind(handle, params);
   }
 
   /**
@@ -43,33 +44,33 @@ export class PreparedStatement {
    * @returns QueryResult instance
    */
   async execute(): Promise<QueryResult> {
-    this.checkNotClosed();
-    const handle = await prep.executePrepared(this.handle!);
-    return new QueryResult(handle, handle, this.connection);
+    const handle = this.getHandle();
+    const resultHandle = await prep.executePrepared(handle);
+    return new QueryResult(resultHandle, resultHandle, this.connection);
   }
 
   /**
    * Get the number of columns in the result
    */
   async columnCount(): Promise<bigint> {
-    this.checkNotClosed();
-    return await prep.preparedColumnCount(this.handle!);
+    const handle = this.getHandle();
+    return await prep.preparedColumnCount(handle);
   }
 
   /**
    * Get the number of parameters in the statement
    */
   async parameterCount(): Promise<bigint> {
-    this.checkNotClosed();
-    return await prep.preparedParameterCount(this.handle!);
+    const handle = this.getHandle();
+    return await prep.preparedParameterCount(handle);
   }
 
   /**
-   * Close the prepared statement
+   * Close the prepared statement (synchronous for use with Symbol.dispose)
    */
-  async close(): Promise<void> {
+  close(): void {
     if (this.handle) {
-      await prep.destroyPrepared(this.handle);
+      prep.destroyPreparedSync(this.handle);
       this.handle = null;
     }
   }
@@ -81,9 +82,10 @@ export class PreparedStatement {
     this.close();
   }
 
-  private checkNotClosed(): void {
+  private getHandle(): PreparedStatementHandle {
     if (!this.handle) {
-      throw new Error("Prepared statement is closed");
+      throw new DatabaseError("Prepared statement is closed");
     }
+    return this.handle;
   }
 }

@@ -2,9 +2,21 @@
  * Functional streaming operations
  */
 
-import type { ConnectionHandle, RowData } from "../types.ts";
+import {
+  type ConnectionHandle,
+  DuckDBType,
+  type DuckDBTypeValue,
+  type RowData,
+} from "../types.ts";
 import * as query from "./query.ts";
-import { getLibrarySync } from "../lib.ts";
+import { getLibrary } from "../lib.ts";
+import { DatabaseError } from "../errors.ts";
+import {
+  BYTE_SIZE_32,
+  BYTE_SIZE_64,
+  createPointerView,
+  isStringType,
+} from "../helpers.ts";
 
 /**
  * Stream rows from a query result lazily
@@ -20,9 +32,11 @@ export async function* stream(
   connHandle: ConnectionHandle,
   sql: string,
 ): AsyncGenerator<RowData, void, unknown> {
-  const lib = getLibrarySync();
+  const lib = await getLibrary();
   if (!lib) {
-    throw new Error("Library not loaded. Call open() or Database() first.");
+    throw new DatabaseError(
+      "Library not loaded. Call open() or Database() first.",
+    );
   }
 
   // execute now throws on error
@@ -37,7 +51,7 @@ export async function* stream(
     }
 
     // Build column cache once for the stream
-    const types: number[] = [];
+    const types: DuckDBTypeValue[] = [];
     const dataViews: (Deno.UnsafePointerView | null)[] = [];
     const nullMaskViews: (Deno.UnsafePointerView | null)[] = [];
 
@@ -45,25 +59,13 @@ export async function* stream(
       types[c] = await query.columnType(handle, c);
 
       const dataPtr = lib.symbols.duckdb_column_data(handle, BigInt(c));
-      if (dataPtr) {
-        dataViews[c] = new Deno.UnsafePointerView(
-          dataPtr as unknown as Deno.PointerObject<unknown>,
-        );
-      } else {
-        dataViews[c] = null;
-      }
+      dataViews[c] = dataPtr ? createPointerView(dataPtr) : null;
 
       const nullMaskPtr = lib.symbols.duckdb_nullmask_data(
         handle,
         BigInt(c),
       );
-      if (nullMaskPtr) {
-        nullMaskViews[c] = new Deno.UnsafePointerView(
-          nullMaskPtr as unknown as Deno.PointerObject<unknown>,
-        );
-      } else {
-        nullMaskViews[c] = null;
-      }
+      nullMaskViews[c] = nullMaskPtr ? createPointerView(nullMaskPtr) : null;
     }
 
     // Yield rows one at a time
@@ -74,9 +76,10 @@ export async function* stream(
         const dataView = dataViews[c];
         const nullMaskView = nullMaskViews[c];
 
-        // Get value based on type - optimized to skip null checking for numeric types
-        if (type === 17 || type === 18 || type >= 19) {
+        // Use shared helper for string type check
+        if (isStringType(type)) {
           // String types: VARCHAR, BLOB, etc. - check null
+          // (1n << BigInt(r)) creates bitmask: 1 at position r, 0 elsewhere
           if (nullMaskView) {
             const nullMask = nullMaskView.getBigUint64(0);
             if ((nullMask & (1n << BigInt(r))) !== 0n) {
@@ -85,29 +88,52 @@ export async function* stream(
             }
           }
           if (dataView) {
-            const innerPtr = dataView.getPointer(r * 8);
+            const innerPtr = dataView.getPointer(r * BYTE_SIZE_64);
             if (innerPtr) {
-              const innerView = new Deno.UnsafePointerView(
-                innerPtr as Deno.PointerObject<unknown>,
-              );
-              row[c] = innerView.getCString();
+              const innerView = createPointerView(innerPtr);
+              row[c] = innerView ? innerView.getCString() : "";
             } else {
               row[c] = "";
             }
           } else {
             row[c] = "";
           }
-        } else if (type === 1 || type === 2 || type === 3 || type === 4) {
-          // BOOLEAN, TINYINT, SMALLINT, INTEGER - skip null check for performance
-          row[c] = dataView ? dataView.getInt32(r * 4) : 0;
-        } else if (type === 5) {
-          // BIGINT - skip null check for performance
-          row[c] = dataView ? dataView.getBigInt64(r * 8) : 0n;
         } else if (
-          type === 6 || type === 7 || type === 10 || type === 11 || type === 19
+          type === DuckDBType.BOOLEAN || type === DuckDBType.TINYINT ||
+          type === DuckDBType.SMALLINT || type === DuckDBType.INTEGER
         ) {
-          // HUGEINT, FLOAT, DOUBLE, DECIMAL - skip null check for performance
-          row[c] = dataView ? dataView.getFloat64(r * 8) : 0;
+          // BOOLEAN, TINYINT, SMALLINT, INTEGER - check null
+          if (nullMaskView) {
+            const nullMask = nullMaskView.getBigUint64(0);
+            if ((nullMask & (1n << BigInt(r))) !== 0n) {
+              row[c] = null;
+              continue;
+            }
+          }
+          row[c] = dataView ? dataView.getInt32(r * BYTE_SIZE_32) : 0;
+        } else if (type === DuckDBType.BIGINT) {
+          // BIGINT - check null
+          if (nullMaskView) {
+            const nullMask = nullMaskView.getBigUint64(0);
+            if ((nullMask & (1n << BigInt(r))) !== 0n) {
+              row[c] = null;
+              continue;
+            }
+          }
+          row[c] = dataView ? dataView.getBigInt64(r * BYTE_SIZE_64) : 0n;
+        } else if (
+          type === DuckDBType.HUGEINT || type === DuckDBType.FLOAT ||
+          type === DuckDBType.DOUBLE
+        ) {
+          // HUGEINT, FLOAT, DOUBLE - check null
+          if (nullMaskView) {
+            const nullMask = nullMaskView.getBigUint64(0);
+            if ((nullMask & (1n << BigInt(r))) !== 0n) {
+              row[c] = null;
+              continue;
+            }
+          }
+          row[c] = dataView ? dataView.getFloat64(r * BYTE_SIZE_64) : 0;
         } else {
           // Fallback - check null
           if (nullMaskView) {

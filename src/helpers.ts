@@ -2,7 +2,8 @@
  * Shared helpers for DuckDB API
  */
 
-import type { DuckDBLibrary } from "./types.ts";
+import type { DuckDBLibrary } from "./lib.ts";
+import { DuckDBType, type DuckDBTypeValue } from "./types.ts";
 
 /** Size of a pointer in bytes (64-bit) */
 const POINTER_SIZE = 8;
@@ -10,19 +11,29 @@ const POINTER_SIZE = 8;
 /** Size of duckdb_result struct */
 const RESULT_SIZE = 48;
 
-/**
- * Pooled pointer buffer - reused across calls
- * Note: Deno FFI is single-threaded, so this is safe. Callers MUST copy
- * data from the buffer immediately, as subsequent calls will overwrite it.
- */
-const pooledPointerBuffer = new Uint8Array(new ArrayBuffer(POINTER_SIZE));
+/** Byte size for 32-bit values (INT32, FLOAT) */
+const BYTE_SIZE_32 = 4;
+
+/** Byte size for 64-bit values (INT64, DOUBLE, pointers) */
+const BYTE_SIZE_64 = 8;
 
 /**
- * Pooled result buffer - reused across calls
- * Note: Deno FFI is single-threaded, so this is safe. Callers MUST copy
- * data from the buffer immediately, as subsequent calls will overwrite it.
+ * Check if a DuckDB type is a string type (requires pointer dereferencing)
+ * String types: VARCHAR, BLOB, DECIMAL, TIMESTAMP, DATE, TIME
  */
-const pooledResultBuffer = new Uint8Array(new ArrayBuffer(RESULT_SIZE));
+export function isStringType(type: DuckDBTypeValue): boolean {
+  return (
+    type === DuckDBType.VARCHAR ||
+    type === DuckDBType.BLOB ||
+    type === DuckDBType.DECIMAL ||
+    type === DuckDBType.TIMESTAMP ||
+    type === DuckDBType.DATE ||
+    type === DuckDBType.TIME
+  );
+}
+
+/** Export byte size constants */
+export { BYTE_SIZE_32, BYTE_SIZE_64, POINTER_SIZE, RESULT_SIZE };
 
 /** TextEncoder instance - reused for string encoding */
 const encoder = new TextEncoder();
@@ -30,26 +41,6 @@ const encoder = new TextEncoder();
 /** Cache for encoded SQL strings - LRU with max size */
 const stringCache = new Map<string, Deno.PointerObject<unknown>>();
 const MAX_STRING_CACHE_SIZE = 1000;
-
-/**
- * Get a pooled 8-byte pointer buffer
- * @deprecated Use createPointerBuffer() for fresh buffers when you need to retain data
- * Note: Deno FFI is single-threaded, so this is safe. Callers MUST copy
- * data from the buffer immediately, as subsequent calls will overwrite it.
- */
-export function getPointerBuffer(): Uint8Array<ArrayBuffer> {
-  return pooledPointerBuffer;
-}
-
-/**
- * Get a pooled 48-byte result buffer
- * @deprecated Use createResultBuffer() for fresh buffers when you need to retain data
- * Note: Deno FFI is single-threaded, so this is safe. Callers MUST copy
- * data from the buffer immediately, as subsequent calls will overwrite it.
- */
-export function getResultBuffer(): Uint8Array<ArrayBuffer> {
-  return pooledResultBuffer;
-}
 
 /**
  * Create an 8-byte pointer buffer (for cases where you need a fresh buffer)
@@ -75,8 +66,13 @@ export function getPointer(buffer: Uint8Array): bigint {
 /**
  * Convert string to FFI pointer
  * Uses LRU caching to avoid repeated encoding of the same strings
+ * @param str - The string to convert
+ * @param lib - Optional DuckDB library for freeing evicted cache entries
  */
-export function stringToPointer(str: string): Deno.PointerObject<unknown> {
+export function stringToPointer(
+  str: string,
+  _lib?: DuckDBLibrary,
+): Deno.PointerObject<unknown> {
   // Check cache first
   const cached = stringCache.get(str);
   if (cached) {
@@ -88,14 +84,16 @@ export function stringToPointer(str: string): Deno.PointerObject<unknown> {
 
   // Encode string with null terminator
   const encoded = encoder.encode(str + "\0");
-  const ptr = Deno.UnsafePointer.of(encoded) as unknown as Deno.PointerObject<
-    unknown
-  >;
+  // Deno.UnsafePointer can be safely cast to PointerObject for our use case
+  const ptr = Deno.UnsafePointer.of(encoded) as Deno.PointerObject<unknown>;
 
   // Evict oldest entry if at capacity
   if (stringCache.size >= MAX_STRING_CACHE_SIZE) {
     const firstKey = stringCache.keys().next().value;
     if (firstKey) {
+      // Note: We don't call duckdb_free() here because the pointer refers to
+      // JS-managed memory (Uint8Array), not DuckDB-allocated memory.
+      // The Uint8Array will be garbage collected when evicted from cache.
       stringCache.delete(firstKey);
     }
   }
@@ -122,42 +120,24 @@ export function freeString(
 }
 
 /**
- * Get available DuckDB configuration options
- * @param lib - The loaded DuckDB library
- * @returns Array of valid config option names
+ * Convert Deno.PointerValue to Deno.PointerObject safely
  */
-export function getConfigOptions(lib: DuckDBLibrary): string[] {
-  const count = lib.symbols.duckdb_config_count();
-  const options: string[] = [];
-
-  for (let i = 0; i < count; i++) {
-    const nameBuffer = createPointerBuffer();
-    const descBuffer = createPointerBuffer();
-
-    lib.symbols.duckdb_get_config_flag(
-      BigInt(i),
-      nameBuffer,
-      descBuffer,
-    );
-
-    // Read the name pointer from the output buffer
-    const namePtr = getPointer(nameBuffer);
-    if (namePtr !== 0n) {
-      const view = new Deno.UnsafePointerView(
-        namePtr as unknown as Deno.PointerObject<unknown>,
-      );
-      const name = view.getCString();
-      if (name) {
-        options.push(name);
-      }
-    }
-
-    // Free the description string
-    const descPtr = getPointer(descBuffer);
-    if (descPtr !== 0n) {
-      lib.symbols.duckdb_free(descPtr as unknown as Deno.PointerValue<unknown>);
-    }
+export function pointerValueToObject(
+  ptr: Deno.PointerValue<unknown>,
+): Deno.PointerObject<unknown> {
+  if (!ptr) {
+    // Return null pointer for null case
+    return null as unknown as Deno.PointerObject<unknown>;
   }
+  return ptr as Deno.PointerObject<unknown>;
+}
 
-  return options;
+/**
+ * Safely create UnsafePointerView from Deno.PointerValue
+ */
+export function createPointerView(
+  ptr: Deno.PointerValue<unknown>,
+): Deno.UnsafePointerView | null {
+  if (!ptr) return null;
+  return new Deno.UnsafePointerView(ptr as Deno.PointerObject<unknown>);
 }

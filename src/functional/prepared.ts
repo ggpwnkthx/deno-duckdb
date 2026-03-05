@@ -9,13 +9,14 @@ import type {
 } from "../types.ts";
 import {
   createPointerBuffer,
+  createPointerView,
   createResultBuffer,
   getPointer,
   isValidHandle,
   stringToPointer,
 } from "../helpers.ts";
 import { DatabaseError } from "../errors.ts";
-import { getLibrary } from "../lib.ts";
+import { getLibrary, getLibrarySync } from "../lib.ts";
 
 /** Value types that can be bound to prepared statements */
 export type BindValue = boolean | number | bigint | string | null;
@@ -42,11 +43,8 @@ export async function prepare(
   if (result !== 0) {
     const stmtPtr = getPointer(handle);
     const errorPtr = lib.symbols.duckdb_prepare_error(stmtPtr);
-    const errorMsg = errorPtr
-      ? new Deno.UnsafePointerView(
-        errorPtr as unknown as Deno.PointerObject<unknown>,
-      ).getCString()
-      : "Failed to prepare statement";
+    const view = createPointerView(errorPtr);
+    const errorMsg = view ? view.getCString() : "Failed to prepare statement";
     lib.symbols.duckdb_destroy_prepare(handle);
     throw new DatabaseError(errorMsg ?? "Failed to prepare statement");
   }
@@ -72,11 +70,8 @@ export async function executePrepared(
 
   if (result !== 0) {
     const errorPtr = lib.symbols.duckdb_result_error(handle);
-    const errorMsg = errorPtr
-      ? new Deno.UnsafePointerView(
-        errorPtr as unknown as Deno.PointerObject<unknown>,
-      ).getCString()
-      : "Execution failed";
+    const view = createPointerView(errorPtr);
+    const errorMsg = view ? view.getCString() : "Execution failed";
     lib.symbols.duckdb_destroy_result(handle);
     throw new DatabaseError(errorMsg ?? "Execution failed");
   }
@@ -156,7 +151,7 @@ export async function bind(
       result = lib.symbols.duckdb_bind_varchar(
         stmtPtr,
         idx,
-        ptr as unknown as Deno.PointerValue<unknown>,
+        ptr as Deno.PointerValue<unknown>,
       );
     } else {
       throw new DatabaseError(`Unsupported parameter type: ${typeof value}`);
@@ -178,6 +173,20 @@ export async function destroyPrepared(
 ): Promise<void> {
   const lib = await getLibrary();
   if (isValidHandle(handle)) {
+    lib.symbols.duckdb_destroy_prepare(handle);
+  }
+}
+
+/**
+ * Destroy a prepared statement (synchronous version)
+ *
+ * @param handle - Prepared statement handle to destroy
+ */
+export function destroyPreparedSync(
+  handle: PreparedStatementHandle,
+): void {
+  const lib = getLibrarySync();
+  if (lib && isValidHandle(handle)) {
     lib.symbols.duckdb_destroy_prepare(handle);
   }
 }

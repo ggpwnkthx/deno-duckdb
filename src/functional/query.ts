@@ -2,15 +2,21 @@
  * Functional query operations
  */
 
-import type { ColumnInfo, ConnectionHandle, ResultHandle } from "../types.ts";
+import type {
+  ColumnInfo,
+  ConnectionHandle,
+  DuckDBTypeValue,
+  ResultHandle,
+} from "../types.ts";
 import {
+  createPointerView,
+  createResultBuffer,
   getPointer,
-  getResultBuffer,
   isValidHandle,
   stringToPointer,
 } from "../helpers.ts";
 import { QueryError } from "../errors.ts";
-import { getLibrary } from "../lib.ts";
+import { getLibrary, getLibrarySync } from "../lib.ts";
 
 /**
  * Execute a SQL query
@@ -25,7 +31,7 @@ export async function execute(
   sql: string,
 ): Promise<ResultHandle> {
   const lib = await getLibrary();
-  const handle = getResultBuffer();
+  const handle = createResultBuffer();
   const connPtr = getPointer(connHandle);
   const sqlPtr = stringToPointer(sql);
 
@@ -33,11 +39,8 @@ export async function execute(
 
   if (result !== 0) {
     const errorPtr = lib.symbols.duckdb_result_error(handle);
-    const errorMsg = errorPtr
-      ? new Deno.UnsafePointerView(
-        errorPtr as unknown as Deno.PointerObject<unknown>,
-      ).getCString()
-      : "Query failed";
+    const view = createPointerView(errorPtr);
+    const errorMsg = view ? view.getCString() : "Query failed";
     lib.symbols.duckdb_destroy_result(handle);
     throw new QueryError(errorMsg, sql);
   }
@@ -86,11 +89,10 @@ export async function columnName(
   const ptr = lib.symbols.duckdb_column_name(handle, BigInt(index));
   if (!ptr) return "";
 
-  const ptrObj = ptr as unknown as Deno.PointerObject<unknown>;
-  const view = new Deno.UnsafePointerView(ptrObj);
-  const name = view.getCString();
+  const view = createPointerView(ptr);
+  if (!view) return "";
 
-  return name;
+  return view.getCString();
 }
 
 /**
@@ -103,9 +105,12 @@ export async function columnName(
 export async function columnType(
   handle: Uint8Array<ArrayBuffer>,
   index: number,
-): Promise<number> {
+): Promise<DuckDBTypeValue> {
   const lib = await getLibrary();
-  return lib.symbols.duckdb_column_type(handle, BigInt(index)) as number;
+  return lib.symbols.duckdb_column_type(
+    handle,
+    BigInt(index),
+  ) as DuckDBTypeValue;
 }
 
 /**
@@ -117,7 +122,7 @@ export async function columnType(
 export async function columnInfos(
   handle: Uint8Array<ArrayBuffer>,
 ): Promise<ColumnInfo[]> {
-  const count = await columnCount(handle);
+  const count = Number(await columnCount(handle));
   const infos: ColumnInfo[] = [];
 
   for (let i = 0; i < count; i++) {
@@ -140,6 +145,21 @@ export async function destroyResult(
 ): Promise<void> {
   const lib = await getLibrary();
   if (isValidHandle(handle)) {
+    lib.symbols.duckdb_destroy_result(handle);
+  }
+}
+
+/**
+ * Destroy a query result (synchronous version)
+ *
+ * @param handle - Result handle to destroy
+ */
+export function destroyResultSync(
+  handle: Uint8Array<ArrayBuffer>,
+): void {
+  // Use getLibrarySync - returns null if library not loaded
+  const lib = getLibrarySync();
+  if (lib && isValidHandle(handle)) {
     lib.symbols.duckdb_destroy_result(handle);
   }
 }

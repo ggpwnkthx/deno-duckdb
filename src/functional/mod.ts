@@ -2,20 +2,19 @@
  * Functional API for DuckDB
  *
  * Pure functional style with explicit state passing.
+ * The library loads automatically on first use.
  *
  * @example
  * ```typescript
- * import { load } from "jsr:@ggpwnkthx/libduckdb";
  * import { open, closeDatabase, create, closeConnection, execute, destroyResult, fetchAll } from "jsr:@ggpwnkthx/duckdb/functional";
  *
- * const lib = await load();
- * const db = open(lib);
- * const conn = create(lib, db);
- * const resultHandle = execute(lib, conn, "SELECT * FROM t");
- * const rows = fetchAll(lib, resultHandle);
- * destroyResult(lib, resultHandle);
- * closeConnection(lib, conn);
- * closeDatabase(lib, db);
+ * const db = await open();
+ * const conn = await create(db);
+ * const resultHandle = await execute(conn, "SELECT * FROM t");
+ * const rows = await fetchAll(resultHandle);
+ * await destroyResult(resultHandle);
+ * await closeConnection(conn);
+ * await closeDatabase(db);
  * ```
  */
 

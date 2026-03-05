@@ -14,6 +14,8 @@ import {
   getPointer,
   isValidHandle,
   stringToPointer,
+  validateConnectionHandle,
+  validatePreparedHandle,
 } from "../helpers.ts";
 import { DatabaseError } from "../errors.ts";
 import { getLibraryFast, getLibrarySync } from "../lib.ts";
@@ -33,6 +35,7 @@ export function prepare(
   connHandle: ConnectionHandle,
   sql: string,
 ): PreparedStatementHandle {
+  validateConnectionHandle(connHandle);
   const lib = getLibraryFast();
   const handle = createPreparedBuffer();
   const connPtr = getPointer(connHandle);
@@ -62,6 +65,7 @@ export function prepare(
 export function executePrepared(
   stmtHandle: PreparedStatementHandle,
 ): ResultHandle {
+  validatePreparedHandle(stmtHandle);
   const lib = getLibraryFast();
   const handle = createResultBuffer();
   const stmtPtr = getPointer(stmtHandle);
@@ -120,6 +124,7 @@ export function bind(
   handle: PreparedStatementHandle,
   params: BindValue[],
 ): void {
+  validatePreparedHandle(handle);
   const lib = getLibraryFast();
   const stmtPtr = getPointer(handle);
 
@@ -167,10 +172,12 @@ export function bind(
  * Destroy a prepared statement
  *
  * @param handle - Prepared statement handle to destroy
+ * @throws Error if handle is invalid
  */
 export function destroyPrepared(
   handle: PreparedStatementHandle,
 ): void {
+  validatePreparedHandle(handle);
   const lib = getLibraryFast();
   if (isValidHandle(handle)) {
     lib.symbols.duckdb_destroy_prepare(handle);

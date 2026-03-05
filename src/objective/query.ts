@@ -68,19 +68,15 @@ export class QueryResult {
     // Only cache if below size limit
     if (rows.length <= MAX_CACHED_ROWS) {
       this.cachedRows = rows;
-      // Cache row/col counts
-      this.cachedRowCount = BigInt(rows.length);
-      this.cachedColCount = BigInt(
-        rows.length > 0 ? rows[0].length : 0,
-      );
+      // Cache row/col counts from actual query result, not derived from row data
+      this.cachedRowCount = query.rowCount(handle);
+      this.cachedColCount = query.columnCount(handle);
       return this.cachedRows;
     }
 
-    // For large results, don't cache - compute counts and return directly
-    this.cachedRowCount = BigInt(rows.length);
-    this.cachedColCount = BigInt(
-      rows.length > 0 ? rows[0].length : 0,
-    );
+    // For large results, don't cache - compute counts from actual result
+    this.cachedRowCount = query.rowCount(handle);
+    this.cachedColCount = query.columnCount(handle);
 
     return rows;
   }

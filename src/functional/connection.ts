@@ -7,6 +7,7 @@ import {
   createConnectionBuffer,
   getPointer,
   isValidHandle,
+  validateConnectionHandle,
 } from "../helpers.ts";
 import { DatabaseError } from "../errors.ts";
 import { getLibrary, getLibraryFast } from "../lib.ts";
@@ -38,10 +39,12 @@ export async function create(
  * Close a connection
  *
  * @param handle - Connection handle to close
+ * @throws Error if handle is invalid
  */
 export function closeConnection(
   handle: ConnectionHandle,
 ): void {
+  validateConnectionHandle(handle);
   const lib = getLibraryFast();
   if (isValidHandle(handle)) {
     lib.symbols.duckdb_disconnect(handle);

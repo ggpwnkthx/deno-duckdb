@@ -9,6 +9,7 @@ import {
   getPointer,
   isValidHandle,
   stringToPointer,
+  validateDatabaseHandle,
 } from "../helpers.ts";
 import { DatabaseError } from "../errors.ts";
 import { getLibrary, getLibraryFast } from "../lib.ts";
@@ -122,10 +123,13 @@ export async function open(
  * Close a DuckDB database
  *
  * @param handle - Database handle to close
+ * @throws Error if handle is not a valid buffer (type check failure)
  */
 export function closeDatabase(
   handle: DatabaseHandle,
 ): void {
+  // Validate the handle type and size, but not validity (for backward compatibility)
+  validateDatabaseHandle(handle);
   const lib = getLibraryFast();
   if (isValidHandle(handle)) {
     lib.symbols.duckdb_close(handle);

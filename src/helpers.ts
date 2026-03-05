@@ -130,6 +130,66 @@ export function isValidHandle(buffer: Uint8Array): boolean {
 }
 
 /**
+ * Validate that a buffer is a valid handle (has correct byte length)
+ * Note: This does NOT check if the handle is valid (non-zero pointer) -
+ *       callers should use isValidHandle() for that check if needed.
+ * @param buffer - The buffer to validate
+ * @param expectedSize - Expected byte size of the handle
+ * @param name - Name of the handle type for error messages
+ * @throws Error if buffer is not a valid buffer of the expected size
+ */
+export function validateHandle(
+  buffer: unknown,
+  expectedSize: number,
+  name: string,
+): asserts buffer is Uint8Array {
+  if (!(buffer instanceof Uint8Array)) {
+    throw new Error(`${name} must be a Uint8Array`);
+  }
+  if (buffer.length !== expectedSize) {
+    throw new Error(
+      `${name} must be ${expectedSize} bytes, got ${buffer.length}`,
+    );
+  }
+}
+
+/**
+ * Validate a database handle
+ */
+export function validateDatabaseHandle(
+  handle: unknown,
+): asserts handle is DatabaseHandle {
+  validateHandle(handle, POINTER_SIZE, "DatabaseHandle");
+}
+
+/**
+ * Validate a connection handle
+ */
+export function validateConnectionHandle(
+  handle: unknown,
+): asserts handle is ConnectionHandle {
+  validateHandle(handle, POINTER_SIZE, "ConnectionHandle");
+}
+
+/**
+ * Validate a result handle
+ */
+export function validateResultHandle(
+  handle: unknown,
+): asserts handle is ResultHandle {
+  validateHandle(handle, RESULT_SIZE, "ResultHandle");
+}
+
+/**
+ * Validate a prepared statement handle
+ */
+export function validatePreparedHandle(
+  handle: unknown,
+): asserts handle is PreparedStatementHandle {
+  validateHandle(handle, POINTER_SIZE, "PreparedStatementHandle");
+}
+
+/**
  * Free a string allocated by DuckDB
  */
 export function freeString(

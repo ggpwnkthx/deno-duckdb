@@ -24,3 +24,4 @@ export * from "./query.ts";
 export * from "./prepared.ts";
 export * from "./value.ts";
 export * from "./stream.ts";
+export * from "./types.ts";

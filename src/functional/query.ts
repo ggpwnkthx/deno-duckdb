@@ -15,6 +15,8 @@ import {
   getPointer,
   isValidHandle,
   stringToPointer,
+  validateConnectionHandle,
+  validateResultHandle,
 } from "../helpers.ts";
 import { QueryError } from "../errors.ts";
 import { getLibraryFast, getLibrarySync } from "../lib.ts";
@@ -26,15 +28,13 @@ import * as value from "./value.ts";
  * @param connHandle - Connection handle
  * @param sql - SQL query string
  * @returns ResultHandle
- * @throws QueryError if query fails
+ * @throws QueryError if query fails or handle is invalid
  */
 export function execute(
   connHandle: ConnectionHandle,
   sql: string,
 ): ResultHandle {
-  if (!isValidHandle(connHandle)) {
-    throw new QueryError("Invalid connection handle", sql);
-  }
+  validateConnectionHandle(connHandle);
   if (!sql || !sql.trim()) {
     throw new QueryError("SQL query cannot be empty", sql);
   }
@@ -172,10 +172,12 @@ export function columnInfos(
  * Destroy a query result
  *
  * @param handle - Result handle to destroy
+ * @throws Error if handle is invalid
  */
 export function destroyResult(
   handle: ResultHandle,
 ): void {
+  validateResultHandle(handle);
   const lib = getLibraryFast();
   if (isValidHandle(handle)) {
     lib.symbols.duckdb_destroy_result(handle);

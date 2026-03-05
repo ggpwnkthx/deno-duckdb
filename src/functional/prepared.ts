@@ -16,7 +16,7 @@ import {
   stringToPointer,
 } from "../helpers.ts";
 import { DatabaseError } from "../errors.ts";
-import { getLibrary, getLibrarySync } from "../lib.ts";
+import { getLibraryFast, getLibrarySync } from "../lib.ts";
 
 /** Value types that can be bound to prepared statements */
 export type BindValue = boolean | number | bigint | string | null;
@@ -29,11 +29,11 @@ export type BindValue = boolean | number | bigint | string | null;
  * @returns PreparedStatementHandle
  * @throws DatabaseError if preparation fails
  */
-export async function prepare(
+export function prepare(
   connHandle: ConnectionHandle,
   sql: string,
-): Promise<PreparedStatementHandle> {
-  const lib = await getLibrary();
+): PreparedStatementHandle {
+  const lib = getLibraryFast();
   const handle = createPointerBuffer();
   const connPtr = getPointer(connHandle);
   const sqlPtr = stringToPointer(sql);
@@ -59,10 +59,10 @@ export async function prepare(
  * @returns ResultHandle
  * @throws DatabaseError if execution fails
  */
-export async function executePrepared(
+export function executePrepared(
   stmtHandle: PreparedStatementHandle,
-): Promise<ResultHandle> {
-  const lib = await getLibrary();
+): ResultHandle {
+  const lib = getLibraryFast();
   const handle = createResultBuffer();
   const stmtPtr = getPointer(stmtHandle);
 
@@ -85,10 +85,10 @@ export async function executePrepared(
  * @param handle - Prepared statement handle
  * @returns Number of columns
  */
-export async function preparedColumnCount(
+export function preparedColumnCount(
   handle: PreparedStatementHandle,
-): Promise<bigint> {
-  const lib = await getLibrary();
+): bigint {
+  const lib = getLibraryFast();
   const ptr = getPointer(handle);
   return lib.symbols.duckdb_prepared_statement_column_count(ptr);
 }
@@ -99,10 +99,10 @@ export async function preparedColumnCount(
  * @param handle - Prepared statement handle
  * @returns Number of parameters
  */
-export async function preparedParameterCount(
+export function preparedParameterCount(
   handle: PreparedStatementHandle,
-): Promise<bigint> {
-  const lib = await getLibrary();
+): bigint {
+  const lib = getLibraryFast();
   const ptr = getPointer(handle);
   return lib.symbols.duckdb_bind_get_parameter_count(
     ptr as unknown as Deno.PointerValue<unknown>,
@@ -116,11 +116,11 @@ export async function preparedParameterCount(
  * @param params - Array of values to bind (in order)
  * @throws DatabaseError if binding fails
  */
-export async function bind(
+export function bind(
   handle: PreparedStatementHandle,
   params: BindValue[],
-): Promise<void> {
-  const lib = await getLibrary();
+): void {
+  const lib = getLibraryFast();
   const stmtPtr = getPointer(handle);
 
   // Set each parameter by index
@@ -168,10 +168,10 @@ export async function bind(
  *
  * @param handle - Prepared statement handle to destroy
  */
-export async function destroyPrepared(
+export function destroyPrepared(
   handle: PreparedStatementHandle,
-): Promise<void> {
-  const lib = await getLibrary();
+): void {
+  const lib = getLibraryFast();
   if (isValidHandle(handle)) {
     lib.symbols.duckdb_destroy_prepare(handle);
   }

@@ -52,7 +52,7 @@ export class Connection {
   async query(sql: string): Promise<QueryResultClass> {
     this.checkNotClosed();
     const handle = await query.execute(this.handle!, sql);
-    return new QueryResultClass(handle, handle, this);
+    return new QueryResultClass(handle, this);
   }
 
   /**

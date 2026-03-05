@@ -11,7 +11,7 @@ import {
   stringToPointer,
 } from "../helpers.ts";
 import { DatabaseError } from "../errors.ts";
-import { getLibrary } from "../lib.ts";
+import { getLibrary, getLibraryFast } from "../lib.ts";
 
 /**
  * Open a DuckDB database
@@ -54,7 +54,8 @@ export async function open(
       // Handle special accessMode -> access_mode conversion
       if (key === "accessMode") {
         name = "access_mode";
-        value = value === "read_only" ? "READ_ONLY" : "READ_WRITE";
+        const normalizedValue = String(value).toLowerCase();
+        value = normalizedValue === "read_only" ? "READ_ONLY" : "READ_WRITE";
       }
 
       // Skip undefined or empty values
@@ -115,10 +116,10 @@ export async function open(
  *
  * @param handle - Database handle to close
  */
-export async function closeDatabase(
+export function closeDatabase(
   handle: DatabaseHandle,
-): Promise<void> {
-  const lib = await getLibrary();
+): void {
+  const lib = getLibraryFast();
   if (isValidHandle(handle)) {
     lib.symbols.duckdb_close(handle);
   }

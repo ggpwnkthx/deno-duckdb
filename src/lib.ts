@@ -6,7 +6,7 @@
  */
 
 import { load } from "@ggpwnkthx/libduckdb";
-import type { symbols } from "@ggpwnkthx/libduckdb";
+import type { symbols } from "@ggpwnkthx/libduckdb/symbols";
 
 /** The loaded DuckDB library with FFI symbols */
 export type DuckDBLibrary = Deno.DynamicLibrary<typeof symbols>;
@@ -57,6 +57,20 @@ export function isLibraryLoaded(): boolean {
  * Returns null if library hasn't been loaded yet
  */
 export function getLibrarySync(): DuckDBLibrary | null {
+  return cachedLib;
+}
+
+/**
+ * Get the cached library synchronously, throwing if not loaded
+ * This is the fastest path - use this in internal functions after library is loaded
+ *
+ * @returns The cached DuckDB library
+ * @throws Error if library hasn't been loaded yet
+ */
+export function getLibraryFast(): DuckDBLibrary {
+  if (!cachedLib) {
+    throw new Error("Library not loaded. Call getLibrary() first.");
+  }
   return cachedLib;
 }
 

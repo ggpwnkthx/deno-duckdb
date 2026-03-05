@@ -46,7 +46,7 @@ export class PreparedStatement {
   async execute(): Promise<QueryResult> {
     const handle = this.getHandle();
     const resultHandle = await prep.executePrepared(handle);
-    return new QueryResult(resultHandle, resultHandle, this.connection);
+    return new QueryResult(resultHandle, this.connection);
   }
 
   /**

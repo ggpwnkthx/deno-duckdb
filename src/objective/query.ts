@@ -10,7 +10,7 @@ import type {
 } from "../types.ts";
 import * as query from "../functional/query.ts";
 import * as value from "../functional/value.ts";
-import { getLibrary } from "../lib.ts";
+import { getLibraryFast } from "../lib.ts";
 import { InvalidResourceError } from "../errors.ts";
 import type { Connection } from "./connection.ts";
 import { createPointerView } from "../helpers.ts";
@@ -42,7 +42,6 @@ export class QueryResult {
    */
   constructor(
     handle: ResultHandle,
-    _result: ResultHandle, // Kept for backward compatibility signature
     connection: Connection,
   ) {
     this.handle = handle;
@@ -55,7 +54,7 @@ export class QueryResult {
    *
    * @returns Array of rows
    */
-  async fetchAll(): Promise<RowData[]> {
+  fetchAll(): RowData[] {
     this.checkNotFreed();
     if (!this.handle) {
       throw new InvalidResourceError("Result has been freed");
@@ -66,8 +65,8 @@ export class QueryResult {
       return this.cachedRows;
     }
 
-    // Fetch rows
-    const rows = await value.fetchAll(this.handle);
+    // Fetch rows (now synchronous)
+    const rows = value.fetchAll(this.handle);
 
     // Only cache if below size limit
     if (rows.length <= MAX_CACHED_ROWS) {
@@ -97,7 +96,7 @@ export class QueryResult {
    * @param index - Row index (0-based)
    * @returns Row data
    */
-  async getRow(index: number): Promise<RowData> {
+  getRow(index: number): RowData {
     this.checkNotFreed();
     if (!this.handle) {
       throw new InvalidResourceError("Result has been freed");
@@ -111,19 +110,19 @@ export class QueryResult {
       return this.cachedRows[index];
     }
 
-    // Cache row/col count on first call
+    // Cache row/col count on first call (now synchronous)
     if (this.cachedRowCount === 0n) {
-      this.cachedRowCount = await query.rowCount(this.handle);
-      this.cachedColCount = await query.columnCount(this.handle);
+      this.cachedRowCount = query.rowCount(this.handle);
+      this.cachedColCount = query.columnCount(this.handle);
     }
 
     if (index < 0 || index >= Number(this.cachedRowCount)) {
       throw new InvalidResourceError("Row index out of bounds");
     }
 
-    // Build column cache on first call
+    // Build column cache on first call (now synchronous)
     if (!this.columnCache) {
-      this.columnCache = await this.buildColumnCache();
+      this.columnCache = this.buildColumnCache();
     }
 
     const colCount = Number(this.cachedColCount);
@@ -145,15 +144,15 @@ export class QueryResult {
   }
 
   /** Build column cache for getRow optimization */
-  private async buildColumnCache(): Promise<ColumnCache> {
+  private buildColumnCache(): ColumnCache {
     const colCount = Number(this.cachedColCount);
-    const lib = await getLibrary();
+    const lib = getLibraryFast();
     const types: DuckDBTypeValue[] = [];
     const dataViews: (Deno.UnsafePointerView | null)[] = [];
     const nullMaskViews: (Deno.UnsafePointerView | null)[] = [];
 
     for (let c = 0; c < colCount; c++) {
-      types[c] = await query.columnType(this.handle!, c);
+      types[c] = query.columnType(this.handle!, c);
 
       const dataPtr = lib.symbols.duckdb_column_data(
         this.handle!,
@@ -176,9 +175,9 @@ export class QueryResult {
    *
    * @returns Array of objects with column names as keys
    */
-  async toArrayOfObjects(): Promise<Record<string, unknown>[]> {
-    const rows = this.cachedRows ? this.cachedRows : await this.fetchAll();
-    const cols = await this.getColumnInfos();
+  toArrayOfObjects(): Record<string, unknown>[] {
+    const rows = this.cachedRows ? this.cachedRows : this.fetchAll();
+    const cols = this.getColumnInfos();
     return rows.map((row) => {
       const obj: Record<string, unknown> = {};
       cols.forEach((col, i) => {
@@ -191,42 +190,42 @@ export class QueryResult {
   /**
    * Get number of rows
    */
-  async rowCount(): Promise<bigint> {
+  rowCount(): bigint {
     this.checkNotFreed();
     if (!this.handle) return 0n;
     // Use cached count if available
     if (this.cachedRowCount !== 0n) {
       return this.cachedRowCount;
     }
-    this.cachedRowCount = await query.rowCount(this.handle);
+    this.cachedRowCount = query.rowCount(this.handle);
     return this.cachedRowCount;
   }
 
   /**
    * Get number of columns
    */
-  async columnCount(): Promise<bigint> {
+  columnCount(): bigint {
     this.checkNotFreed();
     if (!this.handle) return 0n;
     // Use cached count if available
     if (this.cachedColCount !== 0n) {
       return this.cachedColCount;
     }
-    this.cachedColCount = await query.columnCount(this.handle);
+    this.cachedColCount = query.columnCount(this.handle);
     return this.cachedColCount;
   }
 
   /**
    * Get column information
    */
-  async getColumnInfos(): Promise<ColumnInfo[]> {
+  getColumnInfos(): ColumnInfo[] {
     this.checkNotFreed();
     if (!this.handle) return [];
     // Use cached column infos if available
     if (this.cachedColumnInfos) {
       return this.cachedColumnInfos;
     }
-    this.cachedColumnInfos = await query.columnInfos(this.handle);
+    this.cachedColumnInfos = query.columnInfos(this.handle);
     return this.cachedColumnInfos;
   }
 

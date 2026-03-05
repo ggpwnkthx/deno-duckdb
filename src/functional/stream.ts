@@ -9,7 +9,7 @@ import {
   type RowData,
 } from "../types.ts";
 import * as query from "./query.ts";
-import { getLibrary } from "../lib.ts";
+import { getLibraryFast } from "../lib.ts";
 import { DatabaseError } from "../errors.ts";
 import {
   BYTE_SIZE_32,
@@ -17,6 +17,23 @@ import {
   createPointerView,
   isStringType,
 } from "../helpers.ts";
+
+/**
+ * Check if a value at the given row index is null according to the null mask
+ * @param nullMaskView - Pointer view to the null mask (can be null)
+ * @param rowIndex - Row index to check
+ * @returns true if the value is null, false otherwise
+ */
+function isNullValue(
+  nullMaskView: Deno.UnsafePointerView | null,
+  rowIndex: number,
+): boolean {
+  if (!nullMaskView) {
+    return false;
+  }
+  const nullMask = nullMaskView.getBigUint64(0);
+  return (nullMask & (1n << BigInt(rowIndex))) !== 0n;
+}
 
 /**
  * Stream rows from a query result lazily
@@ -32,7 +49,7 @@ export async function* stream(
   connHandle: ConnectionHandle,
   sql: string,
 ): AsyncGenerator<RowData, void, unknown> {
-  const lib = await getLibrary();
+  const lib = getLibraryFast();
   if (!lib) {
     throw new DatabaseError(
       "Library not loaded. Call open() or Database() first.",
@@ -40,11 +57,11 @@ export async function* stream(
   }
 
   // execute now throws on error
-  const handle = await query.execute(connHandle, sql);
+  const handle = query.execute(connHandle, sql);
 
   try {
-    const rowCount = Number(await query.rowCount(handle));
-    const colCount = Number(await query.columnCount(handle));
+    const rowCount = Number(query.rowCount(handle));
+    const colCount = Number(query.columnCount(handle));
 
     if (rowCount === 0 || colCount === 0) {
       return;
@@ -56,7 +73,7 @@ export async function* stream(
     const nullMaskViews: (Deno.UnsafePointerView | null)[] = [];
 
     for (let c = 0; c < colCount; c++) {
-      types[c] = await query.columnType(handle, c);
+      types[c] = query.columnType(handle, c);
 
       const dataPtr = lib.symbols.duckdb_column_data(handle, BigInt(c));
       dataViews[c] = dataPtr ? createPointerView(dataPtr) : null;
@@ -79,13 +96,9 @@ export async function* stream(
         // Use shared helper for string type check
         if (isStringType(type)) {
           // String types: VARCHAR, BLOB, etc. - check null
-          // (1n << BigInt(r)) creates bitmask: 1 at position r, 0 elsewhere
-          if (nullMaskView) {
-            const nullMask = nullMaskView.getBigUint64(0);
-            if ((nullMask & (1n << BigInt(r))) !== 0n) {
-              row[c] = null;
-              continue;
-            }
+          if (isNullValue(nullMaskView, r)) {
+            row[c] = null;
+            continue;
           }
           if (dataView) {
             const innerPtr = dataView.getPointer(r * BYTE_SIZE_64);
@@ -103,22 +116,16 @@ export async function* stream(
           type === DuckDBType.SMALLINT || type === DuckDBType.INTEGER
         ) {
           // BOOLEAN, TINYINT, SMALLINT, INTEGER - check null
-          if (nullMaskView) {
-            const nullMask = nullMaskView.getBigUint64(0);
-            if ((nullMask & (1n << BigInt(r))) !== 0n) {
-              row[c] = null;
-              continue;
-            }
+          if (isNullValue(nullMaskView, r)) {
+            row[c] = null;
+            continue;
           }
           row[c] = dataView ? dataView.getInt32(r * BYTE_SIZE_32) : 0;
         } else if (type === DuckDBType.BIGINT) {
           // BIGINT - check null
-          if (nullMaskView) {
-            const nullMask = nullMaskView.getBigUint64(0);
-            if ((nullMask & (1n << BigInt(r))) !== 0n) {
-              row[c] = null;
-              continue;
-            }
+          if (isNullValue(nullMaskView, r)) {
+            row[c] = null;
+            continue;
           }
           row[c] = dataView ? dataView.getBigInt64(r * BYTE_SIZE_64) : 0n;
         } else if (
@@ -126,22 +133,16 @@ export async function* stream(
           type === DuckDBType.DOUBLE
         ) {
           // HUGEINT, FLOAT, DOUBLE - check null
-          if (nullMaskView) {
-            const nullMask = nullMaskView.getBigUint64(0);
-            if ((nullMask & (1n << BigInt(r))) !== 0n) {
-              row[c] = null;
-              continue;
-            }
+          if (isNullValue(nullMaskView, r)) {
+            row[c] = null;
+            continue;
           }
           row[c] = dataView ? dataView.getFloat64(r * BYTE_SIZE_64) : 0;
         } else {
           // Fallback - check null
-          if (nullMaskView) {
-            const nullMask = nullMaskView.getBigUint64(0);
-            if ((nullMask & (1n << BigInt(r))) !== 0n) {
-              row[c] = null;
-              continue;
-            }
+          if (isNullValue(nullMaskView, r)) {
+            row[c] = null;
+            continue;
           }
           row[c] = "";
         }
@@ -150,6 +151,6 @@ export async function* stream(
     }
   } finally {
     // Always destroy the result handle
-    await query.destroyResult(handle);
+    query.destroyResult(handle);
   }
 }

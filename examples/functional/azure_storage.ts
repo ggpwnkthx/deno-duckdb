@@ -91,7 +91,7 @@ try {
     );
   }
 } catch (error) {
-  console.error(error)
+  console.error(error);
   console.log(
     "Note: Azure Blob Storage query failed (the specific file may not exist)",
   );

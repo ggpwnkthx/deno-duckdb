@@ -1,9 +1,16 @@
 /**
- * Benchmark script comparing query performance across four API layers:
- * 1. @ggpwnkthx/libduckdb - Direct FFI calls
- * 2. Functional API - Pure functional style with explicit state
- * 3. Objective API - Object-oriented with automatic resource management
- * 4. Streaming APIs - Lazy row-by-row iteration for memory efficiency
+ * Benchmark script comparing query performance across Materialized vs Unmaterialized results:
+ *
+ * === Materialized Results ===
+ * These benchmarks execute queries and load the full result set into memory.
+ * - Direct FFI: @ggpwnkthx/libduckdb - Direct FFI calls
+ * - Functional API: Pure functional style with explicit state
+ * - Objective API: Object-oriented with automatic resource management
+ *
+ * === Unmaterialized Results (Streaming) ===
+ * These benchmarks stream rows lazily without loading the full result set.
+ * - Functional API Streaming: Lazy row-by-row iteration
+ * - Objective API Streaming: Lazy row-by-row iteration
  *
  * Only measures query execution and fetch time, not setup/cleanup overhead.
  */
@@ -164,6 +171,8 @@ Deno.bench("Objective API", async () => {
     throw new Error(`Expected 100000 rows, got ${rows.length}`);
   }
 });
+
+// === Unmaterialized Results (Streaming) ===
 
 Deno.bench("Functional API Streaming", async () => {
   // Execute and stream rows

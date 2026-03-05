@@ -16,7 +16,7 @@ import {
   isStringType,
 } from "../helpers.ts";
 import * as query from "./query.ts";
-import { getLibrary } from "../lib.ts";
+import { getLibraryFast } from "../lib.ts";
 
 /**
  * Check if a value at row and column is NULL
@@ -26,12 +26,12 @@ import { getLibrary } from "../lib.ts";
  * @param col - Column index (0-based)
  * @returns Whether the value is NULL
  */
-export async function isNull(
+export function isNull(
   handle: ResultHandle,
   row: number,
   col: number,
-): Promise<boolean> {
-  const lib = await getLibrary();
+): boolean {
+  const lib = getLibraryFast();
   // Use duckdb_nullmask_data to get the null mask pointer
   const nullMaskPtr = lib.symbols.duckdb_nullmask_data(
     handle,
@@ -64,29 +64,27 @@ export async function isNull(
  * @param handle - Result handle
  * @param row - Row index (0-based)
  * @param col - Column index (0-based)
- * @param strict - If true, throw on NULL values instead of returning 0
- * @returns INT32 value
+ * @returns INT32 value or null if NULL
  */
-export async function getInt32(
+export function getInt32(
   handle: ResultHandle,
   row: number,
   col: number,
-  strict = false,
-): Promise<number> {
-  // Check null first if strict mode
-  if (strict && await isNull(handle, row, col)) {
-    throw new Error(`Value at row ${row}, col ${col} is NULL`);
+): number | null {
+  // Check null first
+  if (isNull(handle, row, col)) {
+    return null;
   }
-  const lib = await getLibrary();
+  const lib = getLibraryFast();
   // Use duckdb_column_data to get the actual column data
   const dataPtr = lib.symbols.duckdb_column_data(handle, BigInt(col));
   if (!dataPtr) {
-    return 0;
+    return null;
   }
 
   const view = createPointerView(dataPtr);
   if (!view) {
-    return 0;
+    return null;
   }
 
   // Read the int32 at the row offset (4 bytes per int32)
@@ -100,29 +98,27 @@ export async function getInt32(
  * @param handle - Result handle
  * @param row - Row index (0-based)
  * @param col - Column index (0-based)
- * @param strict - If true, throw on NULL values instead of returning 0n
- * @returns INT64 value
+ * @returns INT64 value or null if NULL
  */
-export async function getInt64(
+export function getInt64(
   handle: ResultHandle,
   row: number,
   col: number,
-  strict = false,
-): Promise<bigint> {
-  // Check null first if strict mode
-  if (strict && await isNull(handle, row, col)) {
-    throw new Error(`Value at row ${row}, col ${col} is NULL`);
+): bigint | null {
+  // Check null first
+  if (isNull(handle, row, col)) {
+    return null;
   }
-  const lib = await getLibrary();
+  const lib = getLibraryFast();
   // Use duckdb_column_data to get the actual column data
   const dataPtr = lib.symbols.duckdb_column_data(handle, BigInt(col));
   if (!dataPtr) {
-    return 0n;
+    return null;
   }
 
   const view = createPointerView(dataPtr);
   if (!view) {
-    return 0n;
+    return null;
   }
 
   // Read the int64 at the row offset (8 bytes per int64)
@@ -136,29 +132,27 @@ export async function getInt64(
  * @param handle - Result handle
  * @param row - Row index (0-based)
  * @param col - Column index (0-based)
- * @param strict - If true, throw on NULL values instead of returning 0
- * @returns DOUBLE value
+ * @returns DOUBLE value or null if NULL
  */
-export async function getDouble(
+export function getDouble(
   handle: ResultHandle,
   row: number,
   col: number,
-  strict = false,
-): Promise<number> {
-  // Check null first if strict mode
-  if (strict && await isNull(handle, row, col)) {
-    throw new Error(`Value at row ${row}, col ${col} is NULL`);
+): number | null {
+  // Check null first
+  if (isNull(handle, row, col)) {
+    return null;
   }
-  const lib = await getLibrary();
+  const lib = getLibraryFast();
   // Use duckdb_column_data to get the actual column data
   const dataPtr = lib.symbols.duckdb_column_data(handle, BigInt(col));
   if (!dataPtr) {
-    return 0;
+    return null;
   }
 
   const view = createPointerView(dataPtr);
   if (!view) {
-    return 0;
+    return null;
   }
 
   // Read the double at the specified row offset (each double is 8 bytes)
@@ -173,28 +167,28 @@ export async function getDouble(
  * @param handle - Result handle
  * @param row - Row index (0-based)
  * @param col - Column index (0-based)
- * @returns VARCHAR value
+ * @returns VARCHAR value or null if NULL
  */
-export async function getString(
+export function getString(
   handle: ResultHandle,
   row: number,
   col: number,
-): Promise<string> {
-  const lib = await getLibrary();
+): string | null {
+  const lib = getLibraryFast();
   // Check if NULL first
-  if (await isNull(handle, row, col)) {
-    return "";
+  if (isNull(handle, row, col)) {
+    return null;
   }
 
   // Use duckdb_column_data to get the column data pointer
   const dataPtr = lib.symbols.duckdb_column_data(handle, BigInt(col));
   if (!dataPtr) {
-    return "";
+    return null;
   }
 
   const view = createPointerView(dataPtr);
   if (!view) {
-    return "";
+    return null;
   }
 
   // Read the pointer at the row offset (8 bytes per pointer)
@@ -202,12 +196,12 @@ export async function getString(
   const innerPtr = view.getPointer(offset);
 
   if (!innerPtr) {
-    return "";
+    return null;
   }
 
   const innerView = createPointerView(innerPtr);
   if (!innerView) {
-    return "";
+    return null;
   }
   return innerView.getCString();
 }
@@ -219,17 +213,17 @@ export async function getString(
  * @param handle - Result handle
  * @returns Array of rows
  */
-export async function fetchAll(
+export function fetchAll(
   handle: ResultHandle,
-): Promise<RowData[]> {
-  const rowCount = Number(await query.rowCount(handle));
-  const colCount = Number(await query.columnCount(handle));
+): RowData[] {
+  const rowCount = Number(query.rowCount(handle));
+  const colCount = Number(query.columnCount(handle));
 
   if (rowCount === 0 || colCount === 0) {
     return [];
   }
 
-  const lib = await getLibrary();
+  const lib = getLibraryFast();
 
   // Pre-fetch column metadata (cached per column, not per cell)
   const columnTypes: DuckDBTypeValue[] = [];
@@ -237,7 +231,7 @@ export async function fetchAll(
   const nullMaskViews: (Deno.UnsafePointerView | null)[] = [];
 
   for (let c = 0; c < colCount; c++) {
-    columnTypes[c] = await query.columnType(handle, c);
+    columnTypes[c] = query.columnType(handle, c);
 
     // Pre-fetch column data pointer and create view
     const dataPtr = lib.symbols.duckdb_column_data(handle, BigInt(c));
@@ -372,23 +366,23 @@ function getStringWithView(
  * @param checkNull - If true (default), check null mask for all types including numeric
  * @returns The value at the specified row and column
  */
-export async function getValueByType(
+export function getValueByType(
   handle: ResultHandle,
   row: number,
   col: number,
   type: DuckDBTypeValue,
   checkNull = true,
-): Promise<ValueType> {
+): ValueType {
   // NULL type is 0, check for NULL values
   if (
-    type === DuckDBType.NULL || (checkNull && await isNull(handle, row, col))
+    type === DuckDBType.NULL || (checkNull && isNull(handle, row, col))
   ) {
     return null;
   }
 
   // Use shared helper for string type check
   if (isStringType(type)) {
-    return await getString(handle, row, col);
+    return getString(handle, row, col);
   }
 
   switch (type) {
@@ -396,15 +390,15 @@ export async function getValueByType(
     case DuckDBType.TINYINT:
     case DuckDBType.SMALLINT:
     case DuckDBType.INTEGER:
-      return await getInt32(handle, row, col);
+      return getInt32(handle, row, col);
     case DuckDBType.BIGINT:
-      return await getInt64(handle, row, col);
+      return getInt64(handle, row, col);
     case DuckDBType.HUGEINT:
     case DuckDBType.FLOAT:
     case DuckDBType.DOUBLE:
-      return await getDouble(handle, row, col);
+      return getDouble(handle, row, col);
     default:
       // Fallback to string for unknown types
-      return await getString(handle, row, col);
+      return getString(handle, row, col);
   }
 }

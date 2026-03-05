@@ -7,6 +7,7 @@ import type {
   ConnectionHandle,
   DuckDBTypeValue,
   ResultHandle,
+  RowData,
 } from "../types.ts";
 import {
   createPointerView,
@@ -16,7 +17,8 @@ import {
   stringToPointer,
 } from "../helpers.ts";
 import { QueryError } from "../errors.ts";
-import { getLibrary, getLibrarySync } from "../lib.ts";
+import { getLibraryFast, getLibrarySync } from "../lib.ts";
+import * as value from "./value.ts";
 
 /**
  * Execute a SQL query
@@ -26,11 +28,11 @@ import { getLibrary, getLibrarySync } from "../lib.ts";
  * @returns ResultHandle
  * @throws QueryError if query fails
  */
-export async function execute(
+export function execute(
   connHandle: ConnectionHandle,
   sql: string,
-): Promise<ResultHandle> {
-  const lib = await getLibrary();
+): ResultHandle {
+  const lib = getLibraryFast();
   const handle = createResultBuffer();
   const connPtr = getPointer(connHandle);
   const sqlPtr = stringToPointer(sql);
@@ -49,15 +51,39 @@ export async function execute(
 }
 
 /**
+ * Execute a SQL query and fetch all rows with automatic cleanup
+ *
+ * This is a convenience function that executes a query and automatically
+ * destroys the result handle when done, returning just the rows.
+ * Use this when you don't need to keep the result handle for further operations.
+ *
+ * @param connHandle - Connection handle
+ * @param sql - SQL query string
+ * @returns Array of rows
+ * @throws QueryError if query fails
+ */
+export function executeAndFetchAll(
+  connHandle: ConnectionHandle,
+  sql: string,
+): RowData[] {
+  const resultHandle = execute(connHandle, sql);
+  try {
+    return value.fetchAll(resultHandle);
+  } finally {
+    destroyResult(resultHandle);
+  }
+}
+
+/**
  * Get the number of rows in a result
  *
  * @param handle - Result handle
  * @returns Number of rows
  */
-export async function rowCount(
+export function rowCount(
   handle: Uint8Array<ArrayBuffer>,
-): Promise<bigint> {
-  const lib = await getLibrary();
+): bigint {
+  const lib = getLibraryFast();
   return lib.symbols.duckdb_row_count(handle);
 }
 
@@ -67,10 +93,10 @@ export async function rowCount(
  * @param handle - Result handle
  * @returns Number of columns
  */
-export async function columnCount(
+export function columnCount(
   handle: Uint8Array<ArrayBuffer>,
-): Promise<bigint> {
-  const lib = await getLibrary();
+): bigint {
+  const lib = getLibraryFast();
   return lib.symbols.duckdb_column_count(handle);
 }
 
@@ -81,11 +107,11 @@ export async function columnCount(
  * @param index - Column index (0-based)
  * @returns Column name
  */
-export async function columnName(
+export function columnName(
   handle: Uint8Array<ArrayBuffer>,
   index: number,
-): Promise<string> {
-  const lib = await getLibrary();
+): string {
+  const lib = getLibraryFast();
   const ptr = lib.symbols.duckdb_column_name(handle, BigInt(index));
   if (!ptr) return "";
 
@@ -102,11 +128,11 @@ export async function columnName(
  * @param index - Column index (0-based)
  * @returns Column type enum value
  */
-export async function columnType(
+export function columnType(
   handle: Uint8Array<ArrayBuffer>,
   index: number,
-): Promise<DuckDBTypeValue> {
-  const lib = await getLibrary();
+): DuckDBTypeValue {
+  const lib = getLibraryFast();
   return lib.symbols.duckdb_column_type(
     handle,
     BigInt(index),
@@ -119,16 +145,16 @@ export async function columnType(
  * @param handle - Result handle
  * @returns Array of ColumnInfo
  */
-export async function columnInfos(
+export function columnInfos(
   handle: Uint8Array<ArrayBuffer>,
-): Promise<ColumnInfo[]> {
-  const count = Number(await columnCount(handle));
+): ColumnInfo[] {
+  const count = Number(columnCount(handle));
   const infos: ColumnInfo[] = [];
 
   for (let i = 0; i < count; i++) {
     infos.push({
-      name: await columnName(handle, i),
-      type: await columnType(handle, i),
+      name: columnName(handle, i),
+      type: columnType(handle, i),
     });
   }
 
@@ -140,10 +166,10 @@ export async function columnInfos(
  *
  * @param handle - Result handle to destroy
  */
-export async function destroyResult(
+export function destroyResult(
   handle: Uint8Array<ArrayBuffer>,
-): Promise<void> {
-  const lib = await getLibrary();
+): void {
+  const lib = getLibraryFast();
   if (isValidHandle(handle)) {
     lib.symbols.duckdb_destroy_result(handle);
   }

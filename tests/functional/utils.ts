@@ -5,8 +5,8 @@
  * with automatic cleanup to prevent resource leaks.
  */
 
-import { functional as duckdb } from "@ggpwnkthx/duckdb";
-import type { ConnectionHandle, DatabaseHandle } from "../src/types.ts";
+import * as duckdb from "@ggpwnkthx/duckdb/functional";
+import type { ConnectionHandle, DatabaseHandle } from "@ggpwnkthx/duckdb";
 
 /**
  * Open a database and run a function, always closing the database in finally

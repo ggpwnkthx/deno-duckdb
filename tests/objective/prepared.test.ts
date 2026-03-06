@@ -3,7 +3,7 @@
  */
 
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
-import { Database } from "../../src/objective/mod.ts";
+import { Database } from "@ggpwnkthx/duckdb/objective";
 
 // Warm-up test to trigger library loading once for all tests
 Deno.test({
@@ -38,249 +38,230 @@ async function setupTestDb(): Promise<Database> {
 }
 
 Deno.test({
-  name: "execute: returns QueryResult for SELECT",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const stmt = conn.prepare("SELECT * FROM prep_test ORDER BY id");
+  name: "prepared: manage prepared statements",
+  async fn(t) {
+    // Step 1: execute prepared
+    await t.step({
+      name: "execute prepared",
+      async fn() {
+        // Returns QueryResult for SELECT
+        const db = await setupTestDb();
+        const conn = await db.connect();
+        const stmt = conn.prepare("SELECT * FROM prep_test ORDER BY id");
 
-    const result = await stmt.execute();
+        const result = await stmt.execute();
 
-    assertExists(result);
-    assertEquals(result.isSuccess(), true);
-    assertEquals(result.rowCount(), 3n);
+        assertExists(result);
+        assertEquals(result.isSuccess(), true);
+        assertEquals(result.rowCount(), 3n);
 
-    result.close();
-    stmt.close();
-    conn.close();
-    db.close();
-  },
-});
+        result.close();
+        stmt.close();
+        conn.close();
+        db.close();
 
-Deno.test({
-  name: "execute: for query with filter",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const stmt = conn.prepare("SELECT * FROM prep_test WHERE id = 1");
+        // For query with filter
+        const db2 = await setupTestDb();
+        const conn2 = await db2.connect();
+        const stmt2 = conn2.prepare("SELECT * FROM prep_test WHERE id = 1");
 
-    const result = await stmt.execute();
+        const result2 = await stmt2.execute();
 
-    assertExists(result);
-    assertEquals(result.isSuccess(), true);
-    assertEquals(result.rowCount(), 1n);
+        assertExists(result2);
+        assertEquals(result2.isSuccess(), true);
+        assertEquals(result2.rowCount(), 1n);
 
-    result.close();
-    stmt.close();
-    conn.close();
-    db.close();
-  },
-});
+        result2.close();
+        stmt2.close();
+        conn2.close();
+        db2.close();
+      },
+    });
 
-Deno.test({
-  name: "columnCount: returns column count for SELECT",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const stmt = conn.prepare("SELECT id, name FROM prep_test");
+    // Step 2: column metadata
+    await t.step({
+      name: "column metadata",
+      async fn() {
+        // Returns column count for SELECT
+        const db = await setupTestDb();
+        const conn = await db.connect();
+        const stmt = conn.prepare("SELECT id, name FROM prep_test");
 
-    assertEquals(await stmt.columnCount(), 2n);
+        assertEquals(await stmt.columnCount(), 2n);
 
-    stmt.close();
-    conn.close();
-    db.close();
-  },
-});
+        stmt.close();
+        conn.close();
+        db.close();
 
-Deno.test({
-  name: "columnCount: returns column count for INSERT",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const stmt = conn.prepare("INSERT INTO prep_test VALUES (4, 'four')");
+        // Returns column count for INSERT
+        const db2 = await setupTestDb();
+        const conn2 = await db2.connect();
+        const stmt2 = conn2.prepare("INSERT INTO prep_test VALUES (4, 'four')");
 
-    // INSERT returns the number of rows affected
-    assertEquals(await stmt.columnCount(), 1n);
+        // INSERT returns the number of rows affected
+        assertEquals(await stmt2.columnCount(), 1n);
 
-    stmt.close();
-    conn.close();
-    db.close();
-  },
-});
+        stmt2.close();
+        conn2.close();
+        db2.close();
+      },
+    });
 
-Deno.test({
-  name: "close: frees the statement",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const stmt = conn.prepare("SELECT * FROM prep_test");
+    // Step 3: resource management
+    await t.step({
+      name: "resource management",
+      async fn() {
+        // Frees the statement
+        const db = await setupTestDb();
+        const conn = await db.connect();
+        const stmt = conn.prepare("SELECT * FROM prep_test");
 
-    stmt.close();
+        stmt.close();
 
-    // After close, operations should throw
-    try {
-      await stmt.execute();
-      throw new Error("Should have thrown");
-    } catch (e) {
-      assertEquals((e as Error).message, "Prepared statement is closed");
-    }
+        // After close, operations should throw
+        try {
+          await stmt.execute();
+          throw new Error("Should have thrown");
+        } catch (e) {
+          assertEquals((e as Error).message, "Prepared statement is closed");
+        }
 
-    conn.close();
-    db.close();
-  },
-});
+        conn.close();
+        db.close();
 
-Deno.test({
-  name: "close: is idempotent",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const stmt = conn.prepare("SELECT * FROM prep_test");
+        // Is idempotent
+        const db2 = await setupTestDb();
+        const conn2 = await db2.connect();
+        const stmt2 = conn2.prepare("SELECT * FROM prep_test");
 
-    stmt.close();
-    stmt.close(); // Should not throw
+        stmt2.close();
+        stmt2.close(); // Should not throw
 
-    conn.close();
-    db.close();
-  },
-});
+        conn2.close();
+        db2.close();
 
-Deno.test({
-  name: "execute: throws when statement is closed",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const stmt = conn.prepare("SELECT * FROM prep_test");
-    stmt.close();
+        // Throws when statement is closed (execute)
+        const db3 = await setupTestDb();
+        const conn3 = await db3.connect();
+        const stmt3 = conn3.prepare("SELECT * FROM prep_test");
+        stmt3.close();
 
-    try {
-      await stmt.execute();
-      throw new Error("Should have thrown");
-    } catch (e) {
-      assertEquals((e as Error).message, "Prepared statement is closed");
-    }
+        try {
+          await stmt3.execute();
+          throw new Error("Should have thrown");
+        } catch (e) {
+          assertEquals((e as Error).message, "Prepared statement is closed");
+        }
 
-    conn.close();
-    db.close();
-  },
-});
+        conn3.close();
+        db3.close();
 
-Deno.test({
-  name: "columnCount: throws when statement is closed",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const stmt = conn.prepare("SELECT * FROM prep_test");
-    stmt.close();
+        // Throws when statement is closed (columnCount)
+        const db4 = await setupTestDb();
+        const conn4 = await db4.connect();
+        const stmt4 = conn4.prepare("SELECT * FROM prep_test");
+        stmt4.close();
 
-    try {
-      await stmt.columnCount();
-      throw new Error("Should have thrown");
-    } catch (e) {
-      assertEquals((e as Error).message, "Prepared statement is closed");
-    }
+        try {
+          await stmt4.columnCount();
+          throw new Error("Should have thrown");
+        } catch (e) {
+          assertEquals((e as Error).message, "Prepared statement is closed");
+        }
 
-    conn.close();
-    db.close();
-  },
-});
+        conn4.close();
+        db4.close();
+      },
+    });
 
-Deno.test({
-  name: "prepare: with unbound parameter placeholder",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
+    // Step 4: edge cases
+    await t.step({
+      name: "edge cases",
+      async fn() {
+        // With unbound parameter placeholder
+        const db = await setupTestDb();
+        const conn = await db.connect();
 
-    // Note: Prepared statements with unbound parameters will fail at execute time
-    // This tests that the prepare itself succeeds but the execute will throw
-    const stmt = conn.prepare("SELECT * FROM prep_test WHERE id = ?");
-    assertExists(stmt);
+        // Note: Prepared statements with unbound parameters will fail at execute time
+        // This tests that the prepare itself succeeds but the execute will throw
+        const stmt = conn.prepare("SELECT * FROM prep_test WHERE id = ?");
+        assertExists(stmt);
 
-    // Should throw because parameter is not bound
-    await assertRejects(
-      async () => await stmt.execute(),
-      Error,
-      "Values were not provided",
-    );
+        // Should throw because parameter is not bound
+        await assertRejects(
+          async () => await stmt.execute(),
+          Error,
+          "Values were not provided",
+        );
 
-    stmt.close();
-    conn.close();
-    db.close();
-  },
-});
+        stmt.close();
+        conn.close();
+        db.close();
 
-Deno.test({
-  name: "prepare: creates statement that can be executed multiple times",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const stmt = conn.prepare("SELECT * FROM prep_test WHERE id = 1");
+        // Creates statement that can be executed multiple times
+        const db2 = await setupTestDb();
+        const conn2 = await db2.connect();
+        const stmt2 = conn2.prepare("SELECT * FROM prep_test WHERE id = 1");
 
-    // Execute twice
-    const result1 = await stmt.execute();
-    assertEquals(result1.isSuccess(), true);
-    assertEquals(await result1.rowCount(), 1n);
-    await result1.close();
+        // Execute twice
+        const result1 = await stmt2.execute();
+        assertEquals(result1.isSuccess(), true);
+        assertEquals(await result1.rowCount(), 1n);
+        await result1.close();
 
-    const result2 = await stmt.execute();
-    assertEquals(result2.isSuccess(), true);
-    assertEquals(await result2.rowCount(), 1n);
-    await result2.close();
+        const result2 = await stmt2.execute();
+        assertEquals(result2.isSuccess(), true);
+        assertEquals(await result2.rowCount(), 1n);
+        await result2.close();
 
-    stmt.close();
-    conn.close();
-    db.close();
-  },
-});
+        stmt2.close();
+        conn2.close();
+        db2.close();
 
-Deno.test({
-  name: "prepare: handles JOIN query",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    // Create another table for join
-    const createResult = conn.query(
-      "CREATE TABLE prep_join (id INTEGER, value TEXT)",
-    );
-    createResult.close();
+        // Handles JOIN query
+        const db3 = await setupTestDb();
+        const conn3 = await db3.connect();
+        // Create another table for join
+        const createResult = conn3.query(
+          "CREATE TABLE prep_join (id INTEGER, value TEXT)",
+        );
+        createResult.close();
 
-    const insertResult = conn.query(
-      "INSERT INTO prep_join VALUES (1, 'a'), (2, 'b')",
-    );
-    insertResult.close();
+        const insertResult = conn3.query(
+          "INSERT INTO prep_join VALUES (1, 'a'), (2, 'b')",
+        );
+        insertResult.close();
 
-    const stmt = conn.prepare(
-      "SELECT p.id, p.name, j.value FROM prep_test p JOIN prep_join j ON p.id = j.id",
-    );
+        const stmt3 = conn3.prepare(
+          "SELECT p.id, p.name, j.value FROM prep_test p JOIN prep_join j ON p.id = j.id",
+        );
 
-    assertExists(stmt);
+        assertExists(stmt3);
 
-    const result = await stmt.execute();
-    assertEquals(result.isSuccess(), true);
+        const result3 = await stmt3.execute();
+        assertEquals(result3.isSuccess(), true);
 
-    result.close();
-    stmt.close();
-    conn.close();
-    db.close();
-  },
-});
+        result3.close();
+        stmt3.close();
+        conn3.close();
+        db3.close();
 
-Deno.test({
-  name: "execute: handles empty result",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const stmt = conn.prepare("SELECT * FROM prep_test WHERE id = 999");
+        // Handles empty result
+        const db4 = await setupTestDb();
+        const conn4 = await db4.connect();
+        const stmt4 = conn4.prepare("SELECT * FROM prep_test WHERE id = 999");
 
-    const result = await stmt.execute();
+        const result4 = await stmt4.execute();
 
-    assertExists(result);
-    assertEquals(result.isSuccess(), true);
-    assertEquals(result.rowCount(), 0n);
+        assertExists(result4);
+        assertEquals(result4.isSuccess(), true);
+        assertEquals(result4.rowCount(), 0n);
 
-    result.close();
-    stmt.close();
-    conn.close();
-    db.close();
+        result4.close();
+        stmt4.close();
+        conn4.close();
+        db4.close();
+      },
+    });
   },
 });

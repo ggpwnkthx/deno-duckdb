@@ -12,17 +12,19 @@ type SizedHandle<T, N extends number> = T & {
   __brand: never;
 };
 
+type Handle<N extends number> = SizedHandle<Uint8Array<ArrayBuffer>, N>
+
 /** 8-byte pointer buffer for database handle */
-export type DatabaseHandle = SizedHandle<Uint8Array<ArrayBuffer>, 8>;
+export type DatabaseHandle = Handle<8>;
 
 /** 8-byte pointer buffer for connection handle */
-export type ConnectionHandle = SizedHandle<Uint8Array<ArrayBuffer>, 8>;
+export type ConnectionHandle = Handle<8>;
 
 /** 48-byte buffer for query result */
-export type ResultHandle = SizedHandle<Uint8Array<ArrayBuffer>, 48>;
+export type ResultHandle = Handle<48>;
 
 /** 8-byte pointer buffer for prepared statement */
-export type PreparedStatementHandle = SizedHandle<Uint8Array<ArrayBuffer>, 8>;
+export type PreparedStatementHandle = Handle<8>;
 
 /** Database configuration options */
 export interface DatabaseConfig {

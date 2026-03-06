@@ -3,7 +3,8 @@
  */
 
 import { assertEquals, assertExists, assertThrows } from "@std/assert";
-import { functional as duckdb } from "@ggpwnkthx/duckdb";
+import type { DatabaseHandle } from "@ggpwnkthx/duckdb";
+import * as duckdb from "@ggpwnkthx/duckdb/functional";
 import { withConn } from "../_util.ts";
 
 // Warm-up test to trigger library loading once for all tests
@@ -19,75 +20,57 @@ Deno.test({
 });
 
 Deno.test({
-  name: "open: opens in-memory database",
-  async fn() {
-    const handle = await duckdb.open();
-    assertExists(handle);
-    duckdb.closeDatabase(handle);
-  },
-});
+  name: "database: manage database lifecycle",
+  async fn(t) {
+    // Step 1: open database
+    await t.step({
+      name: "open database",
+      async fn() {
+        // Opens in-memory database
+        const handle = await duckdb.open();
+        assertExists(handle);
+        duckdb.closeDatabase(handle);
 
-Deno.test({
-  name: "open: opens with custom path config",
-  async fn() {
-    const handle = await duckdb.open({ path: ":memory:" });
-    assertExists(handle);
-    duckdb.closeDatabase(handle);
-  },
-});
+        // Opens with custom path config
+        const handle2 = await duckdb.open({ path: ":memory:" });
+        assertExists(handle2);
+        duckdb.closeDatabase(handle2);
 
-Deno.test({
-  name: "open: throws for invalid SQL",
-  async fn() {
-    // Test SQL parse error instead of invalid path (cross-platform)
-    await withConn((conn) => {
-      assertThrows(
-        () => duckdb.execute(conn, "SELCT 1"),
-        Error,
-      );
+        // Throws for invalid SQL
+        await withConn((conn) => {
+          assertThrows(
+            () => duckdb.execute(conn, "SELCT 1"),
+            Error,
+          );
+        });
+      },
     });
-  },
-});
 
-Deno.test({
-  name: "closeDatabase: closes database handle",
-  async fn() {
-    const handle = await duckdb.open();
-    duckdb.closeDatabase(handle);
-  },
-});
+    // Step 2: validate database
+    await t.step({
+      name: "validate database",
+      async fn() {
+        // Returns true for valid handle
+        const handle = await duckdb.open();
+        assertEquals(duckdb.isValidDatabase(handle), true);
+        duckdb.closeDatabase(handle);
 
-Deno.test("closeDatabase: handles invalid handle gracefully", () => {
-  // Create an invalid handle (zeros)
-  const invalidHandle = new Uint8Array(8) as unknown as Awaited<
-    ReturnType<typeof duckdb.open>
-  >;
-  duckdb.closeDatabase(invalidHandle);
-});
+        // Returns false for invalid handle
+        const invalidHandle = new Uint8Array(8) as unknown as DatabaseHandle;
+        assertEquals(duckdb.isValidDatabase(invalidHandle), false);
+      },
+    });
 
-Deno.test({
-  name: "isValidDatabase: returns true for valid handle",
-  async fn() {
-    const handle = await duckdb.open();
-    assertEquals(duckdb.isValidDatabase(handle), true);
-    duckdb.closeDatabase(handle);
-  },
-});
-
-Deno.test("isValidDatabase: returns false for invalid handle", () => {
-  const invalidHandle = new Uint8Array(8) as unknown as Awaited<
-    ReturnType<typeof duckdb.open>
-  >;
-  assertEquals(duckdb.isValidDatabase(invalidHandle), false);
-});
-
-Deno.test({
-  name: "getPointerValue: returns pointer bigint",
-  async fn() {
-    const handle = await duckdb.open();
-    const pointer = duckdb.getPointerValue(handle);
-    assertExists(pointer);
-    assertEquals(typeof pointer, "bigint");
-    duckdb.closeDatabase(handle);
+    // Step 4: get pointer value
+    await t.step({
+      name: "get pointer value",
+      async fn() {
+        const handle = await duckdb.open();
+        const pointer = duckdb.getPointerValue(handle);
+        assertExists(pointer);
+        assertEquals(typeof pointer, "bigint");
+        duckdb.closeDatabase(handle);
+      },
+    });
   },
 });

@@ -3,7 +3,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { Database } from "../../src/objective/mod.ts";
+import { Database } from "@ggpwnkthx/duckdb/objective";
 
 // Warm-up test to trigger library loading once for all tests
 Deno.test({
@@ -38,324 +38,285 @@ async function setupTestDb(): Promise<Database> {
 }
 
 Deno.test({
-  name: "fetchAll: returns row data",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const result = conn.query("SELECT * FROM test_data ORDER BY id");
+  name: "query: manage query results",
+  async fn(t) {
+    // Step 1: fetch data
+    await t.step({
+      name: "fetch data",
+      async fn() {
+        // Returns row data
+        const db = await setupTestDb();
+        const conn = await db.connect();
+        const result = conn.query("SELECT * FROM test_data ORDER BY id");
 
-    const rows = await result.fetchAll();
+        const rows = await result.fetchAll();
 
-    assertEquals(rows.length, 3);
-    assertEquals(rows[0][0], 1);
-    assertEquals(rows[1][0], 2);
-    assertEquals(rows[2][0], 3);
+        assertEquals(rows.length, 3);
+        assertEquals(rows[0][0], 1);
+        assertEquals(rows[1][0], 2);
+        assertEquals(rows[2][0], 3);
 
-    result.close();
-    conn.close();
-    db.close();
-  },
-});
+        result.close();
+        conn.close();
+        db.close();
 
-Deno.test({
-  name: "getRow: returns single row by index",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const result = conn.query("SELECT * FROM test_data ORDER BY id");
+        // Returns single row by index
+        const db2 = await setupTestDb();
+        const conn2 = await db2.connect();
+        const result2 = conn2.query("SELECT * FROM test_data ORDER BY id");
 
-    const row0 = await result.getRow(0);
-    assertEquals(row0[0], 1);
+        const row0 = await result2.getRow(0);
+        assertEquals(row0[0], 1);
 
-    const row1 = await result.getRow(1);
-    assertEquals(row1[0], 2);
+        const row1 = await result2.getRow(1);
+        assertEquals(row1[0], 2);
 
-    const row2 = await result.getRow(2);
-    assertEquals(row2[0], 3);
+        const row2 = await result2.getRow(2);
+        assertEquals(row2[0], 3);
 
-    result.close();
-    conn.close();
-    db.close();
-  },
-});
+        result2.close();
+        conn2.close();
+        db2.close();
 
-Deno.test({
-  name: "getRow: throws on out of bounds index",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const result = conn.query("SELECT * FROM test_data");
+        // Throws on out of bounds index
+        const db3 = await setupTestDb();
+        const conn3 = await db3.connect();
+        const result3 = conn3.query("SELECT * FROM test_data");
 
-    try {
-      await result.getRow(100);
-      throw new Error("Should have thrown");
-    } catch (e) {
-      assertEquals((e as Error).message, "Row index out of bounds");
-    }
+        try {
+          await result3.getRow(100);
+          throw new Error("Should have thrown");
+        } catch (e) {
+          assertEquals((e as Error).message, "Row index out of bounds");
+        }
 
-    result.close();
-    conn.close();
-    db.close();
-  },
-});
+        result3.close();
+        conn3.close();
+        db3.close();
 
-Deno.test({
-  name: "getRow: throws on negative index",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const result = conn.query("SELECT * FROM test_data");
+        // Throws on negative index
+        const db4 = await setupTestDb();
+        const conn4 = await db4.connect();
+        const result4 = conn4.query("SELECT * FROM test_data");
 
-    try {
-      await result.getRow(-1);
-      throw new Error("Should have thrown");
-    } catch (e) {
-      assertEquals((e as Error).message, "Row index out of bounds");
-    }
+        try {
+          await result4.getRow(-1);
+          throw new Error("Should have thrown");
+        } catch (e) {
+          assertEquals((e as Error).message, "Row index out of bounds");
+        }
 
-    result.close();
-    conn.close();
-    db.close();
-  },
-});
+        result4.close();
+        conn4.close();
+        db4.close();
 
-Deno.test({
-  name: "toArrayOfObjects: returns objects with column names",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const result = conn.query("SELECT * FROM test_data ORDER BY id");
+        // Returns objects with column names
+        const db5 = await setupTestDb();
+        const conn5 = await db5.connect();
+        const result5 = conn5.query("SELECT * FROM test_data ORDER BY id");
 
-    const objects = await result.toArrayOfObjects();
+        const objects = await result5.toArrayOfObjects();
 
-    assertEquals(objects.length, 3);
-    assertEquals(objects[0].id, 1);
-    assertEquals(objects[0].name, "one");
-    assertEquals(objects[0].value, 1.5);
+        assertEquals(objects.length, 3);
+        assertEquals(objects[0].id, 1);
+        assertEquals(objects[0].name, "one");
+        assertEquals(objects[0].value, 1.5);
 
-    assertEquals(objects[1].id, 2);
-    assertEquals(objects[1].name, "two");
-    assertEquals(objects[1].value, 2.5);
+        assertEquals(objects[1].id, 2);
+        assertEquals(objects[1].name, "two");
+        assertEquals(objects[1].value, 2.5);
 
-    result.close();
-    conn.close();
-    db.close();
-  },
-});
+        result5.close();
+        conn5.close();
+        db5.close();
+      },
+    });
 
-Deno.test({
-  name: "rowCount: returns correct count",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const result = conn.query("SELECT * FROM test_data");
+    // Step 2: metadata
+    await t.step({
+      name: "metadata",
+      async fn() {
+        // Returns correct count
+        const db = await setupTestDb();
+        const conn = await db.connect();
+        const result = conn.query("SELECT * FROM test_data");
 
-    assertEquals(result.rowCount(), 3n);
+        assertEquals(result.rowCount(), 3n);
 
-    result.close();
-    conn.close();
-    db.close();
-  },
-});
+        result.close();
+        conn.close();
+        db.close();
 
-Deno.test({
-  name: "columnCount: returns column count",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const result = conn.query("SELECT * FROM test_data");
+        // Returns column count
+        const db2 = await setupTestDb();
+        const conn2 = await db2.connect();
+        const result2 = conn2.query("SELECT * FROM test_data");
 
-    assertEquals(await result.columnCount(), 3n);
+        assertEquals(await result2.columnCount(), 3n);
 
-    result.close();
-    conn.close();
-    db.close();
-  },
-});
+        result2.close();
+        conn2.close();
+        db2.close();
 
-Deno.test({
-  name: "getColumnInfos: returns column metadata",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const result = conn.query("SELECT * FROM test_data");
+        // Returns column metadata
+        const db3 = await setupTestDb();
+        const conn3 = await db3.connect();
+        const result3 = conn3.query("SELECT * FROM test_data");
 
-    const infos = await result.getColumnInfos();
+        const infos = await result3.getColumnInfos();
 
-    assertEquals(infos.length, 3);
-    assertEquals(infos[0].name, "id");
-    assertEquals(infos[1].name, "name");
-    assertEquals(infos[2].name, "value");
+        assertEquals(infos.length, 3);
+        assertEquals(infos[0].name, "id");
+        assertEquals(infos[1].name, "name");
+        assertEquals(infos[2].name, "value");
 
-    result.close();
-    conn.close();
-    db.close();
-  },
-});
+        result3.close();
+        conn3.close();
+        db3.close();
 
-Deno.test({
-  name: "isSuccess: returns query success",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const result = conn.query("SELECT * FROM test_data");
+        // Returns query success
+        const db4 = await setupTestDb();
+        const conn4 = await db4.connect();
+        const result4 = conn4.query("SELECT * FROM test_data");
 
-    assertEquals(result.isSuccess(), true);
+        assertEquals(result4.isSuccess(), true);
 
-    result.close();
-    conn.close();
-    db.close();
-  },
-});
+        result4.close();
+        conn4.close();
+        db4.close();
 
-Deno.test({
-  name: "getError: returns undefined for successful query",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const result = conn.query("SELECT * FROM test_data");
+        // Returns undefined for successful query
+        const db5 = await setupTestDb();
+        const conn5 = await db5.connect();
+        const result5 = conn5.query("SELECT * FROM test_data");
 
-    assertEquals(result.getError(), undefined);
+        assertEquals(result5.getError(), undefined);
 
-    result.close();
-    conn.close();
-    db.close();
-  },
-});
+        result5.close();
+        conn5.close();
+        db5.close();
+      },
+    });
 
-Deno.test({
-  name: "free: releases memory",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const result = conn.query("SELECT * FROM test_data");
+    // Step 3: resource management
+    await t.step({
+      name: "resource management",
+      async fn() {
+        // Releases memory
+        const db = await setupTestDb();
+        const conn = await db.connect();
+        const result = conn.query("SELECT * FROM test_data");
 
-    result.close();
+        result.close();
 
-    // After freeing, operations should throw
-    try {
-      await result.fetchAll();
-      throw new Error("Should have thrown");
-    } catch (e) {
-      assertEquals((e as Error).message, "Result has been freed");
-    }
+        // After freeing, operations should throw
+        try {
+          await result.fetchAll();
+          throw new Error("Should have thrown");
+        } catch (e) {
+          assertEquals((e as Error).message, "Result has been freed");
+        }
 
-    conn.close();
-    db.close();
-  },
-});
+        conn.close();
+        db.close();
 
-Deno.test({
-  name: "free: is idempotent",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const result = conn.query("SELECT * FROM test_data");
+        // Is idempotent
+        const db2 = await setupTestDb();
+        const conn2 = await db2.connect();
+        const result2 = conn2.query("SELECT * FROM test_data");
 
-    result.close();
-    result.close(); // Should not throw
+        result2.close();
+        result2.close(); // Should not throw
 
-    conn.close();
-    db.close();
-  },
-});
+        conn2.close();
+        db2.close();
 
-Deno.test({
-  name: "rowCount: throws after free",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const result = conn.query("SELECT * FROM test_data");
+        // Throws after free (rowCount)
+        const db3 = await setupTestDb();
+        const conn3 = await db3.connect();
+        const result3 = conn3.query("SELECT * FROM test_data");
 
-    result.close();
+        result3.close();
 
-    try {
-      result.rowCount();
-      throw new Error("Should have thrown");
-    } catch (e) {
-      assertEquals((e as Error).message, "Result has been freed");
-    }
+        try {
+          result3.rowCount();
+          throw new Error("Should have thrown");
+        } catch (e) {
+          assertEquals((e as Error).message, "Result has been freed");
+        }
 
-    conn.close();
-    db.close();
-  },
-});
+        conn3.close();
+        db3.close();
 
-Deno.test({
-  name: "columnCount: throws after free",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const result = conn.query("SELECT * FROM test_data");
+        // Throws after free (columnCount)
+        const db4 = await setupTestDb();
+        const conn4 = await db4.connect();
+        const result4 = conn4.query("SELECT * FROM test_data");
 
-    result.close();
+        result4.close();
 
-    try {
-      await result.columnCount();
-      throw new Error("Should have thrown");
-    } catch (e) {
-      assertEquals((e as Error).message, "Result has been freed");
-    }
+        try {
+          await result4.columnCount();
+          throw new Error("Should have thrown");
+        } catch (e) {
+          assertEquals((e as Error).message, "Result has been freed");
+        }
 
-    conn.close();
-    db.close();
-  },
-});
+        conn4.close();
+        db4.close();
 
-Deno.test({
-  name: "getColumnInfos: throws after free",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const result = conn.query("SELECT * FROM test_data");
+        // Throws after free (getColumnInfos)
+        const db5 = await setupTestDb();
+        const conn5 = await db5.connect();
+        const result5 = conn5.query("SELECT * FROM test_data");
 
-    result.close();
+        result5.close();
 
-    try {
-      await result.getColumnInfos();
-      throw new Error("Should have thrown");
-    } catch (e) {
-      assertEquals((e as Error).message, "Result has been freed");
-    }
+        try {
+          await result5.getColumnInfos();
+          throw new Error("Should have thrown");
+        } catch (e) {
+          assertEquals((e as Error).message, "Result has been freed");
+        }
 
-    conn.close();
-    db.close();
-  },
-});
+        conn5.close();
+        db5.close();
 
-Deno.test({
-  name: "toArrayOfObjects: throws after free",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const result = conn.query("SELECT * FROM test_data");
+        // Throws after free (toArrayOfObjects)
+        const db6 = await setupTestDb();
+        const conn6 = await db6.connect();
+        const result6 = conn6.query("SELECT * FROM test_data");
 
-    result.close();
+        result6.close();
 
-    try {
-      await result.toArrayOfObjects();
-      throw new Error("Should have thrown");
-    } catch (e) {
-      assertEquals((e as Error).message, "Result has been freed");
-    }
+        try {
+          await result6.toArrayOfObjects();
+          throw new Error("Should have thrown");
+        } catch (e) {
+          assertEquals((e as Error).message, "Result has been freed");
+        }
 
-    conn.close();
-    db.close();
-  },
-});
+        conn6.close();
+        db6.close();
+      },
+    });
 
-Deno.test({
-  name: "query: handles empty result set",
-  async fn() {
-    const db = await setupTestDb();
-    const conn = await db.connect();
-    const result = conn.query("SELECT * FROM test_data WHERE id = 999");
+    // Step 4: edge cases
+    await t.step({
+      name: "edge cases",
+      async fn() {
+        // Handles empty result set
+        const db = await setupTestDb();
+        const conn = await db.connect();
+        const result = conn.query("SELECT * FROM test_data WHERE id = 999");
 
-    assertEquals(result.rowCount(), 0n);
-    assertEquals((await result.fetchAll()).length, 0);
+        assertEquals(result.rowCount(), 0n);
+        assertEquals((await result.fetchAll()).length, 0);
 
-    result.close();
-    conn.close();
-    db.close();
+        result.close();
+        conn.close();
+        db.close();
+      },
+    });
   },
 });

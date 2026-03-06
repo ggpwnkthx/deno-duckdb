@@ -1,5 +1,5 @@
 /**
- * Benchmark script comparing query performance across Materialized vs Unmaterialized results:
+ * Benchmark script comparing query performance across Materialized vs Lazy iteration:
  *
  * === Materialized Results ===
  * These benchmarks execute queries and load the full result set into memory.
@@ -7,10 +7,10 @@
  * - Functional API: Pure functional style with explicit state
  * - Objective API: Object-oriented with automatic resource management
  *
- * === Unmaterialized Results (Streaming) ===
- * These benchmarks stream rows lazily without loading the full result set.
- * - Functional API Streaming: Lazy row-by-row iteration
- * - Objective API Streaming: Lazy row-by-row iteration
+ * === Lazy Iteration over Materialized Results ===
+ * These benchmarks iterate over rows lazily without loading the full result set.
+ * - Functional API Lazy Iteration: Lazy row-by-row iteration
+ * - Objective API Lazy Iteration: Lazy row-by-row iteration
  *
  * Only measures query execution and fetch time, not setup/cleanup overhead.
  */
@@ -96,8 +96,14 @@ Deno.bench("Direct FFI", () => {
       // Use type-specific reads matching the functional API
       switch (type) {
         case 1: // BOOLEAN
+          row.push(view.getInt8(r * 1));
+          break;
         case 2: // TINYINT
+          row.push(view.getInt8(r * 1));
+          break;
         case 3: // SMALLINT
+          row.push(view.getInt16(r * 2));
+          break;
         case 4: // INTEGER
           row.push(view.getInt32(r * 4));
           break;
@@ -105,8 +111,17 @@ Deno.bench("Direct FFI", () => {
           row.push(view.getBigInt64(r * 8));
           break;
         case 6: // HUGEINT
-        case 7: // FLOAT (type 10)
+        {
+          const offset = r * 16;
+          const lower = view.getBigUint64(offset);
+          const upper = view.getBigInt64(offset + 8);
+          row.push((upper << 64n) + lower);
+          break;
+        }
+        case 7: // FLOAT (type 7 in some versions)
         case 10: // FLOAT
+          row.push(view.getFloat32(r * 4));
+          break;
         case 11: // DOUBLE
         case 19: // DECIMAL
           row.push(view.getFloat64(r * 8));
@@ -118,7 +133,7 @@ Deno.bench("Direct FFI", () => {
           const innerPtr = view.getPointer(r * 8);
           if (innerPtr) {
             const innerView = new Deno.UnsafePointerView(
-              innerPtr as Deno.PointerObject<unknown>,
+              innerPtr as unknown as Deno.PointerObject<unknown>,
             );
             row.push(innerView.getCString());
           } else {
@@ -172,10 +187,10 @@ Deno.bench("Objective API", async () => {
   }
 });
 
-// === Unmaterialized Results (Streaming) ===
+// === Lazy Iteration over Materialized Results ===
 
-Deno.bench("Functional API Streaming", async () => {
-  // Execute and stream rows
+Deno.bench("Functional API Lazy Iteration", async () => {
+  // Execute and iterate over rows lazily
   let count = 0;
   for await (const _row of functional.stream(connHandleFunc, QUERY)) {
     count++;
@@ -187,8 +202,8 @@ Deno.bench("Functional API Streaming", async () => {
   }
 });
 
-Deno.bench("Objective API Streaming", async () => {
-  // Execute and stream rows
+Deno.bench("Objective API Lazy Iteration", async () => {
+  // Execute and iterate over rows lazily
   let count = 0;
   for await (const _row of connObj.stream(QUERY)) {
     count++;

@@ -20,7 +20,7 @@ export const DuckDBType = {
   /** 64-bit integer */
   BIGINT: 5,
   /** 128-bit integer */
-  HUGEINT: 6,
+  HUGEINT: 16,
   /** 32-bit floating point */
   FLOAT: 10,
   /** 64-bit floating point */

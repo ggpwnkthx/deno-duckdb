@@ -227,3 +227,138 @@ Deno.test({
     });
   },
 });
+
+// BOOLEAN tests
+Deno.test({
+  name: "fetchAll: BOOLEAN true/false",
+  async fn() {
+    await withConn(async (conn) => {
+      const handle = await duckdb.execute(
+        conn,
+        "SELECT true as v UNION ALL SELECT false",
+      );
+      const rows = await duckdb.fetchAll(handle);
+      assertEquals(rows[0][0], 1);
+      assertEquals(rows[1][0], 0);
+      await duckdb.destroyResult(handle);
+    });
+  },
+});
+
+// TINYINT tests
+Deno.test({
+  name: "fetchAll: TINYINT values",
+  async fn() {
+    await withConn(async (conn) => {
+      const handle = await duckdb.execute(
+        conn,
+        "SELECT 1::TINYINT UNION ALL SELECT 127::TINYINT",
+      );
+      const rows = await duckdb.fetchAll(handle);
+      assertEquals(rows[0][0], 1);
+      assertEquals(rows[1][0], 127);
+      await duckdb.destroyResult(handle);
+    });
+  },
+});
+
+// SMALLINT tests
+Deno.test({
+  name: "fetchAll: SMALLINT values",
+  async fn() {
+    await withConn(async (conn) => {
+      const handle = await duckdb.execute(
+        conn,
+        "SELECT 1::SMALLINT UNION ALL SELECT 32767::SMALLINT",
+      );
+      const rows = await duckdb.fetchAll(handle);
+      assertEquals(rows[0][0], 1);
+      assertEquals(rows[1][0], 32767);
+      await duckdb.destroyResult(handle);
+    });
+  },
+});
+
+// FLOAT tests
+Deno.test({
+  name: "fetchAll: FLOAT values",
+  async fn() {
+    await withConn(async (conn) => {
+      const handle = await duckdb.execute(
+        conn,
+        "SELECT 1.5::FLOAT",
+      );
+      const rows = await duckdb.fetchAll(handle);
+      assertEquals(rows[0][0], 1.5);
+      await duckdb.destroyResult(handle);
+    });
+  },
+});
+
+// HUGEINT tests
+Deno.test({
+  name: "fetchAll: HUGEINT large positive",
+  async fn() {
+    await withConn(async (conn) => {
+      const handle = await duckdb.execute(
+        conn,
+        "SELECT (pow(2,80) + 12345)::HUGEINT as v",
+      );
+      const rows = await duckdb.fetchAll(handle);
+      assertEquals(rows[0][0], 1208925819614629174706176n);
+      await duckdb.destroyResult(handle);
+    });
+  },
+});
+
+Deno.test({
+  name: "fetchAll: HUGEINT negative",
+  async fn() {
+    await withConn(async (conn) => {
+      const handle = await duckdb.execute(
+        conn,
+        "SELECT (-pow(2,80) + 7)::HUGEINT as v",
+      );
+      const rows = await duckdb.fetchAll(handle);
+      assertEquals(rows[0][0], -1208925819614629174706176n);
+      await duckdb.destroyResult(handle);
+    });
+  },
+});
+
+Deno.test({
+  name: "fetchAll: HUGEINT zero",
+  async fn() {
+    await withConn(async (conn) => {
+      const handle = await duckdb.execute(
+        conn,
+        "SELECT 0::HUGEINT as v",
+      );
+      const rows = await duckdb.fetchAll(handle);
+      assertEquals(rows[0][0], 0n);
+      await duckdb.destroyResult(handle);
+    });
+  },
+});
+
+Deno.test({
+  name: "fetchAll: HUGEINT NULL handling",
+  async fn() {
+    await withConn(async (conn) => {
+      await exec(conn, "CREATE TABLE hugeint_null_test(v HUGEINT)");
+      await exec(
+        conn,
+        "INSERT INTO hugeint_null_test VALUES (NULL), (1::HUGEINT)",
+      );
+
+      const handle = await duckdb.execute(
+        conn,
+        "SELECT * FROM hugeint_null_test",
+      );
+      const rows = await duckdb.fetchAll(handle);
+      assertEquals(rows[0][0], null);
+      assertEquals(rows[1][0], 1n);
+      await duckdb.destroyResult(handle);
+    });
+  },
+});

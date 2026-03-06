@@ -6,6 +6,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { functional as duckdb } from "@ggpwnkthx/duckdb";
 import { functional } from "@ggpwnkthx/duckdb";
 import { QueryError } from "../src/errors.ts";
+import { getPointer } from "../src/helpers.ts";
 import { exec, query, withConn } from "./_util.ts";
 
 // Warm-up test to trigger library loading once for all tests
@@ -16,8 +17,8 @@ Deno.test({
   async fn() {
     const db = await duckdb.open();
     const conn = await duckdb.create(db);
-    await duckdb.closeConnection(conn);
-    await duckdb.closeDatabase(db);
+    duckdb.closeConnection(conn);
+    duckdb.closeDatabase(db);
   },
 });
 
@@ -156,5 +157,24 @@ Deno.test({
       assertEquals(rows[2][0], "café");
       assertEquals(rows[3][0], "😀");
     });
+  },
+});
+
+// Regression test for pointer offset
+Deno.test({
+  name: "regression: getPointer respects byteOffset",
+  fn() {
+    // Create a buffer with data at a specific offset
+    const buffer = new Uint8Array(24);
+    // Write a pointer value at bytes 8-15 (simulating column data)
+    const expectedPtr = 0x123456789ABCDEF0n;
+    const view = new DataView(buffer.buffer, 8, 8);
+    view.setBigUint64(0, expectedPtr, true);
+
+    // Now use getPointer which should read from the start of the buffer
+    // In our use case, we pass buffer.subarray(8) to skip the first 8 bytes
+    const slicedBuffer = buffer.subarray(8);
+    const result = getPointer(slicedBuffer);
+    assertEquals(result, expectedPtr);
   },
 });

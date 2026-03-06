@@ -92,6 +92,7 @@ export function executePrepared(
 export function preparedColumnCount(
   handle: PreparedStatementHandle,
 ): bigint {
+  validatePreparedHandle(handle);
   const lib = getLibraryFast();
   const ptr = getPointer(handle);
   return lib.symbols.duckdb_prepared_statement_column_count(ptr);
@@ -106,6 +107,7 @@ export function preparedColumnCount(
 export function preparedParameterCount(
   handle: PreparedStatementHandle,
 ): bigint {
+  validatePreparedHandle(handle);
   const lib = getLibraryFast();
   const ptr = getPointer(handle);
   return lib.symbols.duckdb_bind_get_parameter_count(
@@ -192,6 +194,7 @@ export function destroyPrepared(
 export function destroyPreparedSync(
   handle: PreparedStatementHandle,
 ): void {
+  validatePreparedHandle(handle);
   const lib = getLibrarySync();
   if (lib && isValidHandle(handle)) {
     lib.symbols.duckdb_destroy_prepare(handle);

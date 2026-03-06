@@ -9,15 +9,114 @@ import {
   DuckDBType,
   type DuckDBTypeValue,
   type ResultHandle,
+  type ValueType,
 } from "../types.ts";
 import {
+  BYTE_SIZE_128,
+  BYTE_SIZE_16,
   BYTE_SIZE_32,
   BYTE_SIZE_64,
+  BYTE_SIZE_8,
   createPointerView,
   isNullFromMask,
   isStringType,
+  validateResultHandle,
 } from "../helpers.ts";
 import { getLibraryFast } from "../lib.ts";
+
+/**
+ * Decode a HUGEINT value from a data view at the given row offset
+ *
+ * HUGEINT format in DuckDB: 16 bytes = { lower: uint64, upper: int64 }
+ * Compute: value = (BigInt(upper) << 64n) + BigInt(lower)
+ */
+export function decodeHugeInt(
+  dataView: Deno.UnsafePointerView | null,
+  row: number,
+): bigint {
+  if (!dataView) return 0n;
+  const offset = row * BYTE_SIZE_128;
+  const lower = dataView.getBigUint64(offset);
+  const upper = dataView.getBigInt64(offset + 8);
+  return (upper << 64n) + lower;
+}
+
+/**
+ * Decode a value by type from pre-fetched column data and null mask
+ *
+ * This is a unified helper function that handles all DuckDB types consistently.
+ *
+ * @param row - Row index (0-based)
+ * @param type - DuckDB type of the column
+ * @param dataView - Pre-fetched data pointer view (or null)
+ * @param nullMaskView - Pre-fetched null mask pointer view (or null)
+ * @param checkNull - If true (default), check null mask for all types
+ * @returns The decoded value
+ */
+export function decodeValueByType(
+  row: number,
+  type: DuckDBTypeValue,
+  dataView: Deno.UnsafePointerView | null,
+  nullMaskView: Deno.UnsafePointerView | null,
+  checkNull = true,
+): ValueType {
+  // NULL type is always null
+  if (type === DuckDBType.NULL) {
+    return null;
+  }
+
+  // Helper to check null
+  const isNullValue = (): boolean => {
+    return checkNull && isNullFromMask(nullMaskView, row);
+  };
+
+  // Handle string types (require pointer dereferencing)
+  if (isStringType(type)) {
+    if (isNullValue()) {
+      return null;
+    }
+    return getStringValue(dataView, row);
+  }
+
+  // Handle numeric types
+  switch (type) {
+    case DuckDBType.BOOLEAN:
+    case DuckDBType.TINYINT:
+      // BOOLEAN, TINYINT - 1 byte
+      if (isNullValue()) return null;
+      return dataView ? dataView.getInt8(row * BYTE_SIZE_8) : 0;
+    case DuckDBType.SMALLINT:
+      // SMALLINT - 2 bytes
+      if (isNullValue()) return null;
+      return dataView ? dataView.getInt16(row * BYTE_SIZE_16) : 0;
+    case DuckDBType.INTEGER:
+      // INTEGER - 4 bytes
+      if (isNullValue()) return null;
+      return dataView ? dataView.getInt32(row * BYTE_SIZE_32) : 0;
+    case DuckDBType.BIGINT:
+      // BIGINT - 8 bytes
+      if (isNullValue()) return null;
+      return dataView ? dataView.getBigInt64(row * BYTE_SIZE_64) : 0n;
+    case DuckDBType.FLOAT:
+      // FLOAT - 4 bytes
+      if (isNullValue()) return null;
+      return dataView ? dataView.getFloat32(row * BYTE_SIZE_32) : 0;
+    case DuckDBType.HUGEINT:
+      // HUGEINT - 16 bytes (two 64-bit integers: lower and upper)
+      if (isNullValue()) return null;
+      return decodeHugeInt(dataView, row);
+    case DuckDBType.DOUBLE:
+      // DOUBLE - 8 bytes
+      if (isNullValue()) return null;
+      return dataView ? dataView.getFloat64(row * BYTE_SIZE_64) : 0;
+    default:
+      // Fallback to string for unknown types
+      if (isNullValue()) {
+        return null;
+      }
+      return getStringValue(dataView, row);
+  }
+}
 
 /**
  * Get a value from a result by row and column index with type
@@ -34,6 +133,7 @@ export function getValueByTypeFromHandle(
   col: number,
   type: DuckDBTypeValue,
 ): unknown {
+  validateResultHandle(handle);
   const lib = getLibraryFast();
 
   // NULL type is always null
@@ -48,33 +148,8 @@ export function getValueByTypeFromHandle(
   const dataView = dataPtr ? createPointerView(dataPtr) : null;
   const nullMaskView = nullMaskPtr ? createPointerView(nullMaskPtr) : null;
 
-  // Check null for all types
-  if (isNullFromMask(nullMaskView, row)) {
-    return null;
-  }
-
-  // Handle string types (require pointer dereferencing)
-  if (isStringType(type)) {
-    return getStringValue(dataView, row);
-  }
-
-  // Handle numeric types
-  switch (type) {
-    case DuckDBType.BOOLEAN:
-    case DuckDBType.TINYINT:
-    case DuckDBType.SMALLINT:
-    case DuckDBType.INTEGER:
-      return dataView ? dataView.getInt32(row * BYTE_SIZE_32) : 0;
-    case DuckDBType.BIGINT:
-      return dataView ? dataView.getBigInt64(row * BYTE_SIZE_64) : 0n;
-    case DuckDBType.HUGEINT:
-    case DuckDBType.FLOAT:
-    case DuckDBType.DOUBLE:
-      return dataView ? dataView.getFloat64(row * BYTE_SIZE_64) : 0;
-    default:
-      // Fallback to string for unknown types
-      return getStringValue(dataView, row);
-  }
+  // Use the unified decoder
+  return decodeValueByType(row, type, dataView, nullMaskView, true);
 }
 
 /**
@@ -113,6 +188,7 @@ export interface ColumnMetadata {
 export function buildColumnMetadata(
   handle: ResultHandle,
 ): ColumnMetadata {
+  validateResultHandle(handle);
   const lib = getLibraryFast();
 
   // Get column count
@@ -161,35 +237,6 @@ export function getValueFromMetadata(
   const dataView = metadata.dataViews[col];
   const nullMaskView = metadata.nullMaskViews[col];
 
-  // NULL type is always null
-  if (type === DuckDBType.NULL) {
-    return null;
-  }
-
-  // Check null mask
-  if (isNullFromMask(nullMaskView, row)) {
-    return null;
-  }
-
-  // Handle string types
-  if (isStringType(type)) {
-    return getStringValue(dataView, row);
-  }
-
-  // Handle numeric types
-  switch (type) {
-    case DuckDBType.BOOLEAN:
-    case DuckDBType.TINYINT:
-    case DuckDBType.SMALLINT:
-    case DuckDBType.INTEGER:
-      return dataView ? dataView.getInt32(row * BYTE_SIZE_32) : 0;
-    case DuckDBType.BIGINT:
-      return dataView ? dataView.getBigInt64(row * BYTE_SIZE_64) : 0n;
-    case DuckDBType.HUGEINT:
-    case DuckDBType.FLOAT:
-    case DuckDBType.DOUBLE:
-      return dataView ? dataView.getFloat64(row * BYTE_SIZE_64) : 0;
-    default:
-      return getStringValue(dataView, row);
-  }
+  // Use the unified decoder
+  return decodeValueByType(row, type, dataView, nullMaskView, true);
 }

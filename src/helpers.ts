@@ -17,11 +17,12 @@ const POINTER_SIZE = 8;
 /** Size of duckdb_result struct */
 const RESULT_SIZE = 48;
 
-/** Byte size for 32-bit values (INT32, FLOAT) */
-const BYTE_SIZE_32 = 4;
-
-/** Byte size for 64-bit values (INT64, DOUBLE, pointers) */
-const BYTE_SIZE_64 = 8;
+/** Byte sizes for DuckDB types */
+export const BYTE_SIZE_8 = 1; // BOOLEAN, TINYINT
+export const BYTE_SIZE_16 = 2; // SMALLINT
+export const BYTE_SIZE_32 = 4; // INTEGER, FLOAT
+export const BYTE_SIZE_64 = 8; // BIGINT, DOUBLE, pointers
+export const BYTE_SIZE_128 = 16; // HUGEINT
 
 /**
  * Check if a DuckDB type is a string type (requires pointer dereferencing)
@@ -38,8 +39,8 @@ export function isStringType(type: DuckDBTypeValue): boolean {
   );
 }
 
-/** Export byte size constants */
-export { BYTE_SIZE_32, BYTE_SIZE_64, POINTER_SIZE, RESULT_SIZE };
+/** Export other size constants */
+export { POINTER_SIZE, RESULT_SIZE };
 
 /** TextEncoder instance - reused for string encoding */
 const encoder = new TextEncoder();
@@ -88,7 +89,8 @@ export function createResultBuffer(): ResultHandle {
  * Extract pointer value from handle buffer
  */
 export function getPointer(buffer: Uint8Array): bigint {
-  return new DataView(buffer.buffer).getBigUint64(0, true);
+  return new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength)
+    .getBigUint64(0, true);
 }
 
 /**

@@ -90,6 +90,7 @@ export function executeAndFetchAll(
 export function rowCount(
   handle: ResultHandle,
 ): bigint {
+  validateResultHandle(handle);
   const lib = getLibraryFast();
   return lib.symbols.duckdb_row_count(handle);
 }
@@ -103,6 +104,7 @@ export function rowCount(
 export function columnCount(
   handle: ResultHandle,
 ): bigint {
+  validateResultHandle(handle);
   const lib = getLibraryFast();
   return lib.symbols.duckdb_column_count(handle);
 }
@@ -118,6 +120,7 @@ export function columnName(
   handle: ResultHandle,
   index: number,
 ): string {
+  validateResultHandle(handle);
   const lib = getLibraryFast();
   const ptr = lib.symbols.duckdb_column_name(handle, BigInt(index));
   if (!ptr) return "";
@@ -139,6 +142,7 @@ export function columnType(
   handle: ResultHandle,
   index: number,
 ): DuckDBTypeValue {
+  validateResultHandle(handle);
   const lib = getLibraryFast();
   return lib.symbols.duckdb_column_type(
     handle,
@@ -155,6 +159,7 @@ export function columnType(
 export function columnInfos(
   handle: ResultHandle,
 ): ColumnInfo[] {
+  validateResultHandle(handle);
   const count = Number(columnCount(handle));
   const infos: ColumnInfo[] = [];
 
@@ -192,7 +197,7 @@ export function destroyResult(
 export function destroyResultSync(
   handle: ResultHandle,
 ): void {
-  // Use getLibrarySync - returns null if library not loaded
+  validateResultHandle(handle);
   const lib = getLibrarySync();
   if (lib && isValidHandle(handle)) {
     lib.symbols.duckdb_destroy_result(handle);

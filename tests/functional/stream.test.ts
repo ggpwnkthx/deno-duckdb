@@ -173,3 +173,86 @@ Deno.test({
     });
   },
 });
+
+// Stream type tests
+Deno.test({
+  name: "stream: HUGEINT values",
+  async fn() {
+    await withConn(async (conn) => {
+      const rows: RowData[] = [];
+      for await (
+        const row of streamFn(conn, "SELECT 1::HUGEINT")
+      ) {
+        rows.push(row);
+      }
+      assertEquals(rows[0][0], 1n);
+    });
+  },
+});
+
+Deno.test({
+  name: "stream: HUGEINT large positive",
+  async fn() {
+    await withConn(async (conn) => {
+      const rows: RowData[] = [];
+      for await (
+        const row of streamFn(conn, "SELECT (pow(2,80) + 12345)::HUGEINT as v")
+      ) {
+        rows.push(row);
+      }
+      assertEquals(rows[0][0], 1208925819614629174706176n);
+    });
+  },
+});
+
+Deno.test({
+  name: "stream: HUGEINT NULL handling",
+  async fn() {
+    await withConn(async (conn) => {
+      await exec(conn, "CREATE TABLE stream_hugeint_null(v HUGEINT)");
+      await exec(
+        conn,
+        "INSERT INTO stream_hugeint_null VALUES (NULL), (42::HUGEINT)",
+      );
+
+      const rows: RowData[] = [];
+      for await (
+        const row of streamFn(conn, "SELECT * FROM stream_hugeint_null")
+      ) {
+        rows.push(row);
+      }
+      assertEquals(rows[0][0], null);
+      assertEquals(rows[1][0], 42n);
+    });
+  },
+});
+
+Deno.test({
+  name: "stream: FLOAT values",
+  async fn() {
+    await withConn(async (conn) => {
+      const rows: RowData[] = [];
+      for await (
+        const row of streamFn(conn, "SELECT 1.5::FLOAT")
+      ) {
+        rows.push(row);
+      }
+      assertEquals(rows[0][0], 1.5);
+    });
+  },
+});
+
+Deno.test({
+  name: "stream: SMALLINT values",
+  async fn() {
+    await withConn(async (conn) => {
+      const rows: RowData[] = [];
+      for await (
+        const row of streamFn(conn, "SELECT 32767::SMALLINT")
+      ) {
+        rows.push(row);
+      }
+      assertEquals(rows[0][0], 32767);
+    });
+  },
+});

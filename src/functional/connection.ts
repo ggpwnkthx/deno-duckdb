@@ -8,6 +8,7 @@ import {
   getPointer,
   isValidHandle,
   validateConnectionHandle,
+  validateDatabaseHandle,
 } from "../helpers.ts";
 import { DatabaseError } from "../errors.ts";
 import { getLibrary, getLibraryFast } from "../lib.ts";
@@ -22,6 +23,7 @@ import { getLibrary, getLibraryFast } from "../lib.ts";
 export async function create(
   dbHandle: DatabaseHandle,
 ): Promise<ConnectionHandle> {
+  validateDatabaseHandle(dbHandle);
   const lib = await getLibrary();
   const handle = createConnectionBuffer();
   const dbPtr = getPointer(dbHandle);
@@ -55,6 +57,7 @@ export function closeConnection(
  * Check if a connection handle is valid
  */
 export function isValidConnection(handle: ConnectionHandle): boolean {
+  validateConnectionHandle(handle);
   return isValidHandle(handle);
 }
 
@@ -62,5 +65,6 @@ export function isValidConnection(handle: ConnectionHandle): boolean {
  * Get the connection pointer value
  */
 export function getPointerValueConnection(handle: ConnectionHandle): bigint {
+  validateConnectionHandle(handle);
   return getPointer(handle);
 }

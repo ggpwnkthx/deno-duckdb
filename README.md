@@ -138,9 +138,9 @@ objects containing handles that must be manually managed and destroyed.
 - `getString` - Get VARCHAR value
 - `getValueByType` - Get value by DuckDB type
 
-**Streaming:**
+**Lazy iteration:**
 
-- `stream` - Stream rows from query lazily
+- `stream` - Iterate over rows from query lazily
 
 ### Objective API (`jsr:@ggpwnkthx/duckdb/objective`)
 
@@ -159,7 +159,7 @@ automatic resource management. Supports `Symbol.dispose` for automatic cleanup.
 **Types:**
 
 - `Disposable` - Interface for explicit resource cleanup
-- `RowStream` - Type for streaming row results
+- `RowStream` - Type for lazy iteration row results
 
 **Error classes:**
 
@@ -175,7 +175,8 @@ automatic resource management. Supports `Symbol.dispose` for automatic cleanup.
 - **Auto-loading** - Library loads automatically on first use
 - **Automatic cleanup** - Objective API handles resource management
 - **Symbol.dispose support** - Use `using` keyword for automatic cleanup
-- **Streaming support** - Stream large query results lazily
+- **Lazy iteration** - Iterate over large query results without loading all into
+  memory
 
 ## Testing
 

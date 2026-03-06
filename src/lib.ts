@@ -37,10 +37,13 @@ export async function getLibrary(): Promise<DuckDBLibrary> {
 
   // Start loading and cache the promise
   loadingPromise = (async (): Promise<DuckDBLibrary> => {
-    const lib = await load();
-    cachedLib = lib;
-    loadingPromise = null;
-    return lib;
+    try {
+      const lib = await load();
+      cachedLib = lib;
+      return lib;
+    } finally {
+      loadingPromise = null;
+    }
   })();
 
   return await loadingPromise;

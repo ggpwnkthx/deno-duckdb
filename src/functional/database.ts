@@ -140,6 +140,7 @@ export function closeDatabase(
  * Check if a database handle is valid
  */
 export function isValidDatabase(handle: DatabaseHandle): boolean {
+  validateDatabaseHandle(handle);
   return isValidHandle(handle);
 }
 
@@ -147,5 +148,6 @@ export function isValidDatabase(handle: DatabaseHandle): boolean {
  * Get the database pointer value
  */
 export function getPointerValue(handle: DatabaseHandle): bigint {
+  validateDatabaseHandle(handle);
   return getPointer(handle);
 }

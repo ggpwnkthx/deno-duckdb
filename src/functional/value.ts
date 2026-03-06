@@ -14,10 +14,11 @@ import {
   BYTE_SIZE_64,
   createPointerView,
   isNullFromMask,
-  isStringType,
+  validateResultHandle,
 } from "../helpers.ts";
 import * as query from "./query.ts";
 import { getLibraryFast } from "../lib.ts";
+import { decodeValueByType } from "./types.ts";
 
 /**
  * Check if a value at row and column is NULL
@@ -32,6 +33,7 @@ export function isNull(
   row: number,
   col: number,
 ): boolean {
+  validateResultHandle(handle);
   const lib = getLibraryFast();
   // Use duckdb_nullmask_data to get the null mask pointer
   const nullMaskPtr = lib.symbols.duckdb_nullmask_data(
@@ -60,6 +62,7 @@ export function getInt32(
   row: number,
   col: number,
 ): number | null {
+  validateResultHandle(handle);
   // Check null first
   if (isNull(handle, row, col)) {
     return null;
@@ -94,6 +97,7 @@ export function getInt64(
   row: number,
   col: number,
 ): bigint | null {
+  validateResultHandle(handle);
   // Check null first
   if (isNull(handle, row, col)) {
     return null;
@@ -128,6 +132,7 @@ export function getDouble(
   row: number,
   col: number,
 ): number | null {
+  validateResultHandle(handle);
   // Check null first
   if (isNull(handle, row, col)) {
     return null;
@@ -163,6 +168,7 @@ export function getString(
   row: number,
   col: number,
 ): string | null {
+  validateResultHandle(handle);
   const lib = getLibraryFast();
   // Check if NULL first
   if (isNull(handle, row, col)) {
@@ -205,6 +211,7 @@ export function getString(
 export function fetchAll(
   handle: ResultHandle,
 ): RowData[] {
+  validateResultHandle(handle);
   const rowCount = Number(query.rowCount(handle));
   const colCount = Number(query.columnCount(handle));
 
@@ -246,14 +253,12 @@ export function fetchAll(
     // Pre-allocate row array
     const row: RowData = new Array(colCount);
     for (let c = 0; c < colCount; c++) {
-      const type = columnTypes[c];
-      const dataView = dataViews[c];
-      const nullMaskView = nullMaskViews[c];
-      row[c] = getValueByTypeOptimized(
+      // Use unified decoder
+      row[c] = decodeValueByType(
         r,
-        type,
-        dataView,
-        nullMaskView,
+        columnTypes[c],
+        dataViews[c],
+        nullMaskViews[c],
       );
     }
     rows[r] = row;
@@ -279,66 +284,8 @@ export function getValueByTypeOptimized(
   nullMaskView: Deno.UnsafePointerView | null,
   checkNull = true,
 ): ValueType {
-  // NULL type is 0
-  if (type === DuckDBType.NULL) {
-    return null;
-  }
-
-  // Use shared helper for null mask check
-  const isNullValue = (): boolean => {
-    return checkNull && isNullFromMask(nullMaskView, row);
-  };
-
-  // Use shared helper for string type check
-  if (isStringType(type)) {
-    // Check null for strings
-    if (isNullValue()) {
-      return null;
-    }
-    return getStringWithView(dataView, row);
-  }
-
-  // For numeric types, check null if enabled (default)
-  switch (type) {
-    case DuckDBType.BOOLEAN:
-    case DuckDBType.TINYINT:
-    case DuckDBType.SMALLINT:
-    case DuckDBType.INTEGER:
-      if (isNullValue()) return null;
-      return dataView ? dataView.getInt32(row * BYTE_SIZE_32) : 0;
-    case DuckDBType.BIGINT:
-      if (isNullValue()) return null;
-      return dataView ? dataView.getBigInt64(row * BYTE_SIZE_64) : 0n;
-    case DuckDBType.HUGEINT:
-    case DuckDBType.FLOAT:
-    case DuckDBType.DOUBLE:
-      if (isNullValue()) return null;
-      return dataView ? dataView.getFloat64(row * BYTE_SIZE_64) : 0;
-    default:
-      // Fallback to string for unknown types
-      if (isNullValue()) {
-        return null;
-      }
-      return getStringWithView(dataView, row);
-  }
-}
-
-/**
- * Get VARCHAR value with pre-fetched view
- */
-function getStringWithView(
-  dataView: Deno.UnsafePointerView | null,
-  row: number,
-): string {
-  if (!dataView) return "";
-
-  const innerPtr = dataView.getPointer(row * BYTE_SIZE_64);
-  if (!innerPtr) return "";
-
-  const innerView = createPointerView(innerPtr);
-  if (!innerView) return "";
-
-  return innerView.getCString();
+  // Use unified decoder
+  return decodeValueByType(row, type, dataView, nullMaskView, checkNull);
 }
 
 /**
@@ -360,6 +307,9 @@ export function getValueByType(
   type: DuckDBTypeValue,
   checkNull = true,
 ): ValueType {
+  validateResultHandle(handle);
+  const lib = getLibraryFast();
+
   // NULL type is 0, check for NULL values
   if (
     type === DuckDBType.NULL || (checkNull && isNull(handle, row, col))
@@ -367,25 +317,13 @@ export function getValueByType(
     return null;
   }
 
-  // Use shared helper for string type check
-  if (isStringType(type)) {
-    return getString(handle, row, col);
-  }
+  // Get column data and null mask
+  const dataPtr = lib.symbols.duckdb_column_data(handle, BigInt(col));
+  const nullMaskPtr = lib.symbols.duckdb_nullmask_data(handle, BigInt(col));
 
-  switch (type) {
-    case DuckDBType.BOOLEAN:
-    case DuckDBType.TINYINT:
-    case DuckDBType.SMALLINT:
-    case DuckDBType.INTEGER:
-      return getInt32(handle, row, col);
-    case DuckDBType.BIGINT:
-      return getInt64(handle, row, col);
-    case DuckDBType.HUGEINT:
-    case DuckDBType.FLOAT:
-    case DuckDBType.DOUBLE:
-      return getDouble(handle, row, col);
-    default:
-      // Fallback to string for unknown types
-      return getString(handle, row, col);
-  }
+  const dataView = dataPtr ? createPointerView(dataPtr) : null;
+  const nullMaskView = nullMaskPtr ? createPointerView(nullMaskPtr) : null;
+
+  // Use unified decoder
+  return decodeValueByType(row, type, dataView, nullMaskView, checkNull);
 }

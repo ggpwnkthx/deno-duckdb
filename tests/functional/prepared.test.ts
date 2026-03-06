@@ -403,8 +403,79 @@ Deno.test({
   sanitizeResources: false,
   sanitizeOps: false,
   async fn(t) {
+
+    // Wrong parameter count - too many bindings
+    await t.step({
+      name: "bind too many parameters throws error",
+      async fn() {
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE arity_test2(id INTEGER)");
+
+          const prepHandle = duckdb.prepare(
+            conn,
+            "SELECT * FROM arity_test2 WHERE id = ?",
+          );
+          // Bind two parameters when only one is required
+          assertThrows(
+            () => duckdb.bind(prepHandle, [1, 2]),
+            DatabaseError,
+          );
+          duckdb.destroyPrepared(prepHandle);
+        });
+      },
     });
 
+    // Execute without binding required parameters
+    await t.step({
+      name: "execute without binding required parameters throws error",
+      async fn() {
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE unbound_test(id INTEGER)");
+          exec(conn, "INSERT INTO unbound_test VALUES (1)");
+
+          const prepHandle = duckdb.prepare(
+            conn,
+            "SELECT * FROM unbound_test WHERE id = ?",
+          );
+          // Execute without binding any parameters
+          assertThrows(
+            () => duckdb.executePrepared(prepHandle),
+            DatabaseError,
+          );
+          duckdb.destroyPrepared(prepHandle);
+        });
+      },
+    });
+
+    // Unsupported bind type rejection
+    await t.step({
+      name: "bind unsupported type throws error",
+      async fn() {
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE type_test(id INTEGER)");
+
+          const prepHandle = duckdb.prepare(
+            conn,
+            "SELECT * FROM type_test WHERE id = ?",
+          );
+          // Try to bind an unsupported type (object)
+          assertThrows(
+            () => duckdb.bind(prepHandle, [{ foo: "bar" }] as any),
+            DatabaseError,
+          );
+          duckdb.destroyPrepared(prepHandle);
+        });
+      },
+    });
+  },
+});
+
+// Negative test cases for prepared statements
+Deno.test({
+  name: "prepared: negative cases",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn(t) {
     // Wrong parameter count - too many bindings
     await t.step({
       name: "bind too many parameters throws error",

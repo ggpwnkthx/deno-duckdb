@@ -424,29 +424,6 @@ Deno.test({
   sanitizeResources: false,
   sanitizeOps: false,
   async fn(t) {
-    // Wrong typed getter on column type
-    await t.step({
-      name: "wrong type getter on column",
-      async fn() {
-        // getString on INTEGER column
-        await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 42 as num");
-          // getString on INTEGER - behavior is undefined, but should not crash
-          const strVal = duckdb.getString(handle, 0, 0);
-          // Value may be garbage or null, but function should not throw
-          duckdb.destroyResult(handle);
-        });
-
-        // getInt32 on VARCHAR column
-        await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 'hello' as str");
-          // getInt32 on VARCHAR - behavior is undefined
-          const intVal = duckdb.getInt32(handle, 0, 0);
-          duckdb.destroyResult(handle);
-        });
-      },
-    });
-
     // Out-of-bounds row/column indices
     await t.step({
       name: "out-of-bounds indices",

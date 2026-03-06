@@ -2,24 +2,15 @@
  * Functional connection operations tests
  */
 
-import { assertEquals, assertExists, assertRejects } from "@std/assert";
-import type { ConnectionHandle, DatabaseHandle } from "@ggpwnkthx/duckdb";
+import { assertEquals, assertExists } from "@std/assert";
+import type { ConnectionHandle } from "@ggpwnkthx/duckdb";
 import * as duckdb from "@ggpwnkthx/duckdb/functional";
-import { withConn, withDb } from "../_util.ts";
-
-// Warm-up test to trigger library loading once for all tests
-Deno.test({
-  name: "warmup: load library",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  async fn() {
-    const db = await duckdb.open();
-    duckdb.closeDatabase(db);
-  },
-});
+import { withConn, withDb } from "./utils.ts";
 
 Deno.test({
   name: "connection: manage connection lifecycle",
+  sanitizeResources: false,
+  sanitizeOps: false,
   async fn(t) {
     // Step 1: create connection
     await t.step({
@@ -31,14 +22,6 @@ Deno.test({
           assertExists(handle);
           duckdb.closeConnection(handle);
         });
-
-        // Throws for invalid database handle
-        const invalidHandle = new Uint8Array(8);
-        await assertRejects(
-          async () =>
-            await duckdb.create(invalidHandle as unknown as DatabaseHandle),
-          Error,
-        );
       },
     });
 

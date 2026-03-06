@@ -3,27 +3,15 @@
  */
 
 import { assertEquals, assertThrows } from "@std/assert";
-import { functional as duckdb } from "@ggpwnkthx/duckdb";
-import { functional } from "@ggpwnkthx/duckdb";
-import { QueryError } from "../src/errors.ts";
-import { getPointer } from "../src/helpers.ts";
-import { exec, query, withConn } from "./_util.ts";
-
-// Warm-up test to trigger library loading once for all tests
-Deno.test({
-  name: "warmup: load library",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  async fn() {
-    const db = await duckdb.open();
-    const conn = await duckdb.create(db);
-    duckdb.closeConnection(conn);
-    duckdb.closeDatabase(db);
-  },
-});
+import * as duckdb from "@ggpwnkthx/duckdb/functional";
+import { QueryError } from "../../src/errors.ts";
+import { getPointer } from "../../src/helpers.ts";
+import { exec, query, withConn } from "./utils.ts";
 
 Deno.test({
   name: "regression: fix previously identified issues",
+  sanitizeResources: false,
+  sanitizeOps: false,
   async fn(t) {
     // Step 1: nullmask handling
     await t.step({
@@ -125,7 +113,7 @@ Deno.test({
           );
           const rows: unknown[][] = [];
           for (
-            const row of functional.stream(conn, "SELECT * FROM str_test")
+            const row of duckdb.stream(conn, "SELECT * FROM str_test")
           ) {
             rows.push(row);
           }

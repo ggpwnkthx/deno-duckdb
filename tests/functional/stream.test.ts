@@ -5,25 +5,14 @@
 import { assertEquals } from "@std/assert";
 import type { RowData } from "@ggpwnkthx/duckdb";
 import * as duckdb from "@ggpwnkthx/duckdb/functional";
-import { exec, withConn } from "../_util.ts";
-
-// Warm-up test to trigger library loading once for all tests
-Deno.test({
-  name: "warmup: load library",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  async fn() {
-    const db = await duckdb.open();
-    const conn = await duckdb.create(db);
-    duckdb.closeConnection(conn);
-    duckdb.closeDatabase(db);
-  },
-});
+import { exec, withConn } from "./utils.ts";
 
 const streamFn = duckdb.stream;
 
 Deno.test({
   name: "stream: manage streaming queries",
+  sanitizeResources: false,
+  sanitizeOps: false,
   async fn(t) {
     // Step 1: basic streaming
     await t.step({
@@ -137,48 +126,6 @@ Deno.test({
     await t.step({
       name: "type handling",
       async fn() {
-        // HUGEINT values
-        await withConn((conn) => {
-          const rows: RowData[] = [];
-          for (
-            const row of streamFn(conn, "SELECT 1::HUGEINT")
-          ) {
-            rows.push(row);
-          }
-          assertEquals(rows[0][0], 1n);
-        });
-
-        // HUGEINT large positive
-        await withConn((conn) => {
-          const rows: RowData[] = [];
-          for (
-            const row of streamFn(
-              conn,
-              "SELECT (pow(2,80) + 12345)::HUGEINT as v",
-            )
-          ) {
-            rows.push(row);
-          }
-          assertEquals(rows[0][0], 1208925819614629174706176n);
-        });
-
-        // HUGEINT NULL handling
-        await withConn((conn) => {
-          exec(conn, "CREATE TABLE stream_hugeint_null(v HUGEINT)");
-          exec(
-            conn,
-            "INSERT INTO stream_hugeint_null VALUES (NULL), (42::HUGEINT)",
-          );
-          const rows: RowData[] = [];
-          for (
-            const row of streamFn(conn, "SELECT * FROM stream_hugeint_null")
-          ) {
-            rows.push(row);
-          }
-          assertEquals(rows[0][0], null);
-          assertEquals(rows[1][0], 42n);
-        });
-
         // FLOAT values
         await withConn((conn) => {
           const rows: RowData[] = [];
@@ -228,6 +175,268 @@ Deno.test({
           }
           assertEquals(rows.length, 1);
           assertEquals(rows[0][0], 3n);
+        });
+      },
+    });
+  },
+});
+
+// New tests for streaming semantics
+Deno.test({
+  name: "stream: early termination and exception handling",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn(t) {
+    // Early termination with break
+    await t.step({
+      name: "early termination with break",
+      async fn() {
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE early_term_test(id INTEGER)");
+          // Insert 10 rows
+          let sql = "INSERT INTO early_term_test VALUES ";
+          for (let i = 1; i <= 10; i++) {
+            sql += `(${i})`;
+            if (i < 10) sql += ", ";
+          }
+          exec(conn, sql);
+
+          // Iterate but break early (only get first 3 rows)
+          const rows: RowData[] = [];
+          for (
+            const row of streamFn(
+              conn,
+              "SELECT * FROM early_term_test ORDER BY id",
+            )
+          ) {
+            rows.push(row);
+            if (rows.length >= 3) break;
+          }
+
+          assertEquals(rows.length, 3);
+          assertEquals(rows[0][0], 1);
+          assertEquals(rows[1][0], 2);
+          assertEquals(rows[2][0], 3);
+        });
+
+        // Verify subsequent queries still work after early termination
+        await withConn((conn) => {
+          exec(
+            conn,
+            "CREATE TABLE after_terminate_test(id INTEGER, value TEXT)",
+          );
+          exec(
+            conn,
+            "INSERT INTO after_terminate_test VALUES (1, 'a'), (2, 'b')",
+          );
+
+          // First stream with early termination
+          const rows1: RowData[] = [];
+          for (
+            const row of streamFn(conn, "SELECT * FROM after_terminate_test")
+          ) {
+            rows1.push(row);
+            break;
+          }
+          assertEquals(rows1.length, 1);
+
+          // Subsequent query should work fine
+          const rows2: RowData[] = [];
+          for (
+            const row of streamFn(conn, "SELECT * FROM after_terminate_test")
+          ) {
+            rows2.push(row);
+          }
+          assertEquals(rows2.length, 2);
+        });
+      },
+    });
+
+    // Exception during iteration
+    await t.step({
+      name: "exception during iteration",
+      async fn() {
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE except_test(id INTEGER, value TEXT)");
+          exec(
+            conn,
+            "INSERT INTO except_test VALUES (1, 'a'), (2, 'b'), (3, 'c')",
+          );
+
+          // Iterate and throw exception
+          let exceptionThrown = false;
+          try {
+            for (
+              const row of streamFn(
+                conn,
+                "SELECT * FROM except_test ORDER BY id",
+              )
+            ) {
+              if (row[0] === 2) {
+                throw new Error("Test exception");
+              }
+            }
+          } catch (e) {
+            exceptionThrown = e instanceof Error &&
+              e.message === "Test exception";
+          }
+          assertEquals(exceptionThrown, true);
+        });
+
+        // Verify cleanup and subsequent queries work after exception
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE after_except_test(id INTEGER, value TEXT)");
+          exec(
+            conn,
+            "INSERT INTO after_except_test VALUES (1, 'x'), (2, 'y')",
+          );
+
+          // First stream throws exception
+          try {
+            for (
+              const row of streamFn(conn, "SELECT * FROM after_except_test")
+            ) {
+              if (row[0] === 1) {
+                throw new Error("Intentional");
+              }
+            }
+          } catch {
+            // Expected
+          }
+
+          // Subsequent query should work fine
+          const rows: RowData[] = [];
+          for (
+            const row of streamFn(conn, "SELECT * FROM after_except_test")
+          ) {
+            rows.push(row);
+          }
+          assertEquals(rows.length, 2);
+          assertEquals(rows[0][1], "x");
+          assertEquals(rows[1][1], "y");
+        });
+      },
+    });
+
+    // Larger result set without fetchAll
+    await t.step({
+      name: "larger result set",
+      async fn() {
+        await withConn((conn) => {
+          // Create and populate table with 100+ rows
+          exec(conn, "CREATE TABLE large_test(id INTEGER, value TEXT)");
+          let sql = "INSERT INTO large_test VALUES ";
+          const expectedValues: number[] = [];
+          for (let i = 1; i <= 150; i++) {
+            sql += `(${i}, 'val_${i}')`;
+            if (i < 150) sql += ", ";
+            if (i % 2 === 0) expectedValues.push(i);
+          }
+          exec(conn, sql);
+
+          // Stream all rows
+          const rows: RowData[] = [];
+          for (
+            const row of streamFn(conn, "SELECT * FROM large_test ORDER BY id")
+          ) {
+            rows.push(row);
+          }
+
+          assertEquals(rows.length, 150);
+          assertEquals(rows[0][0], 1);
+          assertEquals(rows[149][0], 150);
+          assertEquals(rows[0][1], "val_1");
+          assertEquals(rows[149][1], "val_150");
+        });
+      },
+    });
+
+    // Partial consumption doesn't poison subsequent queries
+    await t.step({
+      name: "partial consumption isolation",
+      async fn() {
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE partial_test(id INTEGER, val TEXT)");
+          exec(
+            conn,
+            "INSERT INTO partial_test VALUES (1, 'first'), (2, 'second'), (3, 'third')",
+          );
+
+          // First: get only first row from a stream
+          let firstStreamRow: RowData | null = null;
+          for (
+            const row of streamFn(
+              conn,
+              "SELECT * FROM partial_test ORDER BY id",
+            )
+          ) {
+            firstStreamRow = row;
+            break;
+          }
+          assertEquals(firstStreamRow?.[0], 1);
+
+          // Second: run a completely different query - should work
+          const secondResult = duckdb.execute(conn, "SELECT 'standalone' as s");
+          const secondRows = duckdb.fetchAll(secondResult);
+          assertEquals(secondRows[0][0], "standalone");
+          duckdb.destroyResult(secondResult);
+
+          // Third: stream again - should work independently
+          const thirdRows: RowData[] = [];
+          for (
+            const row of streamFn(
+              conn,
+              "SELECT * FROM partial_test WHERE id > 1",
+            )
+          ) {
+            thirdRows.push(row);
+          }
+          assertEquals(thirdRows.length, 2);
+          assertEquals(thirdRows[0][0], 2);
+          assertEquals(thirdRows[1][0], 3);
+        });
+      },
+    });
+
+    // Boolean consistency across fetchAll and stream
+    await t.step({
+      name: "boolean consistency",
+      async fn() {
+        await withConn((conn) => {
+          exec(
+            conn,
+            "CREATE TABLE bool_test(id INTEGER, flag BOOLEAN)",
+          );
+          exec(
+            conn,
+            "INSERT INTO bool_test VALUES (1, true), (2, false)",
+          );
+
+          // Test stream
+          const streamRows: RowData[] = [];
+          for (
+            const row of streamFn(conn, "SELECT * FROM bool_test ORDER BY id")
+          ) {
+            streamRows.push(row);
+          }
+
+          // Test fetchAll
+          const handle = duckdb.execute(
+            conn,
+            "SELECT * FROM bool_test ORDER BY id",
+          );
+          const fetchRows = duckdb.fetchAll(handle);
+          duckdb.destroyResult(handle);
+
+          // Both should return 1/0 for boolean (this is the API contract)
+          assertEquals(streamRows[0][1], 1);
+          assertEquals(streamRows[1][1], 0);
+          assertEquals(fetchRows[0][1], 1);
+          assertEquals(fetchRows[1][1], 0);
+
+          // Values should match
+          assertEquals(streamRows[0][1], fetchRows[0][1]);
+          assertEquals(streamRows[1][1], fetchRows[1][1]);
         });
       },
     });

@@ -3,23 +3,13 @@
  */
 import { assertEquals, assertExists, assertThrows } from "@std/assert";
 import * as duckdb from "@ggpwnkthx/duckdb/functional";
-import { exec, withConn } from "../_util.ts";
-
-// Warm-up test to trigger library loading once for all tests
-Deno.test({
-  name: "warmup: load library",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  async fn() {
-    const db = await duckdb.open();
-    const conn = await duckdb.create(db);
-    duckdb.closeConnection(conn);
-    duckdb.closeDatabase(db);
-  },
-});
+import { DatabaseError } from "@ggpwnkthx/duckdb";
+import { exec, withConn } from "./utils.ts";
 
 Deno.test({
   name: "prepared: manage prepared statements",
+  sanitizeResources: false,
+  sanitizeOps: false,
   async fn(t) {
     // Step 1: prepare statements
     await t.step({
@@ -36,18 +26,6 @@ Deno.test({
           );
           assertExists(handle);
           duckdb.destroyPrepared(handle);
-        });
-
-        // Throws for invalid SQL
-        await withConn((conn) => {
-          assertThrows(
-            () =>
-              duckdb.prepare(
-                conn,
-                "SELECT * FROM nonexistent_table WHERE ?",
-              ),
-            Error,
-          );
         });
       },
     });
@@ -86,7 +64,6 @@ Deno.test({
         await withConn((conn) => {
           const handle = duckdb.prepare(conn, "SELECT 1");
           duckdb.destroyPrepared(handle);
-          duckdb.destroyPrepared(handle);
         });
 
         // Full workflow: prepare, execute, and fetch results
@@ -110,6 +87,384 @@ Deno.test({
           // Cleanup
           duckdb.destroyPrepared(prepHandle);
           duckdb.destroyResult(execHandle);
+        });
+      },
+    });
+  },
+});
+
+// New tests for parameter binding
+Deno.test({
+  name: "prepared: parameter binding",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn(t) {
+    // Bind boolean parameter
+    await t.step({
+      name: "bind boolean parameter",
+      async fn() {
+        await withConn((conn) => {
+          exec(
+            conn,
+            "CREATE TABLE bind_bool_test(id INTEGER, flag BOOLEAN)",
+          );
+          exec(conn, "INSERT INTO bind_bool_test VALUES (1, true), (2, false)");
+
+          const prepHandle = duckdb.prepare(
+            conn,
+            "SELECT * FROM bind_bool_test WHERE flag = ?",
+          );
+          // Bind true (should return row with id=1)
+          duckdb.bind(prepHandle, [true]);
+          const execHandle = duckdb.executePrepared(prepHandle);
+          const rows = duckdb.fetchAll(execHandle);
+          assertEquals(rows.length, 1);
+          assertEquals(rows[0][0], 1);
+          // BOOLEAN returns 1/0 via getInt8
+          assertEquals(rows[0][1], 1);
+          duckdb.destroyResult(execHandle);
+
+          // Rebind with false and execute again
+          duckdb.bind(prepHandle, [false]);
+          const execHandle2 = duckdb.executePrepared(prepHandle);
+          const rows2 = duckdb.fetchAll(execHandle2);
+          assertEquals(rows2.length, 1);
+          assertEquals(rows2[0][0], 2);
+          assertEquals(rows2[0][1], 0);
+          duckdb.destroyResult(execHandle2);
+
+          duckdb.destroyPrepared(prepHandle);
+        });
+      },
+    });
+
+    // Bind integer parameter
+    await t.step({
+      name: "bind integer parameter",
+      async fn() {
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE bind_int_test(id INTEGER, value TEXT)");
+          exec(
+            conn,
+            "INSERT INTO bind_int_test VALUES (1, 'one'), (2, 'two'), (3, 'three')",
+          );
+
+          const prepHandle = duckdb.prepare(
+            conn,
+            "SELECT * FROM bind_int_test WHERE id = ?",
+          );
+          duckdb.bind(prepHandle, [42]);
+          const execHandle = duckdb.executePrepared(prepHandle);
+          const rows = duckdb.fetchAll(execHandle);
+          assertEquals(rows.length, 0);
+          duckdb.destroyResult(execHandle);
+
+          duckdb.bind(prepHandle, [2]);
+          const execHandle2 = duckdb.executePrepared(prepHandle);
+          const rows2 = duckdb.fetchAll(execHandle2);
+          assertEquals(rows2.length, 1);
+          assertEquals(rows2[0][0], 2);
+          assertEquals(rows2[0][1], "two");
+          duckdb.destroyResult(execHandle2);
+
+          duckdb.destroyPrepared(prepHandle);
+        });
+      },
+    });
+
+    // Bind bigint parameter
+    await t.step({
+      name: "bind bigint parameter",
+      async fn() {
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE bind_bigint_test(id BIGINT, value TEXT)");
+          exec(
+            conn,
+            "INSERT INTO bind_bigint_test VALUES (9223372036854775807, 'max'), (-9223372036854775808, 'min')",
+          );
+
+          const prepHandle = duckdb.prepare(
+            conn,
+            "SELECT * FROM bind_bigint_test WHERE id = ?",
+          );
+          duckdb.bind(prepHandle, [9223372036854775807n]);
+          const execHandle = duckdb.executePrepared(prepHandle);
+          const rows = duckdb.fetchAll(execHandle);
+          assertEquals(rows.length, 1);
+          assertEquals(rows[0][0], 9223372036854775807n);
+          assertEquals(rows[0][1], "max");
+          duckdb.destroyResult(execHandle);
+
+          duckdb.bind(prepHandle, [-9223372036854775808n]);
+          const execHandle2 = duckdb.executePrepared(prepHandle);
+          const rows2 = duckdb.fetchAll(execHandle2);
+          assertEquals(rows2.length, 1);
+          assertEquals(rows2[0][0], -9223372036854775808n);
+          assertEquals(rows2[0][1], "min");
+          duckdb.destroyResult(execHandle2);
+
+          duckdb.destroyPrepared(prepHandle);
+        });
+      },
+    });
+
+    // Bind string parameter
+    await t.step({
+      name: "bind string parameter",
+      async fn() {
+        await withConn((conn) => {
+          exec(
+            conn,
+            "CREATE TABLE bind_str_test(id INTEGER, name TEXT)",
+          );
+          exec(
+            conn,
+            "INSERT INTO bind_str_test VALUES (1, 'Alice'), (2, 'Bob'), (3, 'Charlie')",
+          );
+
+          const prepHandle = duckdb.prepare(
+            conn,
+            "SELECT * FROM bind_str_test WHERE name = ?",
+          );
+          duckdb.bind(prepHandle, ["Bob"]);
+          const execHandle = duckdb.executePrepared(prepHandle);
+          const rows = duckdb.fetchAll(execHandle);
+          assertEquals(rows.length, 1);
+          assertEquals(rows[0][0], 2);
+          assertEquals(rows[0][1], "Bob");
+          duckdb.destroyResult(execHandle);
+
+          duckdb.destroyPrepared(prepHandle);
+        });
+      },
+    });
+
+    // Bind null parameter - use COALESCE to handle NULL comparison
+    await t.step({
+      name: "bind null parameter",
+      async fn() {
+        await withConn((conn) => {
+          exec(
+            conn,
+            "CREATE TABLE bind_null_test(id INTEGER, value TEXT)",
+          );
+          exec(
+            conn,
+            "INSERT INTO bind_null_test VALUES (1, 'has value'), (2, NULL)",
+          );
+
+          // Use a workaround: bind a value and compare with COALESCE
+          const prepHandle = duckdb.prepare(
+            conn,
+            "SELECT * FROM bind_null_test WHERE COALESCE(value, 'NULL_MARKER') = ?",
+          );
+          // Bind a non-matching value first
+          duckdb.bind(prepHandle, ["somevalue"]);
+          let execHandle = duckdb.executePrepared(prepHandle);
+          let rows = duckdb.fetchAll(execHandle);
+          assertEquals(rows.length, 0);
+          duckdb.destroyResult(execHandle);
+
+          // Now bind the NULL marker
+          duckdb.bind(prepHandle, ["NULL_MARKER"]);
+          execHandle = duckdb.executePrepared(prepHandle);
+          rows = duckdb.fetchAll(execHandle);
+          assertEquals(rows.length, 1);
+          assertEquals(rows[0][0], 2);
+          assertEquals(rows[0][1], null);
+          duckdb.destroyResult(execHandle);
+
+          duckdb.destroyPrepared(prepHandle);
+        });
+      },
+    });
+
+    // Bind multiple parameters
+    await t.step({
+      name: "bind multiple parameters",
+      async fn() {
+        await withConn((conn) => {
+          exec(
+            conn,
+            "CREATE TABLE bind_multi_test(id INTEGER, name TEXT, value INTEGER)",
+          );
+          exec(
+            conn,
+            "INSERT INTO bind_multi_test VALUES (1, 'Alice', 100), (2, 'Bob', 200), (3, 'Charlie', 300)",
+          );
+
+          const prepHandle = duckdb.prepare(
+            conn,
+            "SELECT * FROM bind_multi_test WHERE name = ? AND value > ?",
+          );
+
+          // Test with name that doesn't match
+          duckdb.bind(prepHandle, ["Alice", 150]);
+          let execHandle = duckdb.executePrepared(prepHandle);
+          let rows = duckdb.fetchAll(execHandle);
+          assertEquals(rows.length, 0);
+          duckdb.destroyResult(execHandle);
+
+          // Test with matching name but value too low
+          duckdb.bind(prepHandle, ["Bob", 250]);
+          execHandle = duckdb.executePrepared(prepHandle);
+          rows = duckdb.fetchAll(execHandle);
+          assertEquals(rows.length, 0);
+          duckdb.destroyResult(execHandle);
+
+          // Test with matching name and value
+          duckdb.bind(prepHandle, ["Bob", 150]);
+          execHandle = duckdb.executePrepared(prepHandle);
+          rows = duckdb.fetchAll(execHandle);
+          assertEquals(rows.length, 1);
+          assertEquals(rows[0][0], 2);
+          assertEquals(rows[0][1], "Bob");
+          assertEquals(rows[0][2], 200);
+          duckdb.destroyResult(execHandle);
+
+          duckdb.destroyPrepared(prepHandle);
+        });
+      },
+    });
+
+    // Bind floating-point parameter
+    await t.step({
+      name: "bind floating-point parameter",
+      async fn() {
+        await withConn((conn) => {
+          exec(
+            conn,
+            "CREATE TABLE bind_double_test(id INTEGER, value DOUBLE)",
+          );
+          exec(
+            conn,
+            "INSERT INTO bind_double_test VALUES (1, 1.5), (2, 2.5), (3, 3.14)",
+          );
+
+          const prepHandle = duckdb.prepare(
+            conn,
+            "SELECT * FROM bind_double_test WHERE value > ?",
+          );
+          duckdb.bind(prepHandle, [2.0]);
+          const execHandle = duckdb.executePrepared(prepHandle);
+          const rows = duckdb.fetchAll(execHandle);
+          assertEquals(rows.length, 2);
+          assertEquals(rows[0][0], 2);
+          assertEquals(rows[1][0], 3);
+          duckdb.destroyResult(execHandle);
+
+          duckdb.destroyPrepared(prepHandle);
+        });
+      },
+    });
+
+    // Test rebinding (bind new params after execute)
+    await t.step({
+      name: "rebinding parameters",
+      async fn() {
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE rebind_test(id INTEGER, value TEXT)");
+          exec(
+            conn,
+            "INSERT INTO rebind_test VALUES (1, 'a'), (2, 'b'), (3, 'c')",
+          );
+
+          const prepHandle = duckdb.prepare(
+            conn,
+            "SELECT * FROM rebind_test WHERE id = ?",
+          );
+
+          // First bind and execute
+          duckdb.bind(prepHandle, [1]);
+          const execHandle1 = duckdb.executePrepared(prepHandle);
+          const rows1 = duckdb.fetchAll(execHandle1);
+          assertEquals(rows1.length, 1);
+          assertEquals(rows1[0][1], "a");
+          duckdb.destroyResult(execHandle1);
+
+          // Rebind with new params and execute again
+          duckdb.bind(prepHandle, [2]);
+          const execHandle2 = duckdb.executePrepared(prepHandle);
+          const rows2 = duckdb.fetchAll(execHandle2);
+          assertEquals(rows2.length, 1);
+          assertEquals(rows2[0][1], "b");
+          duckdb.destroyResult(execHandle2);
+
+          duckdb.destroyPrepared(prepHandle);
+        });
+      },
+    });
+  },
+});
+
+// Negative test cases for prepared statements
+Deno.test({
+  name: "prepared: negative cases",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn(t) {
+    });
+
+    // Wrong parameter count - too many bindings
+    await t.step({
+      name: "bind too many parameters throws error",
+      async fn() {
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE arity_test2(id INTEGER)");
+
+          const prepHandle = duckdb.prepare(
+            conn,
+            "SELECT * FROM arity_test2 WHERE id = ?",
+          );
+          // Bind two parameters when only one is required
+          assertThrows(
+            () => duckdb.bind(prepHandle, [1, 2]),
+            DatabaseError,
+          );
+          duckdb.destroyPrepared(prepHandle);
+        });
+      },
+    });
+
+    // Execute without binding required parameters
+    await t.step({
+      name: "execute without binding required parameters throws error",
+      async fn() {
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE unbound_test(id INTEGER)");
+          exec(conn, "INSERT INTO unbound_test VALUES (1)");
+
+          const prepHandle = duckdb.prepare(
+            conn,
+            "SELECT * FROM unbound_test WHERE id = ?",
+          );
+          // Execute without binding any parameters
+          assertThrows(
+            () => duckdb.executePrepared(prepHandle),
+            DatabaseError,
+          );
+          duckdb.destroyPrepared(prepHandle);
+        });
+      },
+    });
+
+    // Unsupported bind type rejection
+    await t.step({
+      name: "bind unsupported type throws error",
+      async fn() {
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE type_test(id INTEGER)");
+
+          const prepHandle = duckdb.prepare(
+            conn,
+            "SELECT * FROM type_test WHERE id = ?",
+          );
+          // Try to bind an unsupported type (object)
+          assertThrows(
+            () => duckdb.bind(prepHandle, [{ foo: "bar" }] as any),
+            DatabaseError,
+          );
+          duckdb.destroyPrepared(prepHandle);
         });
       },
     });

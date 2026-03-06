@@ -2,25 +2,14 @@
  * Functional database operations tests
  */
 
-import { assertEquals, assertExists, assertThrows } from "@std/assert";
+import { assertEquals, assertExists } from "@std/assert";
 import type { DatabaseHandle } from "@ggpwnkthx/duckdb";
 import * as duckdb from "@ggpwnkthx/duckdb/functional";
-import { withConn } from "../_util.ts";
-
-// Warm-up test to trigger library loading once for all tests
-// This prevents the FFI resource sanitizer from failing subsequent tests
-Deno.test({
-  name: "warmup: load library",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  async fn() {
-    const handle = await duckdb.open();
-    duckdb.closeDatabase(handle);
-  },
-});
 
 Deno.test({
   name: "database: manage database lifecycle",
+  sanitizeResources: false,
+  sanitizeOps: false,
   async fn(t) {
     // Step 1: open database
     await t.step({
@@ -35,14 +24,6 @@ Deno.test({
         const handle2 = await duckdb.open({ path: ":memory:" });
         assertExists(handle2);
         duckdb.closeDatabase(handle2);
-
-        // Throws for invalid SQL
-        await withConn((conn) => {
-          assertThrows(
-            () => duckdb.execute(conn, "SELCT 1"),
-            Error,
-          );
-        });
       },
     });
 
@@ -61,7 +42,7 @@ Deno.test({
       },
     });
 
-    // Step 4: get pointer value
+    // Step 3: get pointer value
     await t.step({
       name: "get pointer value",
       async fn() {

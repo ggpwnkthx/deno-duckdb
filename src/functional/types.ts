@@ -5,12 +5,8 @@
  * duplicated across value.ts and stream.ts.
  */
 
-import {
-  DuckDBType,
-  type DuckDBTypeValue,
-  type ResultHandle,
-  type ValueType,
-} from "../types.ts";
+import { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
+import type { ResultHandle, ValueType } from "../types.ts";
 import {
   BYTE_SIZE_128,
   BYTE_SIZE_16,
@@ -55,13 +51,13 @@ export function decodeHugeInt(
  */
 export function decodeValueByType(
   row: number,
-  type: DuckDBTypeValue,
+  type: DUCKDB_TYPE,
   dataView: Deno.UnsafePointerView | null,
   nullMaskView: Deno.UnsafePointerView | null,
   checkNull = true,
 ): ValueType {
   // NULL type is always null
-  if (type === DuckDBType.NULL) {
+  if (type === DUCKDB_TYPE.DUCKDB_TYPE_INVALID) {
     return null;
   }
 
@@ -80,32 +76,32 @@ export function decodeValueByType(
 
   // Handle numeric types
   switch (type) {
-    case DuckDBType.BOOLEAN:
-    case DuckDBType.TINYINT:
+    case DUCKDB_TYPE.DUCKDB_TYPE_BOOLEAN:
+    case DUCKDB_TYPE.DUCKDB_TYPE_TINYINT:
       // BOOLEAN, TINYINT - 1 byte
       if (isNullValue()) return null;
       return dataView ? dataView.getInt8(row * BYTE_SIZE_8) : 0;
-    case DuckDBType.SMALLINT:
+    case DUCKDB_TYPE.DUCKDB_TYPE_SMALLINT:
       // SMALLINT - 2 bytes
       if (isNullValue()) return null;
       return dataView ? dataView.getInt16(row * BYTE_SIZE_16) : 0;
-    case DuckDBType.INTEGER:
+    case DUCKDB_TYPE.DUCKDB_TYPE_INTEGER:
       // INTEGER - 4 bytes
       if (isNullValue()) return null;
       return dataView ? dataView.getInt32(row * BYTE_SIZE_32) : 0;
-    case DuckDBType.BIGINT:
+    case DUCKDB_TYPE.DUCKDB_TYPE_BIGINT:
       // BIGINT - 8 bytes
       if (isNullValue()) return null;
       return dataView ? dataView.getBigInt64(row * BYTE_SIZE_64) : 0n;
-    case DuckDBType.FLOAT:
+    case DUCKDB_TYPE.DUCKDB_TYPE_FLOAT:
       // FLOAT - 4 bytes
       if (isNullValue()) return null;
       return dataView ? dataView.getFloat32(row * BYTE_SIZE_32) : 0;
-    case DuckDBType.HUGEINT:
+    case DUCKDB_TYPE.DUCKDB_TYPE_HUGEINT:
       // HUGEINT - 16 bytes (two 64-bit integers: lower and upper)
       if (isNullValue()) return null;
       return decodeHugeInt(dataView, row);
-    case DuckDBType.DOUBLE:
+    case DUCKDB_TYPE.DUCKDB_TYPE_DOUBLE:
       // DOUBLE - 8 bytes
       if (isNullValue()) return null;
       return dataView ? dataView.getFloat64(row * BYTE_SIZE_64) : 0;
@@ -131,13 +127,13 @@ export function getValueByTypeFromHandle(
   handle: ResultHandle,
   row: number,
   col: number,
-  type: DuckDBTypeValue,
+  type: DUCKDB_TYPE,
 ): unknown {
   validateResultHandle(handle);
   const lib = getLibraryFast();
 
   // NULL type is always null
-  if (type === DuckDBType.NULL) {
+  if (type === DUCKDB_TYPE.DUCKDB_TYPE_INVALID) {
     return null;
   }
 
@@ -174,7 +170,7 @@ function getStringValue(
  * Get column metadata for a result (types and views)
  */
 export interface ColumnMetadata {
-  types: DuckDBTypeValue[];
+  types: DUCKDB_TYPE[];
   dataViews: (Deno.UnsafePointerView | null)[];
   nullMaskViews: (Deno.UnsafePointerView | null)[];
 }
@@ -194,7 +190,7 @@ export function buildColumnMetadata(
   // Get column count
   const colCount = Number(lib.symbols.duckdb_column_count(handle));
 
-  const types: DuckDBTypeValue[] = [];
+  const types: DUCKDB_TYPE[] = [];
   const dataViews: (Deno.UnsafePointerView | null)[] = [];
   const nullMaskViews: (Deno.UnsafePointerView | null)[] = [];
 
@@ -203,7 +199,7 @@ export function buildColumnMetadata(
     types[c] = lib.symbols.duckdb_column_type(
       handle,
       BigInt(c),
-    ) as DuckDBTypeValue;
+    ) as DUCKDB_TYPE;
 
     // Get data pointer
     const dataPtr = lib.symbols.duckdb_column_data(handle, BigInt(c));

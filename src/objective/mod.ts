@@ -11,8 +11,8 @@
  * const db = new Database();
  * await db.open();
  * const conn = await db.connect();
- * const result = await conn.query("SELECT * FROM t");
- * const rows = await result.fetchAll();
+ * const result = conn.query("SELECT * FROM t");
+ * const rows = result.fetchAll();
  * result.close();
  * conn.close();
  * db.close();
@@ -26,8 +26,8 @@
  * using db = new Database();
  * await db.open();
  * using conn = await db.connect();
- * const result = await conn.query("SELECT * FROM t");
- * const rows = await result.fetchAll();
+ * const result = conn.query("SELECT * FROM t");
+ * const rows = result.fetchAll();
  * // Auto-cleanup at end of scope
  * ```
  */
@@ -37,7 +37,7 @@ export { Connection } from "./connection.ts";
 export { QueryResult } from "./query.ts";
 export { PreparedStatement } from "./prepared.ts";
 export type { Disposable } from "./disposable.ts";
-export type { RowStream } from "./connection.ts";
+export type { RowStream } from "../functional/stream.ts";
 
 // Re-export error classes for convenience
 export {

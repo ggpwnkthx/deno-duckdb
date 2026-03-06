@@ -14,7 +14,7 @@ const conn = await db.connect();
 
 // Prepare statement without parameters
 console.log("--- Simple prepared statement ---");
-const simpleStmt = await conn.prepare("SELECT 1 as num");
+const simpleStmt = conn.prepare("SELECT 1 as num");
 const simpleResult = await simpleStmt.execute();
 const simpleRows = await simpleResult.fetchAll();
 console.log("Result:", simpleRows);
@@ -23,7 +23,7 @@ await simpleStmt.close();
 
 // Prepare with parameter binding ($1, $2, etc.)
 console.log("\n--- Prepared statement with parameters ---");
-const paramStmt = await conn.prepare(
+const paramStmt = conn.prepare(
   "SELECT * FROM (VALUES (1, 'Alice', 100.50), (2, 'Bob', 200.75), (3, 'Charlie', 150.00)) AS t(id, name, amount) WHERE id > $1",
 );
 
@@ -40,7 +40,7 @@ await paramStmt.close();
 
 // Multiple parameter binding
 console.log("\n--- Multiple parameter binding ---");
-const multiParamStmt = await conn.prepare(
+const multiParamStmt = conn.prepare(
   "SELECT * FROM (VALUES (1, 'Alice'), (2, 'Bob'), (3, 'Charlie')) AS t(id, name) WHERE id BETWEEN $1 AND $2",
 );
 
@@ -56,7 +56,7 @@ await multiResult.close();
 await multiParamStmt.close();
 
 // Clean up
-await conn.close();
-await db.close();
+conn.close();
+db.close();
 
 console.log("\n=== Example Complete ===");

@@ -13,7 +13,7 @@ Deno.test({
   async fn() {
     const db = new Database();
     await db.open();
-    await db.close();
+    db.close();
   },
 });
 
@@ -23,14 +23,12 @@ Deno.test({
     const db = new Database();
     await db.open();
     const conn = await db.connect();
-    const result = await conn.query("SELECT 1 as val");
-
+    const result = conn.query("SELECT 1 as val");
     assertEquals(result.isSuccess(), true);
-    assertEquals(await result.rowCount(), 1n);
-
-    await result.close();
-    await conn.close();
-    await db.close();
+    assertEquals(result.rowCount(), 1n);
+    result.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -40,21 +38,18 @@ Deno.test({
     const db = new Database();
     await db.open();
     const conn = await db.connect();
-
     // Create a table and insert data - close result after each
-    const createResult = await conn.query(
+    const createResult = conn.query(
       "CREATE TABLE test (id INTEGER, name TEXT)",
     );
-    await createResult.close();
-
-    const insertResult = await conn.query(
+    createResult.close();
+    const insertResult = conn.query(
       "INSERT INTO test VALUES (1, 'test')",
     );
     assertEquals(insertResult.isSuccess(), true);
-    await insertResult.close();
-
-    await conn.close();
-    await db.close();
+    insertResult.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -64,25 +59,20 @@ Deno.test({
     const db = new Database();
     await db.open();
     const conn = await db.connect();
-
     // Create table and insert data - close results
-    const createResult = await conn.query("CREATE TABLE test_all (id INTEGER)");
-    await createResult.close();
-
-    const insertResult = await conn.query(
+    const createResult = conn.query("CREATE TABLE test_all (id INTEGER)");
+    createResult.close();
+    const insertResult = conn.query(
       "INSERT INTO test_all VALUES (1), (2), (3)",
     );
-    await insertResult.close();
-
-    const rows = await conn.queryAll("SELECT * FROM test_all ORDER BY id");
-
+    insertResult.close();
+    const rows = conn.queryAll("SELECT * FROM test_all ORDER BY id");
     assertEquals(rows.length, 3);
     assertEquals(rows[0][0], 1);
     assertEquals(rows[1][0], 2);
     assertEquals(rows[2][0], 3);
-
-    await conn.close();
-    await db.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -92,13 +82,11 @@ Deno.test({
     const db = new Database();
     await db.open();
     const conn = await db.connect();
-    const stmt = await conn.prepare("SELECT ? as val");
-
+    const stmt = conn.prepare("SELECT ? as val");
     assertExists(stmt);
-
-    await stmt.close();
-    await conn.close();
-    await db.close();
+    stmt.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -108,14 +96,12 @@ Deno.test({
     const db = new Database();
     await db.open();
     const conn = await db.connect();
-    const stmt = await conn.prepare("SELECT 1 as val");
-
+    const stmt = conn.prepare("SELECT 1 as val");
     // Prepared statement is created even if query returns no results
     assertExists(stmt);
-
-    await stmt.close();
-    await conn.close();
-    await db.close();
+    stmt.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -126,10 +112,9 @@ Deno.test({
     await db.open();
     const conn = await db.connect();
     assertEquals(conn.isClosed(), false);
-
-    await conn.close();
+    conn.close();
     assertEquals(conn.isClosed(), true);
-    await db.close();
+    db.close();
   },
 });
 
@@ -139,10 +124,10 @@ Deno.test({
     const db = new Database();
     await db.open();
     const conn = await db.connect();
-    await conn.close();
-    await conn.close(); // Should not throw
+    conn.close();
+    conn.close(); // Should not throw
     assertEquals(conn.isClosed(), true);
-    await db.close();
+    db.close();
   },
 });
 
@@ -153,10 +138,9 @@ Deno.test({
     await db.open();
     const conn = await db.connect();
     assertEquals(conn.isClosed(), false);
-
-    await conn.close();
+    conn.close();
     assertEquals(conn.isClosed(), true);
-    await db.close();
+    db.close();
   },
 });
 
@@ -166,15 +150,14 @@ Deno.test({
     const db = new Database();
     await db.open();
     const conn = await db.connect();
-    await conn.close();
-
+    conn.close();
     try {
-      await conn.query("SELECT 1");
+      conn.query("SELECT 1");
       throw new Error("Should have thrown");
     } catch (e) {
       assertEquals((e as Error).message, "Connection is closed");
     }
-    await db.close();
+    db.close();
   },
 });
 
@@ -184,15 +167,14 @@ Deno.test({
     const db = new Database();
     await db.open();
     const conn = await db.connect();
-    await conn.close();
-
+    conn.close();
     try {
-      await conn.queryAll("SELECT 1");
+      conn.queryAll("SELECT 1");
       throw new Error("Should have thrown");
     } catch (e) {
       assertEquals((e as Error).message, "Connection is closed");
     }
-    await db.close();
+    db.close();
   },
 });
 
@@ -202,15 +184,14 @@ Deno.test({
     const db = new Database();
     await db.open();
     const conn = await db.connect();
-    await conn.close();
-
+    conn.close();
     try {
-      await conn.prepare("SELECT 1");
+      conn.prepare("SELECT 1");
       throw new Error("Should have thrown");
     } catch (e) {
       assertEquals((e as Error).message, "Connection is closed");
     }
-    await db.close();
+    db.close();
   },
 });
 
@@ -220,11 +201,10 @@ Deno.test({
     const db = new Database();
     await db.open();
     const conn = await db.connect();
-    await conn.close();
-
+    conn.close();
     // Should not throw, close is idempotent
-    await conn.close();
-    await db.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -234,19 +214,16 @@ Deno.test({
     const db = new Database();
     await db.open();
     const conn = await db.connect();
-
-    const r1 = await conn.query("CREATE TABLE multi_test (id INTEGER)");
-    await r1.close();
-    const r2 = await conn.query("INSERT INTO multi_test VALUES (1)");
-    await r2.close();
-    const r3 = await conn.query("INSERT INTO multi_test VALUES (2)");
-    await r3.close();
-
-    const result = await conn.query("SELECT * FROM multi_test ORDER BY id");
-    assertEquals(await result.rowCount(), 2n);
-
-    await result.close();
-    await conn.close();
-    await db.close();
+    const r1 = conn.query("CREATE TABLE multi_test (id INTEGER)");
+    r1.close();
+    const r2 = conn.query("INSERT INTO multi_test VALUES (1)");
+    r2.close();
+    const r3 = conn.query("INSERT INTO multi_test VALUES (2)");
+    r3.close();
+    const result = conn.query("SELECT * FROM multi_test ORDER BY id");
+    assertEquals(result.rowCount(), 2n);
+    result.close();
+    conn.close();
+    db.close();
   },
 });

@@ -2,6 +2,7 @@
  * Shared helpers for DuckDB API
  */
 
+import { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
 import type { DuckDBLibrary } from "./lib.ts";
 import type {
   ConnectionHandle,
@@ -9,7 +10,6 @@ import type {
   PreparedStatementHandle,
   ResultHandle,
 } from "./types.ts";
-import { DuckDBType, type DuckDBTypeValue } from "./types.ts";
 
 /** Size of a pointer in bytes (64-bit) */
 const POINTER_SIZE = 8;
@@ -28,14 +28,14 @@ export const BYTE_SIZE_128 = 16; // HUGEINT
  * Check if a DuckDB type is a string type (requires pointer dereferencing)
  * String types: VARCHAR, BLOB, DECIMAL, TIMESTAMP, DATE, TIME
  */
-export function isStringType(type: DuckDBTypeValue): boolean {
+export function isStringType(type: DUCKDB_TYPE): boolean {
   return (
-    type === DuckDBType.VARCHAR ||
-    type === DuckDBType.BLOB ||
-    type === DuckDBType.DECIMAL ||
-    type === DuckDBType.TIMESTAMP ||
-    type === DuckDBType.DATE ||
-    type === DuckDBType.TIME
+    type === DUCKDB_TYPE.DUCKDB_TYPE_VARCHAR ||
+    type === DUCKDB_TYPE.DUCKDB_TYPE_BLOB ||
+    type === DUCKDB_TYPE.DUCKDB_TYPE_DECIMAL ||
+    type === DUCKDB_TYPE.DUCKDB_TYPE_TIMESTAMP ||
+    type === DUCKDB_TYPE.DUCKDB_TYPE_DATE ||
+    type === DUCKDB_TYPE.DUCKDB_TYPE_TIME
   );
 }
 

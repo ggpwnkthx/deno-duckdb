@@ -155,15 +155,15 @@ Deno.bench("Direct FFI", () => {
   }
 });
 
-Deno.bench("Functional API", async () => {
+Deno.bench("Functional API", () => {
   // Execute query
-  const resultHandle = await functional.execute(connHandleFunc, QUERY);
+  const resultHandle = functional.execute(connHandleFunc, QUERY);
 
   // Fetch all rows
-  const rows = await functional.fetchAll(resultHandle);
+  const rows = functional.fetchAll(resultHandle);
 
   // Cleanup (not measured)
-  await functional.destroyResult(resultHandle);
+  functional.destroyResult(resultHandle);
 
   // Verify we got the data
   if (rows.length !== 100000) {
@@ -176,10 +176,10 @@ Deno.bench("Objective API", async () => {
   const result = await connObj.query(QUERY);
 
   // Fetch all rows
-  const rows = await result.fetchAll();
+  const rows = result.fetchAll();
 
   // Cleanup (not measured)
-  await result.close();
+  result.close();
 
   // Verify we got the data
   if (rows.length !== 100000) {

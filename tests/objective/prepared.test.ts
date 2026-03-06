@@ -13,7 +13,7 @@ Deno.test({
   async fn() {
     const db = new Database();
     await db.open();
-    await db.close();
+    db.close();
   },
 });
 
@@ -23,17 +23,17 @@ async function setupTestDb(): Promise<Database> {
   await db.open();
 
   const conn = await db.connect();
-  const createResult = await conn.query(
+  const createResult = conn.query(
     "CREATE TABLE prep_test (id INTEGER, name TEXT)",
   );
-  await createResult.close();
+  createResult.close();
 
-  const insertResult = await conn.query(
+  const insertResult = conn.query(
     "INSERT INTO prep_test VALUES (1, 'one'), (2, 'two'), (3, 'three')",
   );
-  await insertResult.close();
+  insertResult.close();
 
-  await conn.close();
+  conn.close();
   return db;
 }
 
@@ -42,18 +42,18 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const stmt = await conn.prepare("SELECT * FROM prep_test ORDER BY id");
+    const stmt = conn.prepare("SELECT * FROM prep_test ORDER BY id");
 
     const result = await stmt.execute();
 
     assertExists(result);
     assertEquals(result.isSuccess(), true);
-    assertEquals(await result.rowCount(), 3n);
+    assertEquals(result.rowCount(), 3n);
 
-    await result.close();
-    await stmt.close();
-    await conn.close();
-    await db.close();
+    result.close();
+    stmt.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -62,18 +62,18 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const stmt = await conn.prepare("SELECT * FROM prep_test WHERE id = 1");
+    const stmt = conn.prepare("SELECT * FROM prep_test WHERE id = 1");
 
     const result = await stmt.execute();
 
     assertExists(result);
     assertEquals(result.isSuccess(), true);
-    assertEquals(await result.rowCount(), 1n);
+    assertEquals(result.rowCount(), 1n);
 
-    await result.close();
-    await stmt.close();
-    await conn.close();
-    await db.close();
+    result.close();
+    stmt.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -82,13 +82,13 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const stmt = await conn.prepare("SELECT id, name FROM prep_test");
+    const stmt = conn.prepare("SELECT id, name FROM prep_test");
 
     assertEquals(await stmt.columnCount(), 2n);
 
-    await stmt.close();
-    await conn.close();
-    await db.close();
+    stmt.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -97,14 +97,14 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const stmt = await conn.prepare("INSERT INTO prep_test VALUES (4, 'four')");
+    const stmt = conn.prepare("INSERT INTO prep_test VALUES (4, 'four')");
 
     // INSERT returns the number of rows affected
     assertEquals(await stmt.columnCount(), 1n);
 
-    await stmt.close();
-    await conn.close();
-    await db.close();
+    stmt.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -113,9 +113,9 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const stmt = await conn.prepare("SELECT * FROM prep_test");
+    const stmt = conn.prepare("SELECT * FROM prep_test");
 
-    await stmt.close();
+    stmt.close();
 
     // After close, operations should throw
     try {
@@ -125,8 +125,8 @@ Deno.test({
       assertEquals((e as Error).message, "Prepared statement is closed");
     }
 
-    await conn.close();
-    await db.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -135,13 +135,13 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const stmt = await conn.prepare("SELECT * FROM prep_test");
+    const stmt = conn.prepare("SELECT * FROM prep_test");
 
-    await stmt.close();
-    await stmt.close(); // Should not throw
+    stmt.close();
+    stmt.close(); // Should not throw
 
-    await conn.close();
-    await db.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -150,8 +150,8 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const stmt = await conn.prepare("SELECT * FROM prep_test");
-    await stmt.close();
+    const stmt = conn.prepare("SELECT * FROM prep_test");
+    stmt.close();
 
     try {
       await stmt.execute();
@@ -160,8 +160,8 @@ Deno.test({
       assertEquals((e as Error).message, "Prepared statement is closed");
     }
 
-    await conn.close();
-    await db.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -170,8 +170,8 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const stmt = await conn.prepare("SELECT * FROM prep_test");
-    await stmt.close();
+    const stmt = conn.prepare("SELECT * FROM prep_test");
+    stmt.close();
 
     try {
       await stmt.columnCount();
@@ -180,8 +180,8 @@ Deno.test({
       assertEquals((e as Error).message, "Prepared statement is closed");
     }
 
-    await conn.close();
-    await db.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -193,7 +193,7 @@ Deno.test({
 
     // Note: Prepared statements with unbound parameters will fail at execute time
     // This tests that the prepare itself succeeds but the execute will throw
-    const stmt = await conn.prepare("SELECT * FROM prep_test WHERE id = ?");
+    const stmt = conn.prepare("SELECT * FROM prep_test WHERE id = ?");
     assertExists(stmt);
 
     // Should throw because parameter is not bound
@@ -203,9 +203,9 @@ Deno.test({
       "Values were not provided",
     );
 
-    await stmt.close();
-    await conn.close();
-    await db.close();
+    stmt.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -214,7 +214,7 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const stmt = await conn.prepare("SELECT * FROM prep_test WHERE id = 1");
+    const stmt = conn.prepare("SELECT * FROM prep_test WHERE id = 1");
 
     // Execute twice
     const result1 = await stmt.execute();
@@ -227,9 +227,9 @@ Deno.test({
     assertEquals(await result2.rowCount(), 1n);
     await result2.close();
 
-    await stmt.close();
-    await conn.close();
-    await db.close();
+    stmt.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -239,17 +239,17 @@ Deno.test({
     const db = await setupTestDb();
     const conn = await db.connect();
     // Create another table for join
-    const createResult = await conn.query(
+    const createResult = conn.query(
       "CREATE TABLE prep_join (id INTEGER, value TEXT)",
     );
-    await createResult.close();
+    createResult.close();
 
-    const insertResult = await conn.query(
+    const insertResult = conn.query(
       "INSERT INTO prep_join VALUES (1, 'a'), (2, 'b')",
     );
-    await insertResult.close();
+    insertResult.close();
 
-    const stmt = await conn.prepare(
+    const stmt = conn.prepare(
       "SELECT p.id, p.name, j.value FROM prep_test p JOIN prep_join j ON p.id = j.id",
     );
 
@@ -258,10 +258,10 @@ Deno.test({
     const result = await stmt.execute();
     assertEquals(result.isSuccess(), true);
 
-    await result.close();
-    await stmt.close();
-    await conn.close();
-    await db.close();
+    result.close();
+    stmt.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -270,17 +270,17 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const stmt = await conn.prepare("SELECT * FROM prep_test WHERE id = 999");
+    const stmt = conn.prepare("SELECT * FROM prep_test WHERE id = 999");
 
     const result = await stmt.execute();
 
     assertExists(result);
     assertEquals(result.isSuccess(), true);
-    assertEquals(await result.rowCount(), 0n);
+    assertEquals(result.rowCount(), 0n);
 
-    await result.close();
-    await stmt.close();
-    await conn.close();
-    await db.close();
+    result.close();
+    stmt.close();
+    conn.close();
+    db.close();
   },
 });

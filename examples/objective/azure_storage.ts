@@ -26,26 +26,26 @@ console.log("Connection created\n");
 // The azure extension provides native Azure Blob Storage support
 console.log("--- Installing azure extension ---\n");
 
-let result = await conn.query("INSTALL azure;");
-await result.close();
+let result = conn.query("INSTALL azure;");
+result.close();
 console.log("azure extension installed");
 
-result = await conn.query("LOAD azure;");
-await result.close();
+result = conn.query("LOAD azure;");
+result.close();
 console.log("azure extension loaded\n");
 
 // Step 3: Configure anonymous access for public Azure blobs
 // Azure Open Datasets are publicly accessible without credentials
 console.log("--- Configuring anonymous access for public data ---\n");
 
-result = await conn.query(
+result = conn.query(
   "SET azure_storage_connection_string = '';",
 );
-await result.close();
-result = await conn.query(
+result.close();
+result = conn.query(
   "SET azure_transport_option_type = 'curl';",
 );
-await result.close();
+result.close();
 
 console.log("Anonymous access configured for public Azure blobs\n");
 
@@ -59,14 +59,14 @@ const azureUrl =
   "az://azureopendatastorage.blob.core.windows.net/nyctlc/yellow/puYear=*/puMonth=*/*.parquet";
 
 try {
-  result = await conn.query(
+  result = conn.query(
     `SELECT passengerCount, tripDistance, totalAmount
      FROM read_parquet('${azureUrl}')
      WHERE passengerCount IS NOT NULL
      LIMIT 10`,
   );
-  const rows = await result.fetchAll();
-  await result.close();
+  const rows = result.fetchAll();
+  result.close();
 
   console.log(`Retrieved ${rows.length} rows from Azure Blob Storage`);
   console.log("Sample data (NYC Yellow Taxi):");
@@ -97,8 +97,8 @@ try {
 }
 
 // Clean up
-await conn.close();
-await db.close();
+conn.close();
+db.close();
 
 console.log("\n=== Example Complete ===");
 console.log("All resources cleaned up");

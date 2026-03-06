@@ -14,17 +14,17 @@ const conn = await db.connect();
 
 // Create a table for testing
 console.log("--- Setting up test table ---");
-await conn.query(
+conn.query(
   "CREATE TABLE IF NOT EXISTS accounts (id INTEGER, name VARCHAR, balance DECIMAL)",
 );
 
 // Insert initial data
-await conn.query(
+conn.query(
   "INSERT INTO accounts VALUES (1, 'Alice', 1000), (2, 'Bob', 500)",
 );
 
 // Show initial balances
-const initialResult = await conn.query("SELECT * FROM accounts ORDER BY id");
+const initialResult = conn.query("SELECT * FROM accounts ORDER BY id");
 const initialRows = await initialResult.fetchAll();
 console.log("Initial balances:");
 for (const row of initialRows) {
@@ -36,12 +36,12 @@ await initialResult.close();
 console.log(
   "\n--- Committing a transaction (transfer $200 from Alice to Bob) ---",
 );
-await conn.query("BEGIN TRANSACTION");
-await conn.query("UPDATE accounts SET balance = balance - 200 WHERE id = 1");
-await conn.query("UPDATE accounts SET balance = balance + 200 WHERE id = 2");
-await conn.query("COMMIT");
+conn.query("BEGIN TRANSACTION");
+conn.query("UPDATE accounts SET balance = balance - 200 WHERE id = 1");
+conn.query("UPDATE accounts SET balance = balance + 200 WHERE id = 2");
+conn.query("COMMIT");
 
-const afterCommitResult = await conn.query(
+const afterCommitResult = conn.query(
   "SELECT * FROM accounts ORDER BY id",
 );
 const afterCommitRows = await afterCommitResult.fetchAll();
@@ -55,20 +55,20 @@ await afterCommitResult.close();
 console.log(
   "\n--- Rolling back a transaction (attempt to transfer $2000 from Alice) ---",
 );
-await conn.query("BEGIN TRANSACTION");
-await conn.query("UPDATE accounts SET balance = balance - 2000 WHERE id = 1");
+conn.query("BEGIN TRANSACTION");
+conn.query("UPDATE accounts SET balance = balance - 2000 WHERE id = 1");
 
 // Check balance before rollback
-const beforeRollbackResult = await conn.query(
+const beforeRollbackResult = conn.query(
   "SELECT balance FROM accounts WHERE id = 1",
 );
 const beforeRollbackRows = await beforeRollbackResult.fetchAll();
 console.log(`Alice's balance before rollback: $${beforeRollbackRows[0][0]}`);
 await beforeRollbackResult.close();
 
-await conn.query("ROLLBACK");
+conn.query("ROLLBACK");
 
-const afterRollbackResult = await conn.query(
+const afterRollbackResult = conn.query(
   "SELECT * FROM accounts ORDER BY id",
 );
 const afterRollbackRows = await afterRollbackResult.fetchAll();
@@ -79,7 +79,7 @@ for (const row of afterRollbackRows) {
 await afterRollbackResult.close();
 
 // Clean up
-await conn.close();
-await db.close();
+conn.close();
+db.close();
 
 console.log("\n=== Example Complete ===");

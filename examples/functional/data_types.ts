@@ -24,112 +24,112 @@ const conn = await create(db);
 
 // INTEGER
 console.log("--- INTEGER ---");
-const intStmt = await prepare(conn, "SELECT 42 as num, -10 as neg, 0 as zero");
-const intResult = await executePrepared(intStmt);
+const intStmt = prepare(conn, "SELECT 42 as num, -10 as neg, 0 as zero");
+const intResult = executePrepared(intStmt);
 const intRows = await fetchAll(intResult);
 console.log("Values:", intRows[0]);
-await destroyResult(intResult);
-await destroyPrepared(intStmt);
+destroyResult(intResult);
+destroyPrepared(intStmt);
 
 // BIGINT
 console.log("\n--- BIGINT ---");
-const bigIntStmt = await prepare(
+const bigIntStmt = prepare(
   conn,
   "SELECT 9007199254740991::BIGINT as big_val",
 );
-const bigIntResult = await executePrepared(bigIntStmt);
+const bigIntResult = executePrepared(bigIntStmt);
 const bigIntRows = await fetchAll(bigIntResult);
 console.log("Value:", bigIntRows[0]);
-await destroyResult(bigIntResult);
-await destroyPrepared(bigIntStmt);
+destroyResult(bigIntResult);
+destroyPrepared(bigIntStmt);
 
 // DOUBLE / FLOAT
 console.log("\n--- DOUBLE ---");
-const doubleStmt = await prepare(
+const doubleStmt = prepare(
   conn,
   "SELECT 3.14159 as pi, 2.71828 as e, 1.23456789012345::DOUBLE as precise",
 );
-const doubleResult = await executePrepared(doubleStmt);
+const doubleResult = executePrepared(doubleStmt);
 const doubleRows = await fetchAll(doubleResult);
 console.log("Values:", doubleRows[0]);
-await destroyResult(doubleResult);
-await destroyPrepared(doubleStmt);
+destroyResult(doubleResult);
+destroyPrepared(doubleStmt);
 
 // VARCHAR
 console.log("\n--- VARCHAR ---");
-const varcharStmt = await prepare(
+const varcharStmt = prepare(
   conn,
   "SELECT 'Hello, World!' as greeting",
 );
-const varcharResult = await executePrepared(varcharStmt);
+const varcharResult = executePrepared(varcharStmt);
 const varcharRows = await fetchAll(varcharResult);
 console.log("Value:", varcharRows[0]);
-await destroyResult(varcharResult);
-await destroyPrepared(varcharStmt);
+destroyResult(varcharResult);
+destroyPrepared(varcharStmt);
 
 // BOOLEAN
 console.log("\n--- BOOLEAN ---");
-const boolStmt = await prepare(
+const boolStmt = prepare(
   conn,
   "SELECT true as yes, false as no, 1 = 1 as is_one",
 );
-const boolResult = await executePrepared(boolStmt);
+const boolResult = executePrepared(boolStmt);
 const boolRows = await fetchAll(boolResult);
 console.log("Values:", boolRows[0]);
-await destroyResult(boolResult);
-await destroyPrepared(boolStmt);
+destroyResult(boolResult);
+destroyPrepared(boolStmt);
 
 // DATE
 console.log("\n--- DATE ---");
-const dateStmt = await prepare(
+const dateStmt = prepare(
   conn,
   "SELECT '2024-01-15'::DATE as some_date, CURRENT_DATE as today",
 );
-const dateResult = await executePrepared(dateStmt);
+const dateResult = executePrepared(dateStmt);
 const dateRows = await fetchAll(dateResult);
 console.log("Values:", dateRows[0]);
-await destroyResult(dateResult);
-await destroyPrepared(dateStmt);
+destroyResult(dateResult);
+destroyPrepared(dateStmt);
 
 // TIMESTAMP
 console.log("\n--- TIMESTAMP ---");
-const timestampStmt = await prepare(
+const timestampStmt = prepare(
   conn,
   "SELECT '2024-01-15 10:30:00'::TIMESTAMP as ts, CURRENT_TIMESTAMP as now",
 );
-const timestampResult = await executePrepared(timestampStmt);
+const timestampResult = executePrepared(timestampStmt);
 const timestampRows = await fetchAll(timestampResult);
 console.log("Values:", timestampRows[0]);
-await destroyResult(timestampResult);
-await destroyPrepared(timestampStmt);
+destroyResult(timestampResult);
+destroyPrepared(timestampStmt);
 
 // NULL handling
 console.log("\n--- NULL ---");
-const nullStmt = await prepare(
+const nullStmt = prepare(
   conn,
   "SELECT NULL as null_val, 42 as non_null",
 );
-const nullResult = await executePrepared(nullStmt);
+const nullResult = executePrepared(nullStmt);
 const nullRows = await fetchAll(nullResult);
 console.log("Values:", nullRows[0]);
-await destroyResult(nullResult);
-await destroyPrepared(nullStmt);
+destroyResult(nullResult);
+destroyPrepared(nullStmt);
 
 // Parameter binding with different types
 console.log("\n--- Parameter binding with types ---");
-const paramStmt = await prepare(
+const paramStmt = prepare(
   conn,
   "SELECT $1::INTEGER + $2::DOUBLE as result",
 );
 await bind(paramStmt, [10, 5.5]);
-const paramResult = await executePrepared(paramStmt);
+const paramResult = executePrepared(paramStmt);
 const paramRows = await fetchAll(paramResult);
 console.log("10 + 5.5 =", paramRows[0][0]);
-await destroyResult(paramResult);
-await destroyPrepared(paramStmt);
+destroyResult(paramResult);
+destroyPrepared(paramStmt);
 
 // Clean up
-await closeConnection(conn);
-await closeDatabase(db);
+closeConnection(conn);
+closeDatabase(db);
 
 console.log("\n=== Example Complete ===");

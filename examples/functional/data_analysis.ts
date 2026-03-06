@@ -50,49 +50,49 @@ console.log("Connection created\n");
 // Step 2: Create tables for sales data
 console.log("--- Creating Tables ---\n");
 
-let result = await execute(conn, CREATE_PRODUCTS);
-await destroyResult(result);
+let result = execute(conn, CREATE_PRODUCTS);
+destroyResult(result);
 console.log("Created 'products' table");
 
-result = await execute(conn, CREATE_CUSTOMERS);
-await destroyResult(result);
+result = execute(conn, CREATE_CUSTOMERS);
+destroyResult(result);
 console.log("Created 'customers' table");
 
-result = await execute(conn, CREATE_ORDERS);
-await destroyResult(result);
+result = execute(conn, CREATE_ORDERS);
+destroyResult(result);
 console.log("Created 'orders' table\n");
 
 // Step 3: Insert sample data
 console.log("--- Inserting Sample Data ---\n");
 
-result = await execute(conn, INSERT_PRODUCTS);
-await destroyResult(result);
+result = execute(conn, INSERT_PRODUCTS);
+destroyResult(result);
 console.log("Inserted 10 products");
 
-result = await execute(conn, INSERT_CUSTOMERS);
-await destroyResult(result);
+result = execute(conn, INSERT_CUSTOMERS);
+destroyResult(result);
 console.log("Inserted 5 customers");
 
-result = await execute(conn, INSERT_ORDERS);
-await destroyResult(result);
+result = execute(conn, INSERT_ORDERS);
+destroyResult(result);
 console.log("Inserted 15 orders\n");
 
 // Step 4: Run queries
 console.log("--- Running Queries ---\n");
 
 // Query 1: Products sorted by price
-result = await execute(conn, PRODUCTS_BY_PRICE);
+result = execute(conn, PRODUCTS_BY_PRICE);
 const products = await fetchAll(result);
-await destroyResult(result);
+destroyResult(result);
 console.log("Products (sorted by price, descending):");
 for (const [name, category, price] of products) {
   console.log(`  ${name}: $${price} (${category})`);
 }
 
 // Query 2: Orders with customer and product info (JOIN)
-result = await execute(conn, ORDER_DETAILS);
+result = execute(conn, ORDER_DETAILS);
 const orderDetails = await fetchAll(result);
-await destroyResult(result);
+destroyResult(result);
 console.log("\nOrder Details:");
 for (const [id, customer, product, qty, total] of orderDetails.slice(0, 5)) {
   console.log(
@@ -101,18 +101,18 @@ for (const [id, customer, product, qty, total] of orderDetails.slice(0, 5)) {
 }
 
 // Query 3: Filter by category
-result = await execute(conn, ELECTRONICS_BY_PRICE);
+result = execute(conn, ELECTRONICS_BY_PRICE);
 const electronics = await fetchAll(result);
-await destroyResult(result);
+destroyResult(result);
 console.log("\nElectronics (sorted by price):");
 for (const [name, price] of electronics) {
   console.log(`  ${name}: $${price}`);
 }
 
 // Query 4: Date range filtering
-result = await execute(conn, ORDERS_BY_DATE_RANGE);
+result = execute(conn, ORDERS_BY_DATE_RANGE);
 const dateRangeOrders = await fetchAll(result);
-await destroyResult(result);
+destroyResult(result);
 console.log("\nOrders from Jan 18-21, 2024:");
 for (const row of dateRangeOrders) {
   console.log(
@@ -124,9 +124,9 @@ for (const row of dateRangeOrders) {
 
 // Query 5: Customer totals (calculated in JavaScript)
 console.log("\nCustomer Analysis (calculated via streaming):");
-result = await execute(conn, CUSTOMER_TOTALS);
+result = execute(conn, CUSTOMER_TOTALS);
 const customerTotals = await fetchAll(result);
-await destroyResult(result);
+destroyResult(result);
 
 // Calculate totals per customer
 const customerMap = new Map<string, number>();
@@ -140,9 +140,9 @@ for (const [name, total] of sortedCustomers) {
 }
 
 // Query 6: Using subquery - products above average price
-result = await execute(conn, PRODUCTS_ABOVE_AVERAGE);
+result = execute(conn, PRODUCTS_ABOVE_AVERAGE);
 const aboveAvg = await fetchAll(result);
-await destroyResult(result);
+destroyResult(result);
 console.log("\nProducts with above-average price:");
 for (const [name, price] of aboveAvg) {
   console.log(`  ${name}: $${price}`);
@@ -172,8 +172,8 @@ console.log(`  ... and ${orderCount - 5} more orders`);
 console.log(`  Total quantity across all orders: ${totalQty}`);
 
 // Clean up
-await closeConnection(conn);
-await closeDatabase(db);
+closeConnection(conn);
+closeDatabase(db);
 
 console.log("\n=== Analysis Complete ===");
 console.log("All resources cleaned up");

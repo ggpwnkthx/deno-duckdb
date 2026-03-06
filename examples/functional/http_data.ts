@@ -31,12 +31,12 @@ console.log("Connection created\n");
 // Step 2: Install and load the httpfs extension
 console.log("--- Installing httpfs extension ---\n");
 
-let result = await execute(conn, "INSTALL httpfs;");
-await destroyResult(result);
+let result = execute(conn, "INSTALL httpfs;");
+destroyResult(result);
 console.log("httpfs extension installed");
 
-result = await execute(conn, "LOAD httpfs;");
-await destroyResult(result);
+result = execute(conn, "LOAD httpfs;");
+destroyResult(result);
 console.log("httpfs extension loaded\n");
 
 // Step 3: Query public CSV data via HTTP
@@ -46,12 +46,12 @@ console.log("--- Querying public CSV via HTTP ---\n");
 const csvUrl =
   "https://raw.githubusercontent.com/datasets/country-codes/main/data/country-codes.csv";
 
-result = await execute(
+result = execute(
   conn,
   `SELECT * FROM read_csv_auto('${csvUrl}') LIMIT 10`,
 );
 const rows = await fetchAll(result);
-await destroyResult(result);
+destroyResult(result);
 
 console.log(`Retrieved ${rows.length} rows from HTTP CSV\n`);
 console.log("Sample data (first 10 countries:");
@@ -65,12 +65,12 @@ console.log("\n--- Querying JSON via HTTP ---\n");
 const jsonUrl =
   "https://raw.githubusercontent.com/vega/vega-datasets/next/data/cars.json";
 
-result = await execute(
+result = execute(
   conn,
   `SELECT Origin, COUNT(*) as count FROM read_json_auto('${jsonUrl}') GROUP BY Origin ORDER BY count DESC`,
 );
 const jsonRows = await fetchAll(result);
-await destroyResult(result);
+destroyResult(result);
 
 console.log("Cars by origin (from JSON via HTTP):");
 for (const row of jsonRows) {
@@ -78,8 +78,8 @@ for (const row of jsonRows) {
 }
 
 // Clean up
-await closeConnection(conn);
-await closeDatabase(db);
+closeConnection(conn);
+closeDatabase(db);
 
 console.log("\n=== Example Complete ===");
 console.log("All resources cleaned up");

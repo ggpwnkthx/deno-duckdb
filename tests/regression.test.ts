@@ -2,7 +2,7 @@
  * Regression tests for previously fixed issues
  */
 
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertThrows } from "@std/assert";
 import { functional as duckdb } from "@ggpwnkthx/duckdb";
 import { functional } from "@ggpwnkthx/duckdb";
 import { QueryError } from "../src/errors.ts";
@@ -25,13 +25,13 @@ Deno.test({
 Deno.test({
   name: "regression: nullmask - fetchAll handles NULL in first row",
   async fn() {
-    await withConn(async (conn) => {
+    await withConn((conn) => {
       // Create table and insert row with NULL string value as first row
-      await exec(conn, "CREATE TABLE nullmask_test(id INTEGER, val TEXT)");
-      await exec(conn, "INSERT INTO nullmask_test VALUES (1, NULL)");
+      exec(conn, "CREATE TABLE nullmask_test(id INTEGER, val TEXT)");
+      exec(conn, "INSERT INTO nullmask_test VALUES (1, NULL)");
 
       // Verify using fetchAll()
-      const rows = await query(conn, "SELECT * FROM nullmask_test");
+      const rows = query(conn, "SELECT * FROM nullmask_test");
 
       // fetchAll should return null for NULL value
       assertEquals(rows[0][1], null, "First row should have NULL");
@@ -42,9 +42,9 @@ Deno.test({
 Deno.test({
   name: "regression: QueryError correctness - empty SQL",
   async fn() {
-    await withConn(async (conn) => {
-      await assertRejects(
-        async () => await duckdb.execute(conn, ""),
+    await withConn((conn) => {
+      assertThrows(
+        () => duckdb.execute(conn, ""),
         QueryError,
       );
     });
@@ -54,9 +54,9 @@ Deno.test({
 Deno.test({
   name: "regression: QueryError correctness - invalid SQL",
   async fn() {
-    await withConn(async (conn) => {
+    await withConn((conn) => {
       try {
-        await duckdb.execute(conn, "SELCT 1");
+        duckdb.execute(conn, "SELCT 1");
         throw new Error("Should have thrown");
       } catch (e) {
         assertEquals(e instanceof QueryError, true, "Should be QueryError");
@@ -70,11 +70,10 @@ Deno.test({
 Deno.test({
   name: "regression: string extraction - empty string",
   async fn() {
-    await withConn(async (conn) => {
-      await exec(conn, "CREATE TABLE str_test(val TEXT)");
-      await exec(conn, "INSERT INTO str_test VALUES ('')");
-
-      const rows = await query(conn, "SELECT * FROM str_test");
+    await withConn((conn) => {
+      exec(conn, "CREATE TABLE str_test(val TEXT)");
+      exec(conn, "INSERT INTO str_test VALUES ('')");
+      const rows = query(conn, "SELECT * FROM str_test");
       assertEquals(rows[0][0], "");
     });
   },
@@ -83,11 +82,10 @@ Deno.test({
 Deno.test({
   name: "regression: string extraction - non-ASCII",
   async fn() {
-    await withConn(async (conn) => {
-      await exec(conn, "CREATE TABLE str_test(val TEXT)");
-      await exec(conn, "INSERT INTO str_test VALUES ('café')");
-
-      const rows = await query(conn, "SELECT * FROM str_test");
+    await withConn((conn) => {
+      exec(conn, "CREATE TABLE str_test(val TEXT)");
+      exec(conn, "INSERT INTO str_test VALUES ('café')");
+      const rows = query(conn, "SELECT * FROM str_test");
       assertEquals(rows[0][0], "café");
     });
   },
@@ -96,11 +94,10 @@ Deno.test({
 Deno.test({
   name: "regression: string extraction - emoji",
   async fn() {
-    await withConn(async (conn) => {
-      await exec(conn, "CREATE TABLE str_test(val TEXT)");
-      await exec(conn, "INSERT INTO str_test VALUES ('😀')");
-
-      const rows = await query(conn, "SELECT * FROM str_test");
+    await withConn((conn) => {
+      exec(conn, "CREATE TABLE str_test(val TEXT)");
+      exec(conn, "INSERT INTO str_test VALUES ('😀')");
+      const rows = query(conn, "SELECT * FROM str_test");
       assertEquals(rows[0][0], "😀");
     });
   },
@@ -109,13 +106,12 @@ Deno.test({
 Deno.test({
   name: "regression: string extraction - long string",
   async fn() {
-    await withConn(async (conn) => {
-      await exec(conn, "CREATE TABLE str_test(val TEXT)");
+    await withConn((conn) => {
+      exec(conn, "CREATE TABLE str_test(val TEXT)");
       // Create a string >= 250 characters
       const longStr = "a".repeat(300);
-      await exec(conn, `INSERT INTO str_test VALUES ('${longStr}')`);
-
-      const rows = await query(conn, "SELECT * FROM str_test");
+      exec(conn, `INSERT INTO str_test VALUES ('${longStr}')`);
+      const rows = query(conn, "SELECT * FROM str_test");
       assertEquals(rows[0][0], longStr);
     });
   },
@@ -124,11 +120,10 @@ Deno.test({
 Deno.test({
   name: "regression: string extraction - NULL",
   async fn() {
-    await withConn(async (conn) => {
-      await exec(conn, "CREATE TABLE str_test(val TEXT)");
-      await exec(conn, "INSERT INTO str_test VALUES (NULL)");
-
-      const rows = await query(conn, "SELECT * FROM str_test");
+    await withConn((conn) => {
+      exec(conn, "CREATE TABLE str_test(val TEXT)");
+      exec(conn, "INSERT INTO str_test VALUES (NULL)");
+      const rows = query(conn, "SELECT * FROM str_test");
       assertEquals(rows[0][0], null);
     });
   },
@@ -137,15 +132,14 @@ Deno.test({
 Deno.test({
   name: "regression: string extraction via stream",
   async fn() {
-    await withConn(async (conn) => {
-      await exec(conn, "CREATE TABLE str_test(val TEXT)");
-      await exec(
+    await withConn((conn) => {
+      exec(conn, "CREATE TABLE str_test(val TEXT)");
+      exec(
         conn,
         "INSERT INTO str_test VALUES ('hello'), (''), ('café'), ('😀')",
       );
-
       const rows: unknown[][] = [];
-      for await (
+      for (
         const row of functional.stream(conn, "SELECT * FROM str_test")
       ) {
         rows.push(row);

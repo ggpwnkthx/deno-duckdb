@@ -26,7 +26,7 @@ const conn = await create(db);
 console.log("Connection created");
 
 // Execute query
-const resultHandle = await execute(
+const resultHandle = execute(
   conn,
   "SELECT i, i * 2 as doubled FROM range(5) t(i)",
 );
@@ -43,8 +43,8 @@ for (const row of rows) {
 }
 
 // Clean up - must manually destroy handles
-await destroyResult(resultHandle);
-await closeConnection(conn);
-await closeDatabase(db);
+destroyResult(resultHandle);
+closeConnection(conn);
+closeDatabase(db);
 
 console.log("\nAll resources cleaned up");

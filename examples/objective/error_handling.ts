@@ -23,10 +23,10 @@ console.log("\n--- Handling QueryError ---");
 
 try {
   // Create a prepared statement with invalid table
-  const stmt = await conn.prepare("SELECT * FROM nonexistent_table");
-  const result = await stmt.execute();
-  await result.close();
-  await stmt.close();
+  const stmt = conn.prepare("SELECT * FROM nonexistent_table");
+  const result = stmt.execute();
+  result.close();
+  stmt.close();
   console.log("This should not print");
 } catch (error) {
   const errorMsg = (error as Error).message;
@@ -50,10 +50,10 @@ const errorQueries = [
 
 for (let i = 0; i < errorQueries.length; i++) {
   try {
-    const stmt = await conn.prepare(errorQueries[i]);
-    const result = await stmt.execute();
-    await result.close();
-    await stmt.close();
+    const stmt = conn.prepare(errorQueries[i]);
+    const result = stmt.execute();
+    result.close();
+    stmt.close();
   } catch (error) {
     console.log(`Error ${i + 1}:`, (error as Error).message.split("\n")[0]);
   }
@@ -62,10 +62,10 @@ for (let i = 0; i < errorQueries.length; i++) {
 console.log("\n--- Using error.name for type checking ---");
 
 try {
-  const stmt = await conn.prepare("SELECT * FROM does_not_exist");
-  const result = await stmt.execute();
-  await result.close();
-  await stmt.close();
+  const stmt = conn.prepare("SELECT * FROM does_not_exist");
+  const result = stmt.execute();
+  result.close();
+  stmt.close();
 } catch (error) {
   const errorName = (error as Error).name;
   const errorMessage = (error as Error).message;
@@ -82,34 +82,34 @@ try {
 // Demonstrate proper cleanup in error scenarios
 console.log("\n--- Proper cleanup in error scenarios ---");
 
-async function executeWithCleanup(sql: string): Promise<void> {
+function executeWithCleanup(sql: string): void {
   let stmt = null;
   let result = null;
 
   try {
-    stmt = await conn.prepare(sql);
-    result = await stmt.execute();
+    stmt = conn.prepare(sql);
+    result = stmt.execute();
     console.log("Query executed successfully");
   } catch (error) {
     console.log("Error occurred:", (error as Error).message.split("\n")[0]);
   } finally {
     // Always clean up
     if (result) {
-      await result.close();
+      result.close();
     }
     if (stmt) {
-      await stmt.close();
+      stmt.close();
     }
     console.log("Cleanup completed");
   }
 }
 
-await executeWithCleanup("SELECT 1 as num");
-await executeWithCleanup("SELECT * FROM invalid_table");
+executeWithCleanup("SELECT 1 as num");
+executeWithCleanup("SELECT * FROM invalid_table");
 
 // Clean up connection and database
-await conn.close();
-await db.close();
+conn.close();
+db.close();
 
 console.log("\nAll resources cleaned up");
 console.log("\n=== Example Complete ===");

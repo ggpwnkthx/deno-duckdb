@@ -9,13 +9,10 @@ import { isValidHandle } from "../helpers.ts";
 import * as query from "../functional/query.ts";
 import * as prep from "../functional/prepared.ts";
 import * as value from "../functional/value.ts";
-import { stream } from "../functional/stream.ts";
+import { type RowStream, stream } from "../functional/stream.ts";
 import type { Database } from "./database.ts";
 import { QueryResult as QueryResultClass } from "./query.ts";
 import { PreparedStatement } from "./prepared.ts";
-
-/** Async generator type for streaming rows */
-export type RowStream = AsyncGenerator<RowData, void, unknown>;
 
 /**
  * Connection class - represents a connection to a DuckDB database
@@ -49,13 +46,13 @@ export class Connection {
    * @param sql - SQL query string
    * @returns QueryResult instance
    */
-  async query(sql: string): Promise<QueryResultClass> {
+  query(sql: string): QueryResultClass {
     this.checkNotClosed();
     if (!sql || !sql.trim()) {
       throw new DatabaseError("SQL query cannot be empty");
     }
-    // Note: query.execute is synchronous, but we keep async for backward compatibility
-    const handle = await query.execute(this.handle!, sql);
+    // Note: query.execute is synchronous
+    const handle = query.execute(this.handle!, sql);
     return new QueryResultClass(handle, this);
   }
 
@@ -87,20 +84,20 @@ export class Connection {
    * );
    * ```
    */
-  async queryTyped<T>(
+  queryTyped<T>(
     sql: string,
     mapper?: (row: RowData, columns: string[]) => T,
-  ): Promise<T[]> {
+  ): T[] {
     this.checkNotClosed();
     if (!sql || !sql.trim()) {
       throw new DatabaseError("SQL query cannot be empty");
     }
-    // Note: query.execute is synchronous, but we keep async for backward compatibility
-    const handle = await query.execute(this.handle!, sql);
+    // Note: query.execute is synchronous
+    const handle = query.execute(this.handle!, sql);
 
     try {
       const rows = value.fetchAll(handle);
-      const columns = (await query.columnInfos(handle)).map(
+      const columns = query.columnInfos(handle).map(
         (c) => c.name,
       );
 
@@ -117,7 +114,7 @@ export class Connection {
         return obj as T;
       });
     } finally {
-      await query.destroyResult(handle);
+      query.destroyResult(handle);
     }
   }
 
@@ -127,21 +124,21 @@ export class Connection {
    * @param sql - SQL query string
    * @returns Array of rows
    */
-  async queryAll(sql: string): Promise<RowData[]> {
-    const result = await this.query(sql);
+  queryAll(sql: string): RowData[] {
+    const result = this.query(sql);
     return result.fetchAll();
   }
 
   /**
    * Execute a query and stream rows lazily
    *
-   * This method returns an async generator that yields rows one at a time,
+   * This method returns a generator that yields rows one at a time,
    * avoiding loading all rows into memory at once. Useful for large result sets.
    *
    * @param sql - SQL query string
-   * @returns AsyncGenerator yielding rows
+   * @returns Generator yielding rows
    */
-  async *stream(sql: string): RowStream {
+  *stream(sql: string): RowStream {
     this.checkNotClosed();
     if (!sql || !sql.trim()) {
       throw new DatabaseError("SQL query cannot be empty");
@@ -156,15 +153,12 @@ export class Connection {
    * @param sql - SQL statement to prepare
    * @returns PreparedStatement instance
    */
-  async prepare(sql: string): Promise<PreparedStatement> {
+  prepare(sql: string): PreparedStatement {
     this.checkNotClosed();
     if (!sql || !sql.trim()) {
       throw new DatabaseError("SQL statement cannot be empty");
     }
-
-    // Note: prep.prepare is synchronous, but we keep async for backward compatibility
-    const handle = await prep.prepare(this.handle!, sql);
-
+    const handle = prep.prepare(this.handle!, sql);
     return new PreparedStatement(handle, this);
   }
 

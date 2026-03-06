@@ -32,7 +32,7 @@ export async function getLibrary(): Promise<DuckDBLibrary> {
 
   // If already loading, wait for that to complete
   if (loadingPromise !== null) {
-    return await loadingPromise;
+    return loadingPromise;
   }
 
   // Start loading and cache the promise
@@ -46,6 +46,7 @@ export async function getLibrary(): Promise<DuckDBLibrary> {
     }
   })();
 
+  // Await to satisfy linter - loadingPromise needs to be awaited somewhere
   return await loadingPromise;
 }
 

@@ -49,49 +49,49 @@ console.log("Connection created\n");
 // Step 2: Create tables for sales data
 console.log("--- Creating Tables ---\n");
 
-let result = await conn.query(CREATE_PRODUCTS);
-await result.close();
+let result = conn.query(CREATE_PRODUCTS);
+result.close();
 console.log("Created 'products' table");
 
-result = await conn.query(CREATE_CUSTOMERS);
-await result.close();
+result = conn.query(CREATE_CUSTOMERS);
+result.close();
 console.log("Created 'customers' table");
 
-result = await conn.query(CREATE_ORDERS);
-await result.close();
+result = conn.query(CREATE_ORDERS);
+result.close();
 console.log("Created 'orders' table\n");
 
 // Step 3: Insert sample data
 console.log("--- Inserting Sample Data ---\n");
 
-result = await conn.query(INSERT_PRODUCTS);
-await result.close();
+result = conn.query(INSERT_PRODUCTS);
+result.close();
 console.log("Inserted 10 products");
 
-result = await conn.query(INSERT_CUSTOMERS);
-await result.close();
+result = conn.query(INSERT_CUSTOMERS);
+result.close();
 console.log("Inserted 5 customers");
 
-result = await conn.query(INSERT_ORDERS);
-await result.close();
+result = conn.query(INSERT_ORDERS);
+result.close();
 console.log("Inserted 15 orders\n");
 
 // Step 4: Run queries
 console.log("--- Running Queries ---\n");
 
 // Query 1: Products sorted by price
-result = await conn.query(PRODUCTS_BY_PRICE);
-const products = await result.fetchAll();
-await result.close();
+result = conn.query(PRODUCTS_BY_PRICE);
+const products = result.fetchAll();
+result.close();
 console.log("Products (sorted by price, descending):");
 for (const [name, category, price] of products) {
   console.log(`  ${name}: $${price} (${category})`);
 }
 
 // Query 2: Orders with customer and product info (JOIN)
-result = await conn.query(ORDER_DETAILS);
-const orderDetails = await result.fetchAll();
-await result.close();
+result = conn.query(ORDER_DETAILS);
+const orderDetails = result.fetchAll();
+result.close();
 console.log("\nOrder Details:");
 for (const [id, customer, product, qty, total] of orderDetails.slice(0, 5)) {
   console.log(
@@ -100,18 +100,18 @@ for (const [id, customer, product, qty, total] of orderDetails.slice(0, 5)) {
 }
 
 // Query 3: Filter by category
-result = await conn.query(ELECTRONICS_BY_PRICE);
-const electronics = await result.fetchAll();
-await result.close();
+result = conn.query(ELECTRONICS_BY_PRICE);
+const electronics = result.fetchAll();
+result.close();
 console.log("\nElectronics (sorted by price):");
 for (const [name, price] of electronics) {
   console.log(`  ${name}: $${price}`);
 }
 
 // Query 4: Date range filtering
-result = await conn.query(ORDERS_BY_DATE_RANGE);
-const dateRangeOrders = await result.fetchAll();
-await result.close();
+result = conn.query(ORDERS_BY_DATE_RANGE);
+const dateRangeOrders = result.fetchAll();
+result.close();
 console.log("\nOrders from Jan 18-21, 2024:");
 for (const row of dateRangeOrders) {
   console.log(
@@ -123,9 +123,9 @@ for (const row of dateRangeOrders) {
 
 // Query 5: Customer totals (calculated in JavaScript)
 console.log("\nCustomer Analysis (calculated via streaming):");
-result = await conn.query(CUSTOMER_TOTALS);
-const customerTotals = await result.fetchAll();
-await result.close();
+result = conn.query(CUSTOMER_TOTALS);
+const customerTotals = result.fetchAll();
+result.close();
 
 // Calculate totals per customer
 const customerMap = new Map<string, number>();
@@ -139,9 +139,9 @@ for (const [name, total] of sortedCustomers) {
 }
 
 // Query 6: Using subquery - products above average price
-result = await conn.query(PRODUCTS_ABOVE_AVERAGE);
-const aboveAvg = await result.fetchAll();
-await result.close();
+result = conn.query(PRODUCTS_ABOVE_AVERAGE);
+const aboveAvg = result.fetchAll();
+result.close();
 console.log("\nProducts with above-average price:");
 for (const [name, price] of aboveAvg) {
   console.log(`  ${name}: $${price}`);
@@ -172,8 +172,8 @@ console.log(`  ... and ${orderCount - 5} more orders`);
 console.log(`  Total quantity across all orders: ${totalQty}`);
 
 // Clean up - close in reverse order of creation
-await conn.close();
-await db.close();
+conn.close();
+db.close();
 
 console.log("\n=== Analysis Complete ===");
 console.log("All resources cleaned up");

@@ -19,14 +19,14 @@ console.log("--- Manual cleanup pattern (traditional) ---");
   await db.open();
   const conn = await db.connect();
 
-  const result = await conn.query("SELECT 1 as num");
-  const rows = await result.fetchAll();
+  const result = conn.query("SELECT 1 as num");
+  const rows = result.fetchAll();
   console.log("Result:", rows[0]);
 
   // Must remember to close in reverse order
-  await result.close();
-  await conn.close();
-  await db.close();
+  result.close();
+  conn.close();
+  db.close();
 }
 console.log("Manual cleanup complete\n");
 
@@ -50,10 +50,10 @@ console.log("--- Using auto-cleanup pattern with 'using' ---");
   using _dbCleanup = db;
   using _connCleanup = conn;
 
-  const result = await conn.query("SELECT 1 as num");
+  const result = conn.query("SELECT 1 as num");
   using _resultCleanup = result;
 
-  const rows = await result.fetchAll();
+  const rows = result.fetchAll();
   console.log("Result:", rows[0]);
 }
 console.log("Auto-cleanup complete (resources disposed automatically)\n");
@@ -67,9 +67,9 @@ async function queryWithCleanup() {
 
   using conn = await db.connect();
 
-  using result = await conn.query("SELECT 'Hello, World!' as greeting");
+  using result = conn.query("SELECT 'Hello, World!' as greeting");
 
-  const rows = await result.fetchAll();
+  const rows = result.fetchAll();
   return rows[0];
 }
 
@@ -88,12 +88,12 @@ async function queryWithErrorHandling() {
     using conn = await db.connect();
 
     // This will succeed
-    using result1 = await conn.query("SELECT 1 as success");
-    const rows1 = await result1.fetchAll();
+    using result1 = conn.query("SELECT 1 as success");
+    const rows1 = result1.fetchAll();
     console.log("Query succeeded:", rows1[0]);
 
     // This query has invalid syntax - will throw
-    using _result2 = await conn.query("SELECT * FROM nonexistent_table");
+    using _result2 = conn.query("SELECT * FROM nonexistent_table");
 
     // This won't execute due to error
     console.log("This should not print");
@@ -122,28 +122,28 @@ async function manualCleanupWithError() {
     const conn = await db.connect();
 
     try {
-      const result = await conn.query("SELECT * FROM invalid_query");
+      const result = conn.query("SELECT * FROM invalid_query");
 
       try {
-        const _rows = await result.fetchAll();
-        await result.close(); // This might not run if error occurs earlier
+        const _rows = result.fetchAll();
+        result.close(); // This might not run if error occurs earlier
       } catch (e) {
-        await result.close(); // Need to remember cleanup
+        result.close(); // Need to remember cleanup
         throw e;
       }
 
-      await result.close();
+      result.close();
     } catch (e) {
-      await conn.close(); // Must remember cleanup
+      conn.close(); // Must remember cleanup
       throw e;
     }
 
-    await conn.close();
+    conn.close();
   } catch (error) {
     console.log("Error:", (error as Error).message);
   } finally {
     // Must not forget this!
-    await db.close();
+    db.close();
   }
 }
 

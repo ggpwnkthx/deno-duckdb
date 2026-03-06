@@ -21,51 +21,51 @@ const conn = await create(db);
 
 // Create a table for testing
 console.log("--- Setting up test table ---");
-const setupResult = await execute(
+const setupResult = execute(
   conn,
   "CREATE TABLE IF NOT EXISTS accounts (id INTEGER, name VARCHAR, balance DECIMAL)",
 );
-await destroyResult(setupResult);
+destroyResult(setupResult);
 
 // Insert initial data
-const insertResult = await execute(
+const insertResult = execute(
   conn,
   "INSERT INTO accounts VALUES (1, 'Alice', 1000), (2, 'Bob', 500)",
 );
-await destroyResult(insertResult);
+destroyResult(insertResult);
 
 // Show initial balances
-const initialResult = await execute(conn, "SELECT * FROM accounts ORDER BY id");
+const initialResult = execute(conn, "SELECT * FROM accounts ORDER BY id");
 const initialRows = await fetchAll(initialResult);
 console.log("Initial balances:");
 for (const row of initialRows) {
   console.log(`  ${row[1]}: $${row[2]}`);
 }
-await destroyResult(initialResult);
+destroyResult(initialResult);
 
 // Demonstrate successful transaction
 console.log(
   "\n--- Committing a transaction (transfer $200 from Alice to Bob) ---",
 );
-const beginResult1 = await execute(conn, "BEGIN TRANSACTION");
-await destroyResult(beginResult1);
+const beginResult1 = execute(conn, "BEGIN TRANSACTION");
+destroyResult(beginResult1);
 
-const debitResult = await execute(
+const debitResult = execute(
   conn,
   "UPDATE accounts SET balance = balance - 200 WHERE id = 1",
 );
-await destroyResult(debitResult);
+destroyResult(debitResult);
 
-const creditResult = await execute(
+const creditResult = execute(
   conn,
   "UPDATE accounts SET balance = balance + 200 WHERE id = 2",
 );
-await destroyResult(creditResult);
+destroyResult(creditResult);
 
-const commitResult = await execute(conn, "COMMIT");
-await destroyResult(commitResult);
+const commitResult = execute(conn, "COMMIT");
+destroyResult(commitResult);
 
-const afterCommitResult = await execute(
+const afterCommitResult = execute(
   conn,
   "SELECT * FROM accounts ORDER BY id",
 );
@@ -74,34 +74,34 @@ console.log("After transfer:");
 for (const row of afterCommitRows) {
   console.log(`  ${row[1]}: $${row[2]}`);
 }
-await destroyResult(afterCommitResult);
+destroyResult(afterCommitResult);
 
 // Demonstrate rollback
 console.log(
   "\n--- Rolling back a transaction (attempt to transfer $2000 from Alice) ---",
 );
-const beginResult2 = await execute(conn, "BEGIN TRANSACTION");
-await destroyResult(beginResult2);
+const beginResult2 = execute(conn, "BEGIN TRANSACTION");
+destroyResult(beginResult2);
 
-const debitResult2 = await execute(
+const debitResult2 = execute(
   conn,
   "UPDATE accounts SET balance = balance - 2000 WHERE id = 1",
 );
-await destroyResult(debitResult2);
+destroyResult(debitResult2);
 
 // Check balance before rollback
-const beforeRollbackResult = await execute(
+const beforeRollbackResult = execute(
   conn,
   "SELECT balance FROM accounts WHERE id = 1",
 );
 const beforeRollbackRows = await fetchAll(beforeRollbackResult);
 console.log(`Alice's balance before rollback: $${beforeRollbackRows[0][0]}`);
-await destroyResult(beforeRollbackResult);
+destroyResult(beforeRollbackResult);
 
-const rollbackResult = await execute(conn, "ROLLBACK");
-await destroyResult(rollbackResult);
+const rollbackResult = execute(conn, "ROLLBACK");
+destroyResult(rollbackResult);
 
-const afterRollbackResult = await execute(
+const afterRollbackResult = execute(
   conn,
   "SELECT * FROM accounts ORDER BY id",
 );
@@ -110,10 +110,10 @@ console.log("After rollback:");
 for (const row of afterRollbackRows) {
   console.log(`  ${row[1]}: $${row[2]}`);
 }
-await destroyResult(afterRollbackResult);
+destroyResult(afterRollbackResult);
 
 // Clean up
-await closeConnection(conn);
-await closeDatabase(db);
+closeConnection(conn);
+closeDatabase(db);
 
 console.log("\n=== Example Complete ===");

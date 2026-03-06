@@ -10,11 +10,11 @@
  *
  * const db = await open();
  * const conn = await create(db);
- * const resultHandle = await execute(conn, "SELECT * FROM t");
+ * const resultHandle = execute(conn, "SELECT * FROM t");
  * const rows = await fetchAll(resultHandle);
- * await destroyResult(resultHandle);
- * await closeConnection(conn);
- * await closeDatabase(db);
+ * destroyResult(resultHandle);
+ * closeConnection(conn);
+ * closeDatabase(db);
  * ```
  */
 

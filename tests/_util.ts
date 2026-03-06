@@ -18,7 +18,7 @@ export async function withDb<T>(
   try {
     return await fn(db);
   } finally {
-    await duckdb.closeDatabase(db);
+    duckdb.closeDatabase(db);
   }
 }
 
@@ -27,14 +27,14 @@ export async function withDb<T>(
  * always cleaning up in finally
  */
 export function withConn<T>(
-  fn: (conn: ConnectionHandle) => Promise<T>,
+  fn: (conn: ConnectionHandle) => Promise<T> | T,
 ): Promise<T> {
   return withDb(async (db) => {
     const conn = await duckdb.create(db);
     try {
       return await fn(conn);
     } finally {
-      await duckdb.closeConnection(conn);
+      duckdb.closeConnection(conn);
     }
   });
 }
@@ -42,22 +42,22 @@ export function withConn<T>(
 /**
  * Execute SQL (including DDL/INSERT) and automatically destroy the ResultHandle
  */
-export async function exec(conn: ConnectionHandle, sql: string): Promise<void> {
-  const handle = await duckdb.execute(conn, sql);
-  await duckdb.destroyResult(handle);
+export function exec(conn: ConnectionHandle, sql: string): void {
+  const handle = duckdb.execute(conn, sql);
+  duckdb.destroyResult(handle);
 }
 
 /**
  * Run a SELECT query, return rows with automatic result destruction
  */
-export async function query(
+export function query(
   conn: ConnectionHandle,
   sql: string,
-): Promise<unknown[][]> {
-  const handle = await duckdb.execute(conn, sql);
+): unknown[][] {
+  const handle = duckdb.execute(conn, sql);
   try {
-    return await duckdb.fetchAll(handle);
+    return duckdb.fetchAll(handle);
   } finally {
-    await duckdb.destroyResult(handle);
+    duckdb.destroyResult(handle);
   }
 }

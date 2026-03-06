@@ -1,11 +1,10 @@
 /**
  * Functional query operations
  */
-
+import type { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
 import type {
   ColumnInfo,
   ConnectionHandle,
-  DuckDBTypeValue,
   ResultHandle,
   RowData,
 } from "../types.ts";
@@ -141,13 +140,13 @@ export function columnName(
 export function columnType(
   handle: ResultHandle,
   index: number,
-): DuckDBTypeValue {
+): DUCKDB_TYPE {
   validateResultHandle(handle);
   const lib = getLibraryFast();
   return lib.symbols.duckdb_column_type(
     handle,
     BigInt(index),
-  ) as DuckDBTypeValue;
+  ) as DUCKDB_TYPE;
 }
 
 /**

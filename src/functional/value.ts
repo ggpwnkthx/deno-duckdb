@@ -2,13 +2,8 @@
  * Functional value extraction operations
  */
 
-import {
-  DuckDBType,
-  type DuckDBTypeValue,
-  type ResultHandle,
-  type RowData,
-  type ValueType,
-} from "../types.ts";
+import { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
+import type { ResultHandle, RowData, ValueType } from "../types.ts";
 import {
   BYTE_SIZE_32,
   BYTE_SIZE_64,
@@ -222,7 +217,7 @@ export function fetchAll(
   const lib = getLibraryFast();
 
   // Pre-fetch column metadata (cached per column, not per cell)
-  const columnTypes: DuckDBTypeValue[] = [];
+  const columnTypes: DUCKDB_TYPE[] = [];
   const dataViews: (Deno.UnsafePointerView | null)[] = [];
   const nullMaskViews: (Deno.UnsafePointerView | null)[] = [];
 
@@ -279,7 +274,7 @@ export function fetchAll(
  */
 export function getValueByTypeOptimized(
   row: number,
-  type: DuckDBTypeValue,
+  type: DUCKDB_TYPE,
   dataView: Deno.UnsafePointerView | null,
   nullMaskView: Deno.UnsafePointerView | null,
   checkNull = true,
@@ -304,7 +299,7 @@ export function getValueByType(
   handle: ResultHandle,
   row: number,
   col: number,
-  type: DuckDBTypeValue,
+  type: DUCKDB_TYPE,
   checkNull = true,
 ): ValueType {
   validateResultHandle(handle);
@@ -312,7 +307,8 @@ export function getValueByType(
 
   // NULL type is 0, check for NULL values
   if (
-    type === DuckDBType.NULL || (checkNull && isNull(handle, row, col))
+    type === DUCKDB_TYPE.DUCKDB_TYPE_INVALID ||
+    (checkNull && isNull(handle, row, col))
   ) {
     return null;
   }

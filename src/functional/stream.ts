@@ -2,12 +2,16 @@
  * Functional streaming operations
  */
 
-import type { ConnectionHandle, DuckDBTypeValue, RowData } from "../types.ts";
+import type { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
+import type { ConnectionHandle, RowData } from "../types.ts";
 import * as query from "./query.ts";
 import { getLibraryFast } from "../lib.ts";
 import { DatabaseError } from "../errors.ts";
 import { validateConnectionHandle } from "../helpers.ts";
 import { decodeValueByType } from "./types.ts";
+
+/** Generator type for streaming rows */
+export type RowStream = Generator<RowData, void, unknown>;
 
 /**
  * Stream rows from a query result lazily
@@ -19,10 +23,10 @@ import { decodeValueByType } from "./types.ts";
  * @param sql - SQL query string
  * @yields RowData for each row in the result
  */
-export async function* stream(
+export function* stream(
   connHandle: ConnectionHandle,
   sql: string,
-): AsyncGenerator<RowData, void, unknown> {
+): RowStream {
   validateConnectionHandle(connHandle);
   const lib = getLibraryFast();
   if (!lib) {
@@ -43,7 +47,7 @@ export async function* stream(
     }
 
     // Build column cache once for the stream
-    const types: DuckDBTypeValue[] = [];
+    const types: DUCKDB_TYPE[] = [];
     const dataViews: (Deno.UnsafePointerView | null)[] = [];
     const nullMaskViews: (Deno.UnsafePointerView | null)[] = [];
 

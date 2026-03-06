@@ -2,12 +2,8 @@
  * Object-Oriented QueryResult class
  */
 
-import type {
-  ColumnInfo,
-  DuckDBTypeValue,
-  ResultHandle,
-  RowData,
-} from "../types.ts";
+import type { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
+import type { ColumnInfo, ResultHandle, RowData } from "../types.ts";
 import * as query from "../functional/query.ts";
 import * as value from "../functional/value.ts";
 import { getLibraryFast } from "../lib.ts";
@@ -17,7 +13,7 @@ import { createPointerView } from "../helpers.ts";
 
 /** Cached column data for getRow optimization */
 interface ColumnCache {
-  types: DuckDBTypeValue[];
+  types: DUCKDB_TYPE[];
   dataViews: (Deno.UnsafePointerView | null)[];
   nullMaskViews: (Deno.UnsafePointerView | null)[];
 }
@@ -138,7 +134,7 @@ export class QueryResult {
     const handle = this.checkNotFreed();
     const colCount = Number(this.cachedColCount);
     const lib = getLibraryFast();
-    const types: DuckDBTypeValue[] = [];
+    const types: DUCKDB_TYPE[] = [];
     const dataViews: (Deno.UnsafePointerView | null)[] = [];
     const nullMaskViews: (Deno.UnsafePointerView | null)[] = [];
 

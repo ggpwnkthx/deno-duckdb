@@ -28,7 +28,7 @@ const conn = await create(db);
 console.log("Connection created");
 
 // Execute query - read from the existing database
-const resultHandle = await execute(
+const resultHandle = execute(
   conn,
   "SELECT * FROM test ORDER BY i",
 );
@@ -45,8 +45,8 @@ for (const row of rows) {
 }
 
 // Clean up - must manually destroy handles
-await destroyResult(resultHandle);
-await closeConnection(conn);
-await closeDatabase(db);
+destroyResult(resultHandle);
+closeConnection(conn);
+closeDatabase(db);
 
 console.log("\nAll resources cleaned up");

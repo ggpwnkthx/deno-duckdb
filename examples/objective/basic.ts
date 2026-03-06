@@ -19,13 +19,13 @@ const conn = await db.connect();
 console.log("Connection created");
 
 // Execute query
-const result = await conn.query(
+const result = conn.query(
   "SELECT i, i * 2 as doubled FROM range(5) t(i)",
 );
 console.log("Query executed");
 
 // Fetch all rows
-const rows = await result.fetchAll();
+const rows = result.fetchAll();
 console.log(`Result: ${rows.length} rows`);
 
 // Print results
@@ -35,8 +35,8 @@ for (const row of rows) {
 }
 
 // Clean up - manually close in reverse order
-await result.close();
-await conn.close();
-await db.close();
+result.close();
+conn.close();
+db.close();
 
 console.log("\nAll resources cleaned up");

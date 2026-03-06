@@ -13,7 +13,7 @@ Deno.test({
   async fn() {
     const db = new Database();
     await db.open();
-    await db.close();
+    db.close();
   },
 });
 
@@ -23,17 +23,17 @@ async function setupTestDb(): Promise<Database> {
   await db.open();
 
   const conn = await db.connect();
-  const createResult = await conn.query(
+  const createResult = conn.query(
     "CREATE TABLE test_data (id INTEGER, name TEXT, value DOUBLE)",
   );
-  await createResult.close();
+  createResult.close();
 
-  const insertResult = await conn.query(
+  const insertResult = conn.query(
     "INSERT INTO test_data VALUES (1, 'one', 1.5), (2, 'two', 2.5), (3, 'three', 3.5)",
   );
-  await insertResult.close();
+  insertResult.close();
 
-  await conn.close();
+  conn.close();
   return db;
 }
 
@@ -42,7 +42,7 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const result = await conn.query("SELECT * FROM test_data ORDER BY id");
+    const result = conn.query("SELECT * FROM test_data ORDER BY id");
 
     const rows = await result.fetchAll();
 
@@ -51,9 +51,9 @@ Deno.test({
     assertEquals(rows[1][0], 2);
     assertEquals(rows[2][0], 3);
 
-    await result.close();
-    await conn.close();
-    await db.close();
+    result.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -62,7 +62,7 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const result = await conn.query("SELECT * FROM test_data ORDER BY id");
+    const result = conn.query("SELECT * FROM test_data ORDER BY id");
 
     const row0 = await result.getRow(0);
     assertEquals(row0[0], 1);
@@ -73,9 +73,9 @@ Deno.test({
     const row2 = await result.getRow(2);
     assertEquals(row2[0], 3);
 
-    await result.close();
-    await conn.close();
-    await db.close();
+    result.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -84,7 +84,7 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const result = await conn.query("SELECT * FROM test_data");
+    const result = conn.query("SELECT * FROM test_data");
 
     try {
       await result.getRow(100);
@@ -93,9 +93,9 @@ Deno.test({
       assertEquals((e as Error).message, "Row index out of bounds");
     }
 
-    await result.close();
-    await conn.close();
-    await db.close();
+    result.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -104,7 +104,7 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const result = await conn.query("SELECT * FROM test_data");
+    const result = conn.query("SELECT * FROM test_data");
 
     try {
       await result.getRow(-1);
@@ -113,9 +113,9 @@ Deno.test({
       assertEquals((e as Error).message, "Row index out of bounds");
     }
 
-    await result.close();
-    await conn.close();
-    await db.close();
+    result.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -124,7 +124,7 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const result = await conn.query("SELECT * FROM test_data ORDER BY id");
+    const result = conn.query("SELECT * FROM test_data ORDER BY id");
 
     const objects = await result.toArrayOfObjects();
 
@@ -137,9 +137,9 @@ Deno.test({
     assertEquals(objects[1].name, "two");
     assertEquals(objects[1].value, 2.5);
 
-    await result.close();
-    await conn.close();
-    await db.close();
+    result.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -148,13 +148,13 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const result = await conn.query("SELECT * FROM test_data");
+    const result = conn.query("SELECT * FROM test_data");
 
-    assertEquals(await result.rowCount(), 3n);
+    assertEquals(result.rowCount(), 3n);
 
-    await result.close();
-    await conn.close();
-    await db.close();
+    result.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -163,13 +163,13 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const result = await conn.query("SELECT * FROM test_data");
+    const result = conn.query("SELECT * FROM test_data");
 
     assertEquals(await result.columnCount(), 3n);
 
-    await result.close();
-    await conn.close();
-    await db.close();
+    result.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -178,7 +178,7 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const result = await conn.query("SELECT * FROM test_data");
+    const result = conn.query("SELECT * FROM test_data");
 
     const infos = await result.getColumnInfos();
 
@@ -187,9 +187,9 @@ Deno.test({
     assertEquals(infos[1].name, "name");
     assertEquals(infos[2].name, "value");
 
-    await result.close();
-    await conn.close();
-    await db.close();
+    result.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -198,13 +198,13 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const result = await conn.query("SELECT * FROM test_data");
+    const result = conn.query("SELECT * FROM test_data");
 
     assertEquals(result.isSuccess(), true);
 
-    await result.close();
-    await conn.close();
-    await db.close();
+    result.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -213,13 +213,13 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const result = await conn.query("SELECT * FROM test_data");
+    const result = conn.query("SELECT * FROM test_data");
 
     assertEquals(result.getError(), undefined);
 
-    await result.close();
-    await conn.close();
-    await db.close();
+    result.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -228,9 +228,9 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const result = await conn.query("SELECT * FROM test_data");
+    const result = conn.query("SELECT * FROM test_data");
 
-    await result.close();
+    result.close();
 
     // After freeing, operations should throw
     try {
@@ -240,8 +240,8 @@ Deno.test({
       assertEquals((e as Error).message, "Result has been freed");
     }
 
-    await conn.close();
-    await db.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -250,13 +250,13 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const result = await conn.query("SELECT * FROM test_data");
+    const result = conn.query("SELECT * FROM test_data");
 
-    await result.close();
-    await result.close(); // Should not throw
+    result.close();
+    result.close(); // Should not throw
 
-    await conn.close();
-    await db.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -265,19 +265,19 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const result = await conn.query("SELECT * FROM test_data");
+    const result = conn.query("SELECT * FROM test_data");
 
-    await result.close();
+    result.close();
 
     try {
-      await result.rowCount();
+      result.rowCount();
       throw new Error("Should have thrown");
     } catch (e) {
       assertEquals((e as Error).message, "Result has been freed");
     }
 
-    await conn.close();
-    await db.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -286,9 +286,9 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const result = await conn.query("SELECT * FROM test_data");
+    const result = conn.query("SELECT * FROM test_data");
 
-    await result.close();
+    result.close();
 
     try {
       await result.columnCount();
@@ -297,8 +297,8 @@ Deno.test({
       assertEquals((e as Error).message, "Result has been freed");
     }
 
-    await conn.close();
-    await db.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -307,9 +307,9 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const result = await conn.query("SELECT * FROM test_data");
+    const result = conn.query("SELECT * FROM test_data");
 
-    await result.close();
+    result.close();
 
     try {
       await result.getColumnInfos();
@@ -318,8 +318,8 @@ Deno.test({
       assertEquals((e as Error).message, "Result has been freed");
     }
 
-    await conn.close();
-    await db.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -328,9 +328,9 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const result = await conn.query("SELECT * FROM test_data");
+    const result = conn.query("SELECT * FROM test_data");
 
-    await result.close();
+    result.close();
 
     try {
       await result.toArrayOfObjects();
@@ -339,8 +339,8 @@ Deno.test({
       assertEquals((e as Error).message, "Result has been freed");
     }
 
-    await conn.close();
-    await db.close();
+    conn.close();
+    db.close();
   },
 });
 
@@ -349,13 +349,13 @@ Deno.test({
   async fn() {
     const db = await setupTestDb();
     const conn = await db.connect();
-    const result = await conn.query("SELECT * FROM test_data WHERE id = 999");
+    const result = conn.query("SELECT * FROM test_data WHERE id = 999");
 
-    assertEquals(await result.rowCount(), 0n);
+    assertEquals(result.rowCount(), 0n);
     assertEquals((await result.fetchAll()).length, 0);
 
-    await result.close();
-    await conn.close();
-    await db.close();
+    result.close();
+    conn.close();
+    db.close();
   },
 });

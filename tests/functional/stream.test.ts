@@ -16,28 +16,28 @@ Deno.test({
   async fn() {
     const db = await duckdb.open();
     const conn = await duckdb.create(db);
-    await duckdb.closeConnection(conn);
-    await duckdb.closeDatabase(db);
+    duckdb.closeConnection(conn);
+    duckdb.closeDatabase(db);
   },
 });
 
 Deno.test({
   name: "stream: yields rows from query",
   async fn() {
-    await withConn(async (conn) => {
+    await withConn((conn) => {
       // Set up test data
-      await exec(
+      exec(
         conn,
         "CREATE TABLE stream_test(id INTEGER, name VARCHAR, value DOUBLE)",
       );
-      await exec(
+      exec(
         conn,
         "INSERT INTO stream_test VALUES (1, 'Alice', 100.5), (2, 'Bob', 200.5), (3, 'Charlie', 300.5)",
       );
 
       // Use stream
       const rows: RowData[] = [];
-      for await (
+      for (
         const row of streamFn(
           conn,
           "SELECT * FROM stream_test ORDER BY id",
@@ -60,18 +60,17 @@ Deno.test({
 Deno.test({
   name: "stream: handles empty result",
   async fn() {
-    await withConn(async (conn) => {
-      await exec(
+    await withConn((conn) => {
+      exec(
         conn,
         "CREATE TABLE stream_test(id INTEGER, name VARCHAR, value DOUBLE)",
       );
-      await exec(
+      exec(
         conn,
         "INSERT INTO stream_test VALUES (1, 'Alice', 100.5)",
       );
-
       const rows: RowData[] = [];
-      for await (
+      for (
         const row of streamFn(
           conn,
           "SELECT * FROM stream_test WHERE id > 100",
@@ -79,7 +78,6 @@ Deno.test({
       ) {
         rows.push(row);
       }
-
       assertEquals(rows.length, 0);
     });
   },
@@ -88,18 +86,17 @@ Deno.test({
 Deno.test({
   name: "stream: handles single row",
   async fn() {
-    await withConn(async (conn) => {
-      await exec(
+    await withConn((conn) => {
+      exec(
         conn,
         "CREATE TABLE stream_test(id INTEGER, name VARCHAR, value DOUBLE)",
       );
-      await exec(
+      exec(
         conn,
         "INSERT INTO stream_test VALUES (1, 'Alice', 100.5), (2, 'Bob', 200.5)",
       );
-
       const rows: RowData[] = [];
-      for await (
+      for (
         const row of streamFn(
           conn,
           "SELECT * FROM stream_test WHERE id = 2",
@@ -107,7 +104,6 @@ Deno.test({
       ) {
         rows.push(row);
       }
-
       assertEquals(rows.length, 1);
       assertEquals(rows[0][0], 2);
       assertEquals(rows[0][1], "Bob");
@@ -118,18 +114,17 @@ Deno.test({
 Deno.test({
   name: "stream: handles NULL string values",
   async fn() {
-    await withConn(async (conn) => {
-      await exec(
+    await withConn((conn) => {
+      exec(
         conn,
         "CREATE TABLE stream_test(id INTEGER, name VARCHAR, value DOUBLE)",
       );
-      await exec(
+      exec(
         conn,
         "INSERT INTO stream_test VALUES (1, 'Alice', 100.5), (4, NULL, 400.5)",
       );
-
       const rows: RowData[] = [];
-      for await (
+      for (
         const row of streamFn(
           conn,
           "SELECT * FROM stream_test WHERE id = 4",
@@ -137,7 +132,6 @@ Deno.test({
       ) {
         rows.push(row);
       }
-
       assertEquals(rows.length, 1);
       assertEquals(rows[0][0], 4);
       assertEquals(rows[0][1], null);
@@ -148,18 +142,17 @@ Deno.test({
 Deno.test({
   name: "stream: handles aggregate queries",
   async fn() {
-    await withConn(async (conn) => {
-      await exec(
+    await withConn((conn) => {
+      exec(
         conn,
         "CREATE TABLE stream_test(id INTEGER, name VARCHAR, value DOUBLE)",
       );
-      await exec(
+      exec(
         conn,
         "INSERT INTO stream_test VALUES (1, 'Alice', 100.5), (2, 'Bob', 200.5), (3, 'Charlie', 300.5)",
       );
-
       const rows: RowData[] = [];
-      for await (
+      for (
         const row of streamFn(
           conn,
           "SELECT COUNT(*), SUM(id) FROM stream_test",
@@ -167,7 +160,6 @@ Deno.test({
       ) {
         rows.push(row);
       }
-
       assertEquals(rows.length, 1);
       assertEquals(rows[0][0], 3n);
     });
@@ -178,9 +170,9 @@ Deno.test({
 Deno.test({
   name: "stream: HUGEINT values",
   async fn() {
-    await withConn(async (conn) => {
+    await withConn((conn) => {
       const rows: RowData[] = [];
-      for await (
+      for (
         const row of streamFn(conn, "SELECT 1::HUGEINT")
       ) {
         rows.push(row);
@@ -193,9 +185,9 @@ Deno.test({
 Deno.test({
   name: "stream: HUGEINT large positive",
   async fn() {
-    await withConn(async (conn) => {
+    await withConn((conn) => {
       const rows: RowData[] = [];
-      for await (
+      for (
         const row of streamFn(conn, "SELECT (pow(2,80) + 12345)::HUGEINT as v")
       ) {
         rows.push(row);
@@ -208,15 +200,14 @@ Deno.test({
 Deno.test({
   name: "stream: HUGEINT NULL handling",
   async fn() {
-    await withConn(async (conn) => {
-      await exec(conn, "CREATE TABLE stream_hugeint_null(v HUGEINT)");
-      await exec(
+    await withConn((conn) => {
+      exec(conn, "CREATE TABLE stream_hugeint_null(v HUGEINT)");
+      exec(
         conn,
         "INSERT INTO stream_hugeint_null VALUES (NULL), (42::HUGEINT)",
       );
-
       const rows: RowData[] = [];
-      for await (
+      for (
         const row of streamFn(conn, "SELECT * FROM stream_hugeint_null")
       ) {
         rows.push(row);
@@ -230,9 +221,9 @@ Deno.test({
 Deno.test({
   name: "stream: FLOAT values",
   async fn() {
-    await withConn(async (conn) => {
+    await withConn((conn) => {
       const rows: RowData[] = [];
-      for await (
+      for (
         const row of streamFn(conn, "SELECT 1.5::FLOAT")
       ) {
         rows.push(row);
@@ -245,9 +236,9 @@ Deno.test({
 Deno.test({
   name: "stream: SMALLINT values",
   async fn() {
-    await withConn(async (conn) => {
+    await withConn((conn) => {
       const rows: RowData[] = [];
-      for await (
+      for (
         const row of streamFn(conn, "SELECT 32767::SMALLINT")
       ) {
         rows.push(row);

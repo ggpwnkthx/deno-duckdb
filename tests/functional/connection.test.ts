@@ -14,7 +14,7 @@ Deno.test({
   sanitizeOps: false,
   async fn() {
     const db = await duckdb.open();
-    await duckdb.closeDatabase(db);
+    duckdb.closeDatabase(db);
   },
 });
 
@@ -24,7 +24,7 @@ Deno.test({
     await withDb(async (db) => {
       const handle = await duckdb.create(db);
       assertExists(handle);
-      await duckdb.closeConnection(handle);
+      duckdb.closeConnection(handle);
     });
   },
 });
@@ -47,17 +47,14 @@ Deno.test({
   async fn() {
     await withDb(async (db) => {
       const handle = await duckdb.create(db);
-      // Should not throw
-      await duckdb.closeConnection(handle);
+      duckdb.closeConnection(handle);
     });
   },
 });
 
-Deno.test("closeConnection: handles invalid handle gracefully", async () => {
+Deno.test("closeConnection: handles invalid handle gracefully", () => {
   const invalidHandle = new Uint8Array(8);
-
-  // Should not throw
-  await duckdb.closeConnection(invalidHandle as unknown as ConnectionHandle);
+  duckdb.closeConnection(invalidHandle as unknown as ConnectionHandle);
 });
 
 Deno.test({
@@ -66,7 +63,7 @@ Deno.test({
     await withDb(async (db) => {
       const handle = await duckdb.create(db);
       assertEquals(duckdb.isValidConnection(handle), true);
-      await duckdb.closeConnection(handle);
+      duckdb.closeConnection(handle);
     });
   },
 });

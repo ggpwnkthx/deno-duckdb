@@ -43,11 +43,11 @@ import {
 // Library loads automatically on first use
 const db = await open();
 const conn = await create(db);
-const resultHandle = await execute(conn, "SELECT * FROM t");
+const resultHandle = execute(conn, "SELECT * FROM t");
 const rows = await fetchAll(resultHandle);
-await destroyResult(resultHandle);
-await closeConnection(conn);
-await closeDatabase(db);
+destroyResult(resultHandle);
+closeConnection(conn);
+closeDatabase(db);
 ```
 
 ### Objective API
@@ -61,8 +61,8 @@ import { Database } from "jsr:@ggpwnkthx/duckdb/objective";
 const db = new Database();
 await db.open();
 const conn = await db.connect();
-const result = await conn.query("SELECT * FROM t");
-const rows = await result.fetchAll();
+const result = conn.query("SELECT * FROM t");
+const rows = result.fetchAll();
 result.close();
 conn.close();
 db.close();
@@ -76,8 +76,8 @@ import { Database } from "jsr:@ggpwnkthx/duckdb/objective";
 using db = new Database();
 await db.open();
 using conn = await db.connect();
-const result = await conn.query("SELECT * FROM t");
-const rows = await result.fetchAll();
+const result = conn.query("SELECT * FROM t");
+const rows = result.fetchAll();
 // Auto-cleanup at end of scope
 ```
 

@@ -14,7 +14,7 @@ const conn = await db.connect();
 
 // INTEGER
 console.log("--- INTEGER ---");
-const intStmt = await conn.prepare("SELECT 42 as num, -10 as neg, 0 as zero");
+const intStmt = conn.prepare("SELECT 42 as num, -10 as neg, 0 as zero");
 const intResult = await intStmt.execute();
 const intRows = await intResult.fetchAll();
 console.log("Values:", intRows[0]);
@@ -23,7 +23,7 @@ await intStmt.close();
 
 // BIGINT
 console.log("\n--- BIGINT ---");
-const bigIntStmt = await conn.prepare(
+const bigIntStmt = conn.prepare(
   "SELECT 9007199254740991::BIGINT as big_val",
 );
 const bigIntResult = await bigIntStmt.execute();
@@ -34,7 +34,7 @@ await bigIntStmt.close();
 
 // DOUBLE / FLOAT
 console.log("\n--- DOUBLE ---");
-const doubleStmt = await conn.prepare(
+const doubleStmt = conn.prepare(
   "SELECT 3.14159 as pi, 2.71828 as e, 1.23456789012345::DOUBLE as precise",
 );
 const doubleResult = await doubleStmt.execute();
@@ -45,7 +45,7 @@ await doubleStmt.close();
 
 // VARCHAR
 console.log("\n--- VARCHAR ---");
-const varcharStmt = await conn.prepare(
+const varcharStmt = conn.prepare(
   "SELECT 'Hello, World!' as greeting",
 );
 const varcharResult = await varcharStmt.execute();
@@ -56,7 +56,7 @@ await varcharStmt.close();
 
 // BOOLEAN
 console.log("\n--- BOOLEAN ---");
-const boolStmt = await conn.prepare(
+const boolStmt = conn.prepare(
   "SELECT true as yes, false as no, 1 = 1 as is_one",
 );
 const boolResult = await boolStmt.execute();
@@ -67,7 +67,7 @@ await boolStmt.close();
 
 // DATE
 console.log("\n--- DATE ---");
-const dateStmt = await conn.prepare(
+const dateStmt = conn.prepare(
   "SELECT '2024-01-15'::DATE as some_date, CURRENT_DATE as today",
 );
 const dateResult = await dateStmt.execute();
@@ -78,7 +78,7 @@ await dateStmt.close();
 
 // TIMESTAMP
 console.log("\n--- TIMESTAMP ---");
-const timestampStmt = await conn.prepare(
+const timestampStmt = conn.prepare(
   "SELECT '2024-01-15 10:30:00'::TIMESTAMP as ts, CURRENT_TIMESTAMP as now",
 );
 const timestampResult = await timestampStmt.execute();
@@ -89,7 +89,7 @@ await timestampStmt.close();
 
 // NULL handling
 console.log("\n--- NULL ---");
-const nullStmt = await conn.prepare(
+const nullStmt = conn.prepare(
   "SELECT NULL as null_val, 42 as non_null",
 );
 const nullResult = await nullStmt.execute();
@@ -100,7 +100,7 @@ await nullStmt.close();
 
 // Parameter binding with different types
 console.log("\n--- Parameter binding with types ---");
-const paramStmt = await conn.prepare(
+const paramStmt = conn.prepare(
   "SELECT $1::INTEGER + $2::DOUBLE as result",
 );
 await paramStmt.bind([10, 5.5]);
@@ -111,7 +111,7 @@ await paramResult.close();
 await paramStmt.close();
 
 // Clean up
-await conn.close();
-await db.close();
+conn.close();
+db.close();
 
 console.log("\n=== Example Complete ===");

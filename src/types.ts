@@ -2,59 +2,7 @@
  * Shared types for the DuckDB API
  */
 
-/**
- * DuckDB type enum values
- * These constants represent the internal DuckDB type identifiers returned by duckdb_column_type
- */
-export const DuckDBType = {
-  /** NULL type */
-  NULL: 0,
-  /** Boolean type */
-  BOOLEAN: 1,
-  /** 8-bit integer */
-  TINYINT: 2,
-  /** 16-bit integer */
-  SMALLINT: 3,
-  /** 32-bit integer */
-  INTEGER: 4,
-  /** 64-bit integer */
-  BIGINT: 5,
-  /** 128-bit integer */
-  HUGEINT: 16,
-  /** 32-bit floating point */
-  FLOAT: 10,
-  /** 64-bit floating point */
-  DOUBLE: 11,
-  /** Variable-length string */
-  VARCHAR: 17,
-  /** Binary large object */
-  BLOB: 18,
-  /** Decimal type */
-  DECIMAL: 19,
-  /** Timestamp type */
-  TIMESTAMP: 20,
-  /** Date type */
-  DATE: 21,
-  /** Time type */
-  TIME: 22,
-  /** Interval type */
-  INTERVAL: 23,
-  /** UUID type */
-  UUID: 24,
-  /** List type */
-  LIST: 32,
-  /** Struct type */
-  STRUCT: 33,
-  /** Map type */
-  MAP: 34,
-  /** Array type */
-  ARRAY: 35,
-  /** Enum type */
-  ENUM: 36,
-} as const;
-
-/** Type alias for DuckDB type constants */
-export type DuckDBTypeValue = typeof DuckDBType[keyof typeof DuckDBType];
+import type { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
 
 /**
  * Helper to create a branded type with exact byte size
@@ -95,7 +43,7 @@ export interface ColumnInfo {
   /** Column name */
   name: string;
   /** Column type (DuckDB type enum value) */
-  type: DuckDBTypeValue;
+  type: DUCKDB_TYPE;
 }
 
 /** Row data as array of values */

@@ -74,7 +74,7 @@ try {
      WHERE passengerCount IS NOT NULL
      LIMIT 10`,
   );
-  const rows = await fetchAll(result);
+  const rows = fetchAll(result);
   destroyResult(result);
 
   console.log(`Retrieved ${rows.length} rows from Azure Blob Storage`);

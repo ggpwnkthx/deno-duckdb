@@ -15,11 +15,11 @@ const conn = await db.connect();
 // Prepare statement without parameters
 console.log("--- Simple prepared statement ---");
 const simpleStmt = conn.prepare("SELECT 1 as num");
-const simpleResult = await simpleStmt.execute();
-const simpleRows = await simpleResult.fetchAll();
+const simpleResult = simpleStmt.execute();
+const simpleRows = simpleResult.fetchAll();
 console.log("Result:", simpleRows);
-await simpleResult.close();
-await simpleStmt.close();
+simpleResult.close();
+simpleStmt.close();
 
 // Prepare with parameter binding ($1, $2, etc.)
 console.log("\n--- Prepared statement with parameters ---");
@@ -28,15 +28,15 @@ const paramStmt = conn.prepare(
 );
 
 // Bind parameter $1 = 1
-await paramStmt.bind([1]);
-const paramResult = await paramStmt.execute();
-const paramRows = await paramResult.fetchAll();
+paramStmt.bind([1]);
+const paramResult = paramStmt.execute();
+const paramRows = paramResult.fetchAll();
 console.log("Users with id > 1:");
 for (const row of paramRows) {
   console.log(`  id: ${row[0]}, name: ${row[1]}, amount: ${row[2]}`);
 }
-await paramResult.close();
-await paramStmt.close();
+paramResult.close();
+paramStmt.close();
 
 // Multiple parameter binding
 console.log("\n--- Multiple parameter binding ---");
@@ -45,15 +45,15 @@ const multiParamStmt = conn.prepare(
 );
 
 // Bind $1 = 1, $2 = 2
-await multiParamStmt.bind([1, 2]);
-const multiResult = await multiParamStmt.execute();
-const multiRows = await multiResult.fetchAll();
+multiParamStmt.bind([1, 2]);
+const multiResult = multiParamStmt.execute();
+const multiRows = multiResult.fetchAll();
 console.log("Users with id between 1 and 2:");
 for (const row of multiRows) {
   console.log(`  id: ${row[0]}, name: ${row[1]}`);
 }
-await multiResult.close();
-await multiParamStmt.close();
+multiResult.close();
+multiParamStmt.close();
 
 // Clean up
 conn.close();

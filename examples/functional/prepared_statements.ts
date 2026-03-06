@@ -26,7 +26,7 @@ const conn = await create(db);
 console.log("--- Simple prepared statement ---");
 const simpleStmt = prepare(conn, "SELECT 1 as num");
 const simpleResult = executePrepared(simpleStmt);
-const simpleRows = await fetchAll(simpleResult);
+const simpleRows = fetchAll(simpleResult);
 console.log("Result:", simpleRows);
 destroyResult(simpleResult);
 destroyPrepared(simpleStmt);
@@ -39,9 +39,9 @@ const paramStmt = prepare(
 );
 
 // Bind parameter $1 = 1
-await bind(paramStmt, [1]);
+bind(paramStmt, [1]);
 const paramResult = executePrepared(paramStmt);
-const paramRows = await fetchAll(paramResult);
+const paramRows = fetchAll(paramResult);
 console.log("Users with id > 1:");
 for (const row of paramRows) {
   console.log(`  id: ${row[0]}, name: ${row[1]}, amount: ${row[2]}`);
@@ -57,9 +57,9 @@ const multiParamStmt = prepare(
 );
 
 // Bind $1 = 1, $2 = 2
-await bind(multiParamStmt, [1, 2]);
+bind(multiParamStmt, [1, 2]);
 const multiResult = executePrepared(multiParamStmt);
-const multiRows = await fetchAll(multiResult);
+const multiRows = fetchAll(multiResult);
 console.log("Users with id between 1 and 2:");
 for (const row of multiRows) {
   console.log(`  id: ${row[0]}, name: ${row[1]}`);

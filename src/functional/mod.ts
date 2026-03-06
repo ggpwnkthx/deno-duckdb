@@ -11,7 +11,7 @@
  * const db = await open();
  * const conn = await create(db);
  * const resultHandle = execute(conn, "SELECT * FROM t");
- * const rows = await fetchAll(resultHandle);
+ * const rows = fetchAll(resultHandle);
  * destroyResult(resultHandle);
  * closeConnection(conn);
  * closeDatabase(db);

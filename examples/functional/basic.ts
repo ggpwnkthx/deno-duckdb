@@ -33,7 +33,7 @@ const resultHandle = execute(
 console.log("Query executed");
 
 // Fetch all rows
-const rows = await fetchAll(resultHandle);
+const rows = fetchAll(resultHandle);
 console.log(`Result: ${rows.length} rows`);
 
 // Print results

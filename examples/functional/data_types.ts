@@ -26,7 +26,7 @@ const conn = await create(db);
 console.log("--- INTEGER ---");
 const intStmt = prepare(conn, "SELECT 42 as num, -10 as neg, 0 as zero");
 const intResult = executePrepared(intStmt);
-const intRows = await fetchAll(intResult);
+const intRows = fetchAll(intResult);
 console.log("Values:", intRows[0]);
 destroyResult(intResult);
 destroyPrepared(intStmt);
@@ -38,7 +38,7 @@ const bigIntStmt = prepare(
   "SELECT 9007199254740991::BIGINT as big_val",
 );
 const bigIntResult = executePrepared(bigIntStmt);
-const bigIntRows = await fetchAll(bigIntResult);
+const bigIntRows = fetchAll(bigIntResult);
 console.log("Value:", bigIntRows[0]);
 destroyResult(bigIntResult);
 destroyPrepared(bigIntStmt);
@@ -50,7 +50,7 @@ const doubleStmt = prepare(
   "SELECT 3.14159 as pi, 2.71828 as e, 1.23456789012345::DOUBLE as precise",
 );
 const doubleResult = executePrepared(doubleStmt);
-const doubleRows = await fetchAll(doubleResult);
+const doubleRows = fetchAll(doubleResult);
 console.log("Values:", doubleRows[0]);
 destroyResult(doubleResult);
 destroyPrepared(doubleStmt);
@@ -62,7 +62,7 @@ const varcharStmt = prepare(
   "SELECT 'Hello, World!' as greeting",
 );
 const varcharResult = executePrepared(varcharStmt);
-const varcharRows = await fetchAll(varcharResult);
+const varcharRows = fetchAll(varcharResult);
 console.log("Value:", varcharRows[0]);
 destroyResult(varcharResult);
 destroyPrepared(varcharStmt);
@@ -74,7 +74,7 @@ const boolStmt = prepare(
   "SELECT true as yes, false as no, 1 = 1 as is_one",
 );
 const boolResult = executePrepared(boolStmt);
-const boolRows = await fetchAll(boolResult);
+const boolRows = fetchAll(boolResult);
 console.log("Values:", boolRows[0]);
 destroyResult(boolResult);
 destroyPrepared(boolStmt);
@@ -86,7 +86,7 @@ const dateStmt = prepare(
   "SELECT '2024-01-15'::DATE as some_date, CURRENT_DATE as today",
 );
 const dateResult = executePrepared(dateStmt);
-const dateRows = await fetchAll(dateResult);
+const dateRows = fetchAll(dateResult);
 console.log("Values:", dateRows[0]);
 destroyResult(dateResult);
 destroyPrepared(dateStmt);
@@ -98,7 +98,7 @@ const timestampStmt = prepare(
   "SELECT '2024-01-15 10:30:00'::TIMESTAMP as ts, CURRENT_TIMESTAMP as now",
 );
 const timestampResult = executePrepared(timestampStmt);
-const timestampRows = await fetchAll(timestampResult);
+const timestampRows = fetchAll(timestampResult);
 console.log("Values:", timestampRows[0]);
 destroyResult(timestampResult);
 destroyPrepared(timestampStmt);
@@ -110,7 +110,7 @@ const nullStmt = prepare(
   "SELECT NULL as null_val, 42 as non_null",
 );
 const nullResult = executePrepared(nullStmt);
-const nullRows = await fetchAll(nullResult);
+const nullRows = fetchAll(nullResult);
 console.log("Values:", nullRows[0]);
 destroyResult(nullResult);
 destroyPrepared(nullStmt);
@@ -121,9 +121,9 @@ const paramStmt = prepare(
   conn,
   "SELECT $1::INTEGER + $2::DOUBLE as result",
 );
-await bind(paramStmt, [10, 5.5]);
+bind(paramStmt, [10, 5.5]);
 const paramResult = executePrepared(paramStmt);
-const paramRows = await fetchAll(paramResult);
+const paramRows = fetchAll(paramResult);
 console.log("10 + 5.5 =", paramRows[0][0]);
 destroyResult(paramResult);
 destroyPrepared(paramStmt);

@@ -36,7 +36,7 @@ destroyResult(insertResult);
 
 // Show initial balances
 const initialResult = execute(conn, "SELECT * FROM accounts ORDER BY id");
-const initialRows = await fetchAll(initialResult);
+const initialRows = fetchAll(initialResult);
 console.log("Initial balances:");
 for (const row of initialRows) {
   console.log(`  ${row[1]}: $${row[2]}`);
@@ -69,7 +69,7 @@ const afterCommitResult = execute(
   conn,
   "SELECT * FROM accounts ORDER BY id",
 );
-const afterCommitRows = await fetchAll(afterCommitResult);
+const afterCommitRows = fetchAll(afterCommitResult);
 console.log("After transfer:");
 for (const row of afterCommitRows) {
   console.log(`  ${row[1]}: $${row[2]}`);
@@ -94,7 +94,7 @@ const beforeRollbackResult = execute(
   conn,
   "SELECT balance FROM accounts WHERE id = 1",
 );
-const beforeRollbackRows = await fetchAll(beforeRollbackResult);
+const beforeRollbackRows = fetchAll(beforeRollbackResult);
 console.log(`Alice's balance before rollback: $${beforeRollbackRows[0][0]}`);
 destroyResult(beforeRollbackResult);
 
@@ -105,7 +105,7 @@ const afterRollbackResult = execute(
   conn,
   "SELECT * FROM accounts ORDER BY id",
 );
-const afterRollbackRows = await fetchAll(afterRollbackResult);
+const afterRollbackRows = fetchAll(afterRollbackResult);
 console.log("After rollback:");
 for (const row of afterRollbackRows) {
   console.log(`  ${row[1]}: $${row[2]}`);

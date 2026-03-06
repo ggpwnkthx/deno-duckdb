@@ -25,12 +25,12 @@ conn.query(
 
 // Show initial balances
 const initialResult = conn.query("SELECT * FROM accounts ORDER BY id");
-const initialRows = await initialResult.fetchAll();
+const initialRows = initialResult.fetchAll();
 console.log("Initial balances:");
 for (const row of initialRows) {
   console.log(`  ${row[1]}: $${row[2]}`);
 }
-await initialResult.close();
+initialResult.close();
 
 // Demonstrate successful transaction
 console.log(
@@ -44,12 +44,12 @@ conn.query("COMMIT");
 const afterCommitResult = conn.query(
   "SELECT * FROM accounts ORDER BY id",
 );
-const afterCommitRows = await afterCommitResult.fetchAll();
+const afterCommitRows = afterCommitResult.fetchAll();
 console.log("After transfer:");
 for (const row of afterCommitRows) {
   console.log(`  ${row[1]}: $${row[2]}`);
 }
-await afterCommitResult.close();
+afterCommitResult.close();
 
 // Demonstrate rollback
 console.log(
@@ -62,21 +62,21 @@ conn.query("UPDATE accounts SET balance = balance - 2000 WHERE id = 1");
 const beforeRollbackResult = conn.query(
   "SELECT balance FROM accounts WHERE id = 1",
 );
-const beforeRollbackRows = await beforeRollbackResult.fetchAll();
+const beforeRollbackRows = beforeRollbackResult.fetchAll();
 console.log(`Alice's balance before rollback: $${beforeRollbackRows[0][0]}`);
-await beforeRollbackResult.close();
+beforeRollbackResult.close();
 
 conn.query("ROLLBACK");
 
 const afterRollbackResult = conn.query(
   "SELECT * FROM accounts ORDER BY id",
 );
-const afterRollbackRows = await afterRollbackResult.fetchAll();
+const afterRollbackRows = afterRollbackResult.fetchAll();
 console.log("After rollback:");
 for (const row of afterRollbackRows) {
   console.log(`  ${row[1]}: $${row[2]}`);
 }
-await afterRollbackResult.close();
+afterRollbackResult.close();
 
 // Clean up
 conn.close();

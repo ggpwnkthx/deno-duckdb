@@ -50,7 +50,7 @@ result = execute(
   conn,
   `SELECT * FROM read_csv_auto('${csvUrl}') LIMIT 10`,
 );
-const rows = await fetchAll(result);
+const rows = fetchAll(result);
 destroyResult(result);
 
 console.log(`Retrieved ${rows.length} rows from HTTP CSV\n`);
@@ -69,7 +69,7 @@ result = execute(
   conn,
   `SELECT Origin, COUNT(*) as count FROM read_json_auto('${jsonUrl}') GROUP BY Origin ORDER BY count DESC`,
 );
-const jsonRows = await fetchAll(result);
+const jsonRows = fetchAll(result);
 destroyResult(result);
 
 console.log("Cars by origin (from JSON via HTTP):");

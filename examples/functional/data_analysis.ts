@@ -82,7 +82,7 @@ console.log("--- Running Queries ---\n");
 
 // Query 1: Products sorted by price
 result = execute(conn, PRODUCTS_BY_PRICE);
-const products = await fetchAll(result);
+const products = fetchAll(result);
 destroyResult(result);
 console.log("Products (sorted by price, descending):");
 for (const [name, category, price] of products) {
@@ -91,7 +91,7 @@ for (const [name, category, price] of products) {
 
 // Query 2: Orders with customer and product info (JOIN)
 result = execute(conn, ORDER_DETAILS);
-const orderDetails = await fetchAll(result);
+const orderDetails = fetchAll(result);
 destroyResult(result);
 console.log("\nOrder Details:");
 for (const [id, customer, product, qty, total] of orderDetails.slice(0, 5)) {
@@ -102,7 +102,7 @@ for (const [id, customer, product, qty, total] of orderDetails.slice(0, 5)) {
 
 // Query 3: Filter by category
 result = execute(conn, ELECTRONICS_BY_PRICE);
-const electronics = await fetchAll(result);
+const electronics = fetchAll(result);
 destroyResult(result);
 console.log("\nElectronics (sorted by price):");
 for (const [name, price] of electronics) {
@@ -111,7 +111,7 @@ for (const [name, price] of electronics) {
 
 // Query 4: Date range filtering
 result = execute(conn, ORDERS_BY_DATE_RANGE);
-const dateRangeOrders = await fetchAll(result);
+const dateRangeOrders = fetchAll(result);
 destroyResult(result);
 console.log("\nOrders from Jan 18-21, 2024:");
 for (const row of dateRangeOrders) {
@@ -125,7 +125,7 @@ for (const row of dateRangeOrders) {
 // Query 5: Customer totals (calculated in JavaScript)
 console.log("\nCustomer Analysis (calculated via streaming):");
 result = execute(conn, CUSTOMER_TOTALS);
-const customerTotals = await fetchAll(result);
+const customerTotals = fetchAll(result);
 destroyResult(result);
 
 // Calculate totals per customer
@@ -141,7 +141,7 @@ for (const [name, total] of sortedCustomers) {
 
 // Query 6: Using subquery - products above average price
 result = execute(conn, PRODUCTS_ABOVE_AVERAGE);
-const aboveAvg = await fetchAll(result);
+const aboveAvg = fetchAll(result);
 destroyResult(result);
 console.log("\nProducts with above-average price:");
 for (const [name, price] of aboveAvg) {

@@ -4,8 +4,8 @@
 
 import { assertEquals, assertThrows } from "@std/assert";
 import * as duckdb from "@ggpwnkthx/duckdb/functional";
-import { QueryError } from "../../src/errors.ts";
-import { getPointer } from "../../src/helpers.ts";
+import { QueryError } from "@ggpwnkthx/duckdb";
+import { getPointer } from "@ggpwnkthx/duckdb";
 import { exec, query, withConn } from "./utils.ts";
 
 Deno.test({

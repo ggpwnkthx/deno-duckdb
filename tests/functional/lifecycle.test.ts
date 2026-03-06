@@ -38,8 +38,6 @@ Deno.test({
 
 Deno.test({
   name: "lifecycle: destroyed result handle operations",
-  sanitizeResources: false,
-  sanitizeOps: false,
   async fn(t) {
     // Double destroy should be safe
     await t.step({
@@ -71,8 +69,6 @@ Deno.test({
 
 Deno.test({
   name: "lifecycle: database close behavior",
-  sanitizeResources: false,
-  sanitizeOps: false,
   async fn(t) {
     // Database close - connection may remain valid (FFI behavior)
     // This is the actual observed behavior - connection handle is not invalidated
@@ -102,8 +98,6 @@ Deno.test({
 
 Deno.test({
   name: "lifecycle: double-destroy/double-close safety",
-  sanitizeResources: false,
-  sanitizeOps: false,
   async fn(t) {
     // Double close connection is safe
     await t.step({

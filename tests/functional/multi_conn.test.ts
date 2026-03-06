@@ -2,7 +2,12 @@
  * Functional multi-connection tests
  *
  * Tests for multiple connections to the same database, shared visibility,
- * and sequential query behavior.
+ * and parallel query behavior.
+ *
+ * Note: The "parallel queries" tests use Promise.all to test independent
+ * multi-connection usage. They do NOT test true concurrent/overlapping
+ * execution within a single connection, but rather verify that multiple
+ * connections can be used in parallel without interference.
  */
 
 import { assertEquals } from "@std/assert";
@@ -89,8 +94,6 @@ Deno.test({
 
 Deno.test({
   name: "multi_conn: sequential queries on different connections",
-  sanitizeResources: false,
-  sanitizeOps: false,
   async fn(t) {
     // Execute queries on different connections
     await t.step({
@@ -192,15 +195,15 @@ Deno.test({
   },
 });
 
-// Concurrent test cases for multi-connection
+// Parallel test cases for multi-connection
+// Note: These tests verify independent multi-connection usage using Promise.all.
+// They do NOT test true concurrent execution within a single connection.
 Deno.test({
-  name: "multi_conn: concurrent queries",
-  sanitizeResources: false,
-  sanitizeOps: false,
+  name: "multi_conn: parallel queries",
   async fn(t) {
-    // Concurrent queries with Promise.all
+    // Parallel queries with Promise.all
     await t.step({
-      name: "concurrent queries with Promise.all",
+      name: "parallel queries with Promise.all",
       async fn() {
         await withDb(async (db) => {
           // Setup data
@@ -214,10 +217,14 @@ Deno.test({
           const conn1 = await duckdb.create(db);
           const conn2 = await duckdb.create(db);
 
-          // Execute queries concurrently using Promise.all
+          // Execute queries in parallel using Promise.all
           const [result1, result2] = await Promise.all([
-            Promise.resolve(query(conn1, "SELECT * FROM concurrent_data WHERE id = 1")),
-            Promise.resolve(query(conn2, "SELECT * FROM concurrent_data WHERE id = 2")),
+            Promise.resolve(
+              query(conn1, "SELECT * FROM concurrent_data WHERE id = 1"),
+            ),
+            Promise.resolve(
+              query(conn2, "SELECT * FROM concurrent_data WHERE id = 2"),
+            ),
           ]);
 
           // Both should return correct results
@@ -235,9 +242,9 @@ Deno.test({
       },
     });
 
-    // Overlapping prepared statement execution
+    // Parallel prepared statement execution
     await t.step({
-      name: "overlapping prepared statement execution",
+      name: "parallel prepared statement execution",
       async fn() {
         await withDb(async (db) => {
           // Setup data
@@ -262,7 +269,7 @@ Deno.test({
             conn2,
             "SELECT * FROM prep_concurrent WHERE val = ?",
           );
-          // Execute prepared statements concurrently
+          // Execute prepared statements in parallel
           duckdb.bind(prep1, [1]);
           duckdb.bind(prep2, ["b"]);
           const [result1, result2] = await Promise.all([

@@ -7,7 +7,7 @@
 import { assertEquals, assertThrows } from "@std/assert";
 import * as duckdb from "@ggpwnkthx/duckdb/functional";
 import { DatabaseError, QueryError } from "@ggpwnkthx/duckdb";
-import { withConn } from "./utils.ts";
+import { query, withConn } from "./utils.ts";
 
 Deno.test({
   name: "errors: QueryError with invalid SQL",
@@ -19,9 +19,9 @@ Deno.test({
       name: "invalid table name throws error with query info",
       async fn() {
         await withConn((conn) => {
-          const query = "SELECT * FROM nonexistent_table_xyz";
+          const invalidQuery = "SELECT * FROM nonexistent_table_xyz";
           assertThrows(
-            () => duckdb.execute(conn, query),
+            () => duckdb.execute(conn, invalidQuery),
             QueryError,
           );
         });
@@ -41,20 +41,43 @@ Deno.test({
       },
     });
 
-    // Invalid SQL should have meaningful error message
+    // QueryError should have stable query property
     await t.step({
-      name: "QueryError has query property",
+      name: "QueryError has stable query property",
       async fn() {
         await withConn((conn) => {
+          const sql = "SELECT * FROM nonexistent";
           try {
-            duckdb.execute(conn, "SELECT * FROM nonexistent");
+            duckdb.execute(conn, sql);
             throw new Error("Should have thrown");
           } catch (e) {
             const err = e as QueryError;
             // Error should be QueryError with query property
             assertEquals(err instanceof QueryError, true);
-            assertEquals(typeof err.query, "string");
+            // The query property should contain the original SQL
+            assertEquals(err.query, sql);
           }
+        });
+      },
+    });
+
+    // Connection remains usable after query error
+    await t.step({
+      name: "connection remains usable after query error",
+      async fn() {
+        await withConn((conn) => {
+          // First, cause an error
+          try {
+            duckdb.execute(conn, "SELECT * FROM nonexistent_table");
+          } catch (e) {
+            // Verify it's a QueryError
+            assertEquals(e instanceof QueryError, true);
+          }
+
+          // Connection should still work
+          const rows = query(conn, "SELECT 1 as test");
+          assertEquals(rows.length, 1);
+          assertEquals(rows[0][0], 1);
         });
       },
     });
@@ -63,8 +86,6 @@ Deno.test({
 
 Deno.test({
   name: "errors: empty SQL",
-  sanitizeResources: false,
-  sanitizeOps: false,
   async fn(t) {
     // Empty SQL should throw
     await t.step({
@@ -96,8 +117,6 @@ Deno.test({
 
 Deno.test({
   name: "errors: prepare with invalid SQL",
-  sanitizeResources: false,
-  sanitizeOps: false,
   async fn(t) {
     // Prepare with invalid SQL should throw DatabaseError (not QueryError)
     await t.step({

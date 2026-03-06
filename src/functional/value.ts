@@ -16,12 +16,38 @@ import { getLibraryFast } from "../lib.ts";
 import { decodeValueByType } from "./types.ts";
 
 /**
+ * Validate row and column indices are within bounds
+ *
+ * @param handle - Result handle
+ * @param row - Row index
+ * @param col - Column index
+ */
+function validateIndices(handle: ResultHandle, row: number, col: number): void {
+  const lib = getLibraryFast();
+  const rowCount = Number(lib.symbols.duckdb_row_count(handle));
+  const colCount = Number(lib.symbols.duckdb_column_count(handle));
+
+  if (row < 0 || row >= rowCount) {
+    throw new RangeError(
+      `Row index ${row} is out of bounds (valid range: 0-${rowCount - 1})`,
+    );
+  }
+
+  if (col < 0 || col >= colCount) {
+    throw new RangeError(
+      `Column index ${col} is out of bounds (valid range: 0-${colCount - 1})`,
+    );
+  }
+}
+
+/**
  * Check if a value at row and column is NULL
  *
  * @param handle - Result handle
  * @param row - Row index (0-based)
  * @param col - Column index (0-based)
  * @returns Whether the value is NULL
+ * @throws RangeError if row or column index is out of bounds
  */
 export function isNull(
   handle: ResultHandle,
@@ -29,6 +55,8 @@ export function isNull(
   col: number,
 ): boolean {
   validateResultHandle(handle);
+  validateIndices(handle, row, col);
+
   const lib = getLibraryFast();
   // Use duckdb_nullmask_data to get the null mask pointer
   const nullMaskPtr = lib.symbols.duckdb_nullmask_data(
@@ -51,6 +79,7 @@ export function isNull(
  * @param row - Row index (0-based)
  * @param col - Column index (0-based)
  * @returns INT32 value or null if NULL
+ * @throws RangeError if row or column index is out of bounds
  */
 export function getInt32(
   handle: ResultHandle,
@@ -58,6 +87,7 @@ export function getInt32(
   col: number,
 ): number | null {
   validateResultHandle(handle);
+  validateIndices(handle, row, col);
   // Check null first
   if (isNull(handle, row, col)) {
     return null;
@@ -86,6 +116,7 @@ export function getInt32(
  * @param row - Row index (0-based)
  * @param col - Column index (0-based)
  * @returns INT64 value or null if NULL
+ * @throws RangeError if row or column index is out of bounds
  */
 export function getInt64(
   handle: ResultHandle,
@@ -93,6 +124,7 @@ export function getInt64(
   col: number,
 ): bigint | null {
   validateResultHandle(handle);
+  validateIndices(handle, row, col);
   // Check null first
   if (isNull(handle, row, col)) {
     return null;
@@ -121,6 +153,7 @@ export function getInt64(
  * @param row - Row index (0-based)
  * @param col - Column index (0-based)
  * @returns DOUBLE value or null if NULL
+ * @throws RangeError if row or column index is out of bounds
  */
 export function getDouble(
   handle: ResultHandle,
@@ -128,6 +161,7 @@ export function getDouble(
   col: number,
 ): number | null {
   validateResultHandle(handle);
+  validateIndices(handle, row, col);
   // Check null first
   if (isNull(handle, row, col)) {
     return null;
@@ -157,6 +191,7 @@ export function getDouble(
  * @param row - Row index (0-based)
  * @param col - Column index (0-based)
  * @returns VARCHAR value or null if NULL
+ * @throws RangeError if row or column index is out of bounds
  */
 export function getString(
   handle: ResultHandle,
@@ -164,6 +199,7 @@ export function getString(
   col: number,
 ): string | null {
   validateResultHandle(handle);
+  validateIndices(handle, row, col);
   const lib = getLibraryFast();
   // Check if NULL first
   if (isNull(handle, row, col)) {
@@ -294,6 +330,7 @@ export function getValueByTypeOptimized(
  * @param type - DuckDB type
  * @param checkNull - If true (default), check null mask for all types including numeric
  * @returns The value at the specified row and column
+ * @throws RangeError if row or column index is out of bounds
  */
 export function getValueByType(
   handle: ResultHandle,
@@ -303,6 +340,7 @@ export function getValueByType(
   checkNull = true,
 ): ValueType {
   validateResultHandle(handle);
+  validateIndices(handle, row, col);
   const lib = getLibraryFast();
 
   // NULL type is 0, check for NULL values

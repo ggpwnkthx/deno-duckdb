@@ -239,7 +239,7 @@ Deno.test({
       },
     });
 
-    // Bind null parameter - use COALESCE to handle NULL comparison
+    // Bind null parameter using IS NOT DISTINCT FROM
     await t.step({
       name: "bind null parameter",
       async fn() {
@@ -253,20 +253,23 @@ Deno.test({
             "INSERT INTO bind_null_test VALUES (1, 'has value'), (2, NULL)",
           );
 
-          // Use a workaround: bind a value and compare with COALESCE
+          // Use IS NOT DISTINCT FROM for proper NULL comparison
           const prepHandle = duckdb.prepare(
             conn,
-            "SELECT * FROM bind_null_test WHERE COALESCE(value, 'NULL_MARKER') = ?",
+            "SELECT * FROM bind_null_test WHERE value IS NOT DISTINCT FROM ?",
           );
-          // Bind a non-matching value first
-          duckdb.bind(prepHandle, ["somevalue"]);
+
+          // Bind a non-null value first
+          duckdb.bind(prepHandle, ["has value"]);
           let execHandle = duckdb.executePrepared(prepHandle);
           let rows = duckdb.fetchAll(execHandle);
-          assertEquals(rows.length, 0);
+          assertEquals(rows.length, 1);
+          assertEquals(rows[0][0], 1);
+          assertEquals(rows[0][1], "has value");
           duckdb.destroyResult(execHandle);
 
-          // Now bind the NULL marker
-          duckdb.bind(prepHandle, ["NULL_MARKER"]);
+          // Now bind NULL
+          duckdb.bind(prepHandle, [null]);
           execHandle = duckdb.executePrepared(prepHandle);
           rows = duckdb.fetchAll(execHandle);
           assertEquals(rows.length, 1);
@@ -403,7 +406,6 @@ Deno.test({
   sanitizeResources: false,
   sanitizeOps: false,
   async fn(t) {
-
     // Wrong parameter count - too many bindings
     await t.step({
       name: "bind too many parameters throws error",
@@ -460,79 +462,7 @@ Deno.test({
           );
           // Try to bind an unsupported type (object)
           assertThrows(
-            () => duckdb.bind(prepHandle, [{ foo: "bar" }] as any),
-            DatabaseError,
-          );
-          duckdb.destroyPrepared(prepHandle);
-        });
-      },
-    });
-  },
-});
-
-// Negative test cases for prepared statements
-Deno.test({
-  name: "prepared: negative cases",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  async fn(t) {
-    // Wrong parameter count - too many bindings
-    await t.step({
-      name: "bind too many parameters throws error",
-      async fn() {
-        await withConn((conn) => {
-          exec(conn, "CREATE TABLE arity_test2(id INTEGER)");
-
-          const prepHandle = duckdb.prepare(
-            conn,
-            "SELECT * FROM arity_test2 WHERE id = ?",
-          );
-          // Bind two parameters when only one is required
-          assertThrows(
-            () => duckdb.bind(prepHandle, [1, 2]),
-            DatabaseError,
-          );
-          duckdb.destroyPrepared(prepHandle);
-        });
-      },
-    });
-
-    // Execute without binding required parameters
-    await t.step({
-      name: "execute without binding required parameters throws error",
-      async fn() {
-        await withConn((conn) => {
-          exec(conn, "CREATE TABLE unbound_test(id INTEGER)");
-          exec(conn, "INSERT INTO unbound_test VALUES (1)");
-
-          const prepHandle = duckdb.prepare(
-            conn,
-            "SELECT * FROM unbound_test WHERE id = ?",
-          );
-          // Execute without binding any parameters
-          assertThrows(
-            () => duckdb.executePrepared(prepHandle),
-            DatabaseError,
-          );
-          duckdb.destroyPrepared(prepHandle);
-        });
-      },
-    });
-
-    // Unsupported bind type rejection
-    await t.step({
-      name: "bind unsupported type throws error",
-      async fn() {
-        await withConn((conn) => {
-          exec(conn, "CREATE TABLE type_test(id INTEGER)");
-
-          const prepHandle = duckdb.prepare(
-            conn,
-            "SELECT * FROM type_test WHERE id = ?",
-          );
-          // Try to bind an unsupported type (object)
-          assertThrows(
-            () => duckdb.bind(prepHandle, [{ foo: "bar" }] as any),
+            () => duckdb.bind(prepHandle, [{ foo: "bar" }] as unknown as never),
             DatabaseError,
           );
           duckdb.destroyPrepared(prepHandle);

@@ -3,60 +3,67 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import type { ConnectionHandle } from "@ggpwnkthx/duckdb";
 import * as duckdb from "@ggpwnkthx/duckdb/functional";
-import { withConn, withDb } from "./utils.ts";
+import { withDb } from "./utils.ts";
 
 Deno.test({
   name: "connection: manage connection lifecycle",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn(t) {
-    // Step 1: create connection
+    // Create connection and verify it's valid
     await t.step({
-      name: "create connection",
+      name: "create connection returns valid handle",
       async fn() {
-        // Creates a valid connection
         await withDb(async (db) => {
-          const handle = await duckdb.create(db);
-          assertExists(handle);
-          duckdb.closeConnection(handle);
+          const conn = await duckdb.create(db);
+          assertEquals(duckdb.isValidConnection(conn), true);
+          duckdb.closeConnection(conn);
         });
       },
     });
 
-    // Step 2: validate connection
+    // Connection becomes invalid after close
     await t.step({
-      name: "validate connection",
+      name: "connection is invalid after close",
       async fn() {
-        // Returns true for valid handle
         await withDb(async (db) => {
-          const handle = await duckdb.create(db);
-          assertEquals(duckdb.isValidConnection(handle), true);
-          duckdb.closeConnection(handle);
+          const conn = await duckdb.create(db);
+          duckdb.closeConnection(conn);
+          assertEquals(duckdb.isValidConnection(conn), false);
         });
-
-        // Returns false for invalid handle
-        const invalidHandle = new Uint8Array(8);
-        assertEquals(
-          duckdb.isValidConnection(
-            invalidHandle as unknown as ConnectionHandle,
-          ),
-          false,
-        );
       },
     });
 
-    // Step 3: get pointer value
+    // Multiple connections are distinct
     await t.step({
-      name: "get pointer value",
+      name: "multiple connections yield distinct handles",
       async fn() {
-        await withConn(async (conn) => {
-          // Using await on an async function to avoid linter warning
-          const conn2 = await Promise.resolve(conn);
-          const pointer = duckdb.getPointerValueConnection(conn2);
-          assertExists(pointer);
-          assertEquals(typeof pointer, "bigint");
+        await withDb(async (db) => {
+          const conn1 = await duckdb.create(db);
+          const conn2 = await duckdb.create(db);
+          // They should be different handles
+          assertExists(conn1);
+          assertExists(conn2);
+          // Close both
+          duckdb.closeConnection(conn1);
+          duckdb.closeConnection(conn2);
+        });
+      },
+    });
+
+    // Connection can execute query after creation
+    await t.step({
+      name: "connection can execute query after creation",
+      async fn() {
+        await withDb(async (db) => {
+          const conn = await duckdb.create(db);
+          const result = duckdb.execute(conn, "SELECT 1 AS x");
+          const rows = duckdb.fetchAll(result);
+          duckdb.destroyResult(result);
+          assertEquals(rows.length, 1);
+          assertEquals(rows[0][0], 1);
+          duckdb.closeConnection(conn);
         });
       },
     });

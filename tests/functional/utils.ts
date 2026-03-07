@@ -6,24 +6,6 @@
  */
 
 import * as duckdb from "@ggpwnkthx/duckdb/functional";
-import type { BindValue } from "@ggpwnkthx/duckdb/functional";
-
-/**
- * Validate that params are valid BindValue types.
- * This is needed because duckdb.bind requires BindValue[] but tests may pass unknown[].
- * The cast is safe after this validation.
- */
-function validateBindParams(params: unknown[]): asserts params is BindValue[] {
-  for (const p of params) {
-    const t = typeof p;
-    if (
-      t !== "boolean" && t !== "number" && t !== "bigint" &&
-      t !== "string" && p !== null
-    ) {
-      throw new Error(`Invalid bind parameter type: ${t}`);
-    }
-  }
-}
 import type {
   ConnectionHandle,
   DatabaseHandle,
@@ -135,13 +117,12 @@ export function withPrepared<T>(
 export function withPreparedParams<T>(
   conn: ConnectionHandle,
   sql: string,
-  params: unknown[],
+  params: Parameters<typeof duckdb.bind>[1],
   fn: (prepHandle: PreparedStatementHandle, execHandle: ResultHandle) => T,
 ): T {
   const prepHandle = duckdb.prepare(conn, sql);
   try {
-    validateBindParams(params);
-    duckdb.bind(prepHandle, params as Parameters<typeof duckdb.bind>[1]);
+    duckdb.bind(prepHandle, params);
     const execHandle = duckdb.executePrepared(prepHandle);
     try {
       return fn(prepHandle, execHandle);

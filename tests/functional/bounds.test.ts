@@ -341,7 +341,7 @@ Deno.test({
   sanitizeOps: true,
   async fn(t) {
     await t.step({
-      name: "columnName with NaN throws RangeError",
+      name: "columnName with NaN throws RangeError (BigInt conversion)",
       async fn() {
         await withConn((conn) => {
           const handle = duckdb.execute(conn, "SELECT 1, 2, 3");
@@ -352,7 +352,7 @@ Deno.test({
     });
 
     await t.step({
-      name: "columnName with 1.5 throws RangeError",
+      name: "columnName with 1.5 throws RangeError (bounds check: 1.5 >= 3)",
       async fn() {
         await withConn((conn) => {
           const handle = duckdb.execute(conn, "SELECT 1, 2, 3");
@@ -363,7 +363,7 @@ Deno.test({
     });
 
     await t.step({
-      name: "columnName with Infinity throws RangeError",
+      name: "columnName with Infinity throws RangeError (BigInt conversion)",
       async fn() {
         await withConn((conn) => {
           const handle = duckdb.execute(conn, "SELECT 1, 2, 3");
@@ -374,7 +374,7 @@ Deno.test({
     });
 
     await t.step({
-      name: "columnType with NaN throws RangeError",
+      name: "columnType with NaN throws RangeError (BigInt conversion)",
       async fn() {
         await withConn((conn) => {
           const handle = duckdb.execute(conn, "SELECT 1, 2, 3");
@@ -385,7 +385,7 @@ Deno.test({
     });
 
     await t.step({
-      name: "columnType with Infinity throws RangeError",
+      name: "columnType with Infinity throws RangeError (BigInt conversion)",
       async fn() {
         await withConn((conn) => {
           const handle = duckdb.execute(conn, "SELECT 1, 2, 3");
@@ -396,7 +396,7 @@ Deno.test({
     });
 
     await t.step({
-      name: "isNull with Infinity row throws RangeError",
+      name: "isNull with Infinity row throws RangeError (bounds check)",
       async fn() {
         await withConn((conn) => {
           const handle = duckdb.execute(conn, "SELECT 1");
@@ -407,7 +407,7 @@ Deno.test({
     });
 
     await t.step({
-      name: "getInt32 with 1.5 column throws RangeError",
+      name: "getInt32 with 1.5 column throws RangeError (bounds check: 1.5 >= 1)",
       async fn() {
         await withConn((conn) => {
           const handle = duckdb.execute(conn, "SELECT 1");

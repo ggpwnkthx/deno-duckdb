@@ -3,11 +3,6 @@
  *
  * Tests for multiple connections to the same database, shared visibility,
  * and independent query execution across separate connections.
- *
- * Note: These tests verify that multiple connections can operate independently
- * without interference. They do NOT test true concurrent/overlapping execution
- * within a single connection - the Promise.all wrapper is used to execute
- * independent queries on separate connections in a single test assertion.
  */
 
 import { assertEquals } from "@std/assert";
@@ -204,12 +199,12 @@ Deno.test({
 });
 
 // Independent connection test cases
-// Note: These tests verify independent multi-connection usage using Promise.all.
-// They do NOT test true concurrent/overlapping execution within a single connection.
+// These tests verify that queries and prepared statements can execute
+// independently across separate connections without interference.
 Deno.test({
   name: "multi_conn: independent queries across connections",
   async fn(t) {
-    // Independent queries with Promise.all
+    // Independent queries on separate connections
     await t.step({
       name: "independent queries on separate connections",
       async fn() {
@@ -225,15 +220,15 @@ Deno.test({
           const conn1 = await duckdb.create(db);
           const conn2 = await duckdb.create(db);
 
-          // Execute queries in parallel using Promise.all
-          const [result1, result2] = await Promise.all([
-            Promise.resolve(
-              query(conn1, "SELECT * FROM concurrent_data WHERE id = 1"),
-            ),
-            Promise.resolve(
-              query(conn2, "SELECT * FROM concurrent_data WHERE id = 2"),
-            ),
-          ]);
+          // Execute queries on separate connections
+          const result1 = query(
+            conn1,
+            "SELECT * FROM concurrent_data WHERE id = 1",
+          );
+          const result2 = query(
+            conn2,
+            "SELECT * FROM concurrent_data WHERE id = 2",
+          );
 
           // Both should return correct results
           assertEquals(result1.length, 1);
@@ -250,9 +245,9 @@ Deno.test({
       },
     });
 
-    // Separate prepared statement execution
+    // Prepared statement execution on separate connections
     await t.step({
-      name: "separate prepared statements on different connections",
+      name: "execute prepared statements on separate connections",
       async fn() {
         await withDb(async (db) => {
           // Setup data
@@ -277,13 +272,11 @@ Deno.test({
             conn2,
             "SELECT * FROM prep_concurrent WHERE val = ?",
           );
-          // Execute prepared statements in parallel
+          // Execute prepared statements on separate connections
           duckdb.bind(prep1, [1]);
           duckdb.bind(prep2, ["b"]);
-          const [result1, result2] = await Promise.all([
-            Promise.resolve(duckdb.executePrepared(prep1)),
-            Promise.resolve(duckdb.executePrepared(prep2)),
-          ]);
+          const result1 = duckdb.executePrepared(prep1);
+          const result2 = duckdb.executePrepared(prep2);
 
           const rows1 = duckdb.fetchAll(result1);
           const rows2 = duckdb.fetchAll(result2);

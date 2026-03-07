@@ -540,10 +540,12 @@ Deno.test({
   sanitizeOps: true,
   async fn(t) {
     await t.step({
-      name: "getInt32 with Infinity column throws RangeError",
+      name:
+        "getInt32 with Infinity column throws RangeError (Infinity fails bounds check)",
       async fn() {
         await withConn((conn) => {
           const handle = duckdb.execute(conn, "SELECT 1");
+          // Infinity >= colCount is true, triggering out-of-bounds check
           assertThrows(() => duckdb.getInt32(handle, 0, Infinity), RangeError);
           duckdb.destroyResult(handle);
         });
@@ -551,10 +553,12 @@ Deno.test({
     });
 
     await t.step({
-      name: "getDouble with 1.5 row throws RangeError",
+      name:
+        "getDouble with 1.5 row throws RangeError (fractional fails bounds check)",
       async fn() {
         await withConn((conn) => {
           const handle = duckdb.execute(conn, "SELECT 1.5");
+          // 1.5 >= rowCount (1) is true, triggering out-of-bounds check
           assertThrows(() => duckdb.getDouble(handle, 1.5, 0), RangeError);
           duckdb.destroyResult(handle);
         });
@@ -562,10 +566,13 @@ Deno.test({
     });
 
     await t.step({
-      name: "getString with NaN column throws RangeError",
+      name:
+        "getString with NaN column throws RangeError (NaN fails BigInt conversion)",
       async fn() {
         await withConn((conn) => {
           const handle = duckdb.execute(conn, "SELECT 'test'");
+          // NaN >= colCount is false (NaN comparisons always return false),
+          // so bounds check passes, then BigInt(NaN) throws RangeError
           assertThrows(() => duckdb.getString(handle, 0, NaN), RangeError);
           duckdb.destroyResult(handle);
         });
@@ -573,10 +580,12 @@ Deno.test({
     });
 
     await t.step({
-      name: "getValueByType with Infinity row throws RangeError",
+      name:
+        "getValueByType with Infinity row throws RangeError (Infinity fails bounds check)",
       async fn() {
         await withConn((conn) => {
           const handle = duckdb.execute(conn, "SELECT 1");
+          // Infinity >= rowCount is true, triggering out-of-bounds check
           assertThrows(
             () =>
               duckdb.getValueByType(

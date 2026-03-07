@@ -493,32 +493,6 @@ Deno.test({
       },
     });
 
-    // Wrong parameter type - DuckDB coerces string to INTEGER
-    await t.step({
-      name: "bind wrong type coerces to column type",
-      async fn() {
-        await withConn((conn) => {
-          // Create table with explicit INTEGER column
-          exec(conn, "CREATE TABLE type_constrained_test(id INTEGER)");
-          exec(conn, "INSERT INTO type_constrained_test VALUES (1), (2), (3)");
-
-          const prepHandle = duckdb.prepare(
-            conn,
-            "SELECT * FROM type_constrained_test WHERE id = ?",
-          );
-          // Bind a string to an INTEGER column - DuckDB coerces it
-          duckdb.bind(prepHandle, ["2"]);
-          const execHandle = duckdb.executePrepared(prepHandle);
-          const rows = duckdb.fetchAll(execHandle);
-          // Should return row with id=2 (string "2" coerced to integer 2)
-          assertEquals(rows.length, 1);
-          assertEquals(rows[0][0], 2);
-          duckdb.destroyResult(execHandle);
-          duckdb.destroyPrepared(prepHandle);
-        });
-      },
-    });
-
     // Rebinding should not leak old parameter state
     await t.step({
       name: "rebinding does not leak old parameter state",

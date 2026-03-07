@@ -9,7 +9,9 @@
       "WebFetch(domain:docs.deno.com)",
       "WebFetch(domain:duckdb.org)",
       "mcp__ide__getDiagnostics",
-      "Bash(deno:*)"
+      "Bash(deno:*)",
+      "Bash(sed:*)",
+      "Bash(grep:*)"
     ]
   },
   "hooks": {

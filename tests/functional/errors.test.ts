@@ -4,7 +4,7 @@
  * Tests for specific error types, error messages, and error properties
  */
 
-import { assertEquals, assertThrows } from "@std/assert";
+import { assertEquals } from "@std/assert";
 import * as duckdb from "@ggpwnkthx/duckdb/functional";
 import { DatabaseError, QueryError } from "@ggpwnkthx/duckdb";
 import { query, withConn } from "./utils.ts";
@@ -20,23 +20,37 @@ Deno.test({
       async fn() {
         await withConn((conn) => {
           const invalidQuery = "SELECT * FROM nonexistent_table_xyz";
-          assertThrows(
-            () => duckdb.execute(conn, invalidQuery),
-            QueryError,
-          );
+          try {
+            duckdb.execute(conn, invalidQuery);
+            throw new Error("Should have thrown");
+          } catch (e) {
+            const err = e as QueryError;
+            assertEquals(err instanceof QueryError, true);
+            // Check stable query property
+            assertEquals(err.query, invalidQuery);
+            // Check message includes diagnostic context
+            assertEquals(err.message.includes("nonexistent_table_xyz"), true);
+          }
         });
       },
     });
 
     // Syntax error should throw
     await t.step({
-      name: "syntax error throws error",
+      name: "syntax error throws error with query info",
       async fn() {
         await withConn((conn) => {
-          assertThrows(
-            () => duckdb.execute(conn, "SELCT 1"),
-            QueryError,
-          );
+          const sql = "SELCT 1";
+          try {
+            duckdb.execute(conn, sql);
+            throw new Error("Should have thrown");
+          } catch (e) {
+            const err = e as QueryError;
+            assertEquals(err instanceof QueryError, true);
+            assertEquals(err.query, sql);
+            // Message should include some diagnostic info
+            assertEquals(err.message.length > 0, true);
+          }
         });
       },
     });
@@ -89,26 +103,39 @@ Deno.test({
   async fn(t) {
     // Empty SQL should throw
     await t.step({
-      name: "empty SQL throws error",
+      name: "empty SQL throws error with query info",
       async fn() {
         await withConn((conn) => {
-          assertThrows(
-            () => duckdb.execute(conn, ""),
-            QueryError,
-          );
+          const sql = "";
+          try {
+            duckdb.execute(conn, sql);
+            throw new Error("Should have thrown");
+          } catch (e) {
+            const err = e as QueryError;
+            assertEquals(err instanceof QueryError, true);
+            // Empty SQL should have empty string as query property
+            assertEquals(err.query, sql);
+            // Check message mentions empty
+            assertEquals(err.message.includes("empty"), true);
+          }
         });
       },
     });
 
     // Whitespace-only SQL should throw
     await t.step({
-      name: "whitespace-only SQL throws error",
+      name: "whitespace-only SQL throws error with query info",
       async fn() {
         await withConn((conn) => {
-          assertThrows(
-            () => duckdb.execute(conn, "   "),
-            QueryError,
-          );
+          const sql = "   ";
+          try {
+            duckdb.execute(conn, sql);
+            throw new Error("Should have thrown");
+          } catch (e) {
+            const err = e as QueryError;
+            assertEquals(err instanceof QueryError, true);
+            assertEquals(err.query, sql);
+          }
         });
       },
     });
@@ -120,26 +147,35 @@ Deno.test({
   async fn(t) {
     // Prepare with invalid SQL should throw DatabaseError (not QueryError)
     await t.step({
-      name: "prepare invalid SQL throws",
+      name: "prepare invalid SQL throws with message context",
       async fn() {
         await withConn((conn) => {
-          assertThrows(
-            () => duckdb.prepare(conn, "PREPARE nonexistent"),
-            DatabaseError,
-          );
+          try {
+            duckdb.prepare(conn, "PREPARE nonexistent");
+            throw new Error("Should have thrown");
+          } catch (e) {
+            const err = e as DatabaseError;
+            assertEquals(err instanceof DatabaseError, true);
+            // Check message has diagnostic info
+            assertEquals(err.message.length > 0, true);
+          }
         });
       },
     });
 
     // Prepare with invalid table
     await t.step({
-      name: "prepare with invalid table throws",
+      name: "prepare with invalid table throws with context",
       async fn() {
         await withConn((conn) => {
-          assertThrows(
-            () => duckdb.prepare(conn, "SELECT * FROM invalid_table_xyz"),
-            DatabaseError,
-          );
+          try {
+            duckdb.prepare(conn, "SELECT * FROM invalid_table_xyz");
+            throw new Error("Should have thrown");
+          } catch (e) {
+            const err = e as DatabaseError;
+            assertEquals(err instanceof DatabaseError, true);
+            assertEquals(err.message.includes("invalid_table_xyz"), true);
+          }
         });
       },
     });

@@ -4,7 +4,7 @@
  * Tests that all APIs return identical results: fetchAll, typed getters, getValueByType, stream
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertThrows } from "@std/assert";
 
 import type { RowData } from "@ggpwnkthx/duckdb";
 import * as duckdb from "@ggpwnkthx/duckdb/functional";
@@ -181,17 +181,17 @@ Deno.test({
 
           // getValueByType should handle gracefully (out of bounds)
           const handle2 = duckdb.execute(conn, "SELECT * FROM empty_test");
-          try {
-            duckdb.getValueByType(
-              handle2,
-              0,
-              0,
-              DUCKDB_TYPE.DUCKDB_TYPE_INTEGER,
-            );
-          } catch (e) {
-            // Should throw RangeError for empty result
-            assertEquals(e instanceof RangeError, true);
-          }
+          assertThrows(
+            () => {
+              duckdb.getValueByType(
+                handle2,
+                0,
+                0,
+                DUCKDB_TYPE.DUCKDB_TYPE_INTEGER,
+              );
+            },
+            RangeError,
+          );
           duckdb.destroyResult(handle2);
         });
       },

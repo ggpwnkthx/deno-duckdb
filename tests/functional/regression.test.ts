@@ -6,7 +6,7 @@ import { assertEquals, assertThrows } from "@std/assert";
 import * as duckdb from "@ggpwnkthx/duckdb/functional";
 import { QueryError } from "@ggpwnkthx/duckdb";
 import { getPointer } from "@ggpwnkthx/duckdb";
-import { exec, query, withConn } from "./utils.ts";
+import { exec, query, withConn, withPreparedParams } from "./utils.ts";
 
 Deno.test({
   name: "regression: fix previously identified issues",
@@ -94,6 +94,41 @@ Deno.test({
           exec(conn, `INSERT INTO str_test VALUES ('${longStr}')`);
           const rows = query(conn, "SELECT * FROM str_test");
           assertEquals(rows[0][0], longStr);
+        });
+
+        // Larger long string (>= 1000 characters) with parameterized insert
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE str_test(val TEXT)");
+          // Create a string >= 1000 characters
+          const largeStr = "x".repeat(1500);
+          // Use parameterized query to avoid SQL injection/escaping issues
+          withPreparedParams(conn, "INSERT INTO str_test VALUES (?)", [
+            largeStr,
+          ], () => {});
+          const rows = query(conn, "SELECT * FROM str_test");
+          assertEquals(rows[0][0], largeStr);
+        });
+
+        // String with embedded newlines
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE str_test(val TEXT)");
+          const newlineStr = "line1\nline2\r\nline3";
+          withPreparedParams(conn, "INSERT INTO str_test VALUES (?)", [
+            newlineStr,
+          ], () => {});
+          const rows = query(conn, "SELECT * FROM str_test");
+          assertEquals(rows[0][0], newlineStr);
+        });
+
+        // String with backslash escape
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE str_test(val TEXT)");
+          const backslashStr = "path\\to\\file";
+          withPreparedParams(conn, "INSERT INTO str_test VALUES (?)", [
+            backslashStr,
+          ], () => {});
+          const rows = query(conn, "SELECT * FROM str_test");
+          assertEquals(rows[0][0], backslashStr);
         });
 
         // NULL

@@ -2,12 +2,12 @@
  * Functional multi-connection tests
  *
  * Tests for multiple connections to the same database, shared visibility,
- * and parallel query behavior.
+ * and independent query execution across separate connections.
  *
- * Note: The "parallel queries" tests use Promise.all to test independent
- * multi-connection usage. They do NOT test true concurrent/overlapping
- * execution within a single connection, but rather verify that multiple
- * connections can be used in parallel without interference.
+ * Note: These tests verify that multiple connections can operate independently
+ * without interference. They do NOT test true concurrent/overlapping execution
+ * within a single connection - the Promise.all wrapper is used to execute
+ * independent queries on separate connections in a single test assertion.
  */
 
 import { assertEquals } from "@std/assert";
@@ -28,6 +28,14 @@ Deno.test({
           const conn1 = await duckdb.create(db);
           const conn2 = await duckdb.create(db);
           const conn3 = await duckdb.create(db);
+
+          // Verify connections are distinct handles
+          const ptr1 = duckdb.getPointerValueConnection(conn1);
+          const ptr2 = duckdb.getPointerValueConnection(conn2);
+          const ptr3 = duckdb.getPointerValueConnection(conn3);
+          assertEquals(ptr1 !== ptr2, true);
+          assertEquals(ptr2 !== ptr3, true);
+          assertEquals(ptr1 !== ptr3, true);
 
           // All should be valid
           assertEquals(duckdb.isValidConnection(conn1), true);
@@ -195,15 +203,15 @@ Deno.test({
   },
 });
 
-// Parallel test cases for multi-connection
+// Independent connection test cases
 // Note: These tests verify independent multi-connection usage using Promise.all.
-// They do NOT test true concurrent execution within a single connection.
+// They do NOT test true concurrent/overlapping execution within a single connection.
 Deno.test({
-  name: "multi_conn: parallel queries",
+  name: "multi_conn: independent queries across connections",
   async fn(t) {
-    // Parallel queries with Promise.all
+    // Independent queries with Promise.all
     await t.step({
-      name: "parallel queries with Promise.all",
+      name: "independent queries on separate connections",
       async fn() {
         await withDb(async (db) => {
           // Setup data
@@ -242,9 +250,9 @@ Deno.test({
       },
     });
 
-    // Parallel prepared statement execution
+    // Separate prepared statement execution
     await t.step({
-      name: "parallel prepared statement execution",
+      name: "separate prepared statements on different connections",
       async fn() {
         await withDb(async (db) => {
           // Setup data

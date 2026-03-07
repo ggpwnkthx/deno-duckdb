@@ -2,7 +2,7 @@
  * Functional database operations tests
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals } from "@std/assert";
 import type { DatabaseHandle } from "@ggpwnkthx/duckdb";
 import * as duckdb from "@ggpwnkthx/duckdb/functional";
 
@@ -13,17 +13,55 @@ Deno.test({
   async fn(t) {
     // Step 1: open database
     await t.step({
-      name: "open database",
+      name: "open database (in-memory)",
       async fn() {
-        // Opens in-memory database
+        // Opens in-memory database (does not test persistence)
         const handle = await duckdb.open();
-        assertExists(handle);
+        assertEquals(duckdb.isValidDatabase(handle), true);
         duckdb.closeDatabase(handle);
 
-        // Opens with custom path config
+        // Opens with explicit :memory: path
         const handle2 = await duckdb.open({ path: ":memory:" });
-        assertExists(handle2);
+        assertEquals(duckdb.isValidDatabase(handle2), true);
         duckdb.closeDatabase(handle2);
+      },
+    });
+
+    // Step 1b: file-backed persistence test
+    await t.step({
+      name: "open database (file-backed persistence)",
+      async fn() {
+        // Use a file in the current directory for persistence test
+        const testDbPath = "./test_persistence.duck.db";
+
+        try {
+          // Open, create table, insert data
+          const db1 = await duckdb.open({ path: testDbPath });
+          const conn1 = await duckdb.create(db1);
+          duckdb.execute(conn1, "CREATE TABLE test (id INTEGER, name TEXT)");
+          duckdb.execute(conn1, "INSERT INTO test VALUES (1, 'hello')");
+          duckdb.closeConnection(conn1);
+          duckdb.closeDatabase(db1);
+
+          // Reopen and verify data persisted
+          const db2 = await duckdb.open({ path: testDbPath });
+          const conn2 = await duckdb.create(db2);
+          const result = duckdb.execute(conn2, "SELECT * FROM test");
+          const rows = duckdb.fetchAll(result);
+          duckdb.destroyResult(result);
+          assertEquals(rows.length, 1);
+          assertEquals(rows[0][0], 1); // id
+          assertEquals(rows[0][1], "hello"); // name
+          duckdb.closeConnection(conn2);
+          duckdb.closeDatabase(db2);
+        } finally {
+          // Clean up test file
+          try {
+            await Deno.remove(testDbPath);
+          } catch {
+            // Ignore cleanup errors
+          }
+        }
       },
     });
 
@@ -47,10 +85,18 @@ Deno.test({
       name: "get pointer value",
       async fn() {
         const handle = await duckdb.open();
+        // Verify handle is valid (non-zero pointer)
+        assertEquals(duckdb.isValidDatabase(handle), true);
         const pointer = duckdb.getPointerValue(handle);
-        assertExists(pointer);
+        // Pointer should be non-zero for valid handle
+        assertEquals(pointer !== 0n, true);
         assertEquals(typeof pointer, "bigint");
         duckdb.closeDatabase(handle);
+
+        // Invalid handle has zero pointer
+        const invalidHandle = new Uint8Array(8) as unknown as DatabaseHandle;
+        const invalidPointer = duckdb.getPointerValue(invalidHandle);
+        assertEquals(invalidPointer, 0n);
       },
     });
   },

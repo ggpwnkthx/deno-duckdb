@@ -469,5 +469,100 @@ Deno.test({
         });
       },
     });
+
+    // Too few parameters bound - throws at execute time
+    await t.step({
+      name: "bind too few parameters throws error at execute",
+      async fn() {
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE few_params_test(id INTEGER, value TEXT)");
+          exec(conn, "INSERT INTO few_params_test VALUES (1, 'a')");
+
+          const prepHandle = duckdb.prepare(
+            conn,
+            "SELECT * FROM few_params_test WHERE id = ? AND value = ?",
+          );
+          // Bind only one parameter when two are required - throws at execute
+          duckdb.bind(prepHandle, [1]);
+          assertThrows(
+            () => duckdb.executePrepared(prepHandle),
+            DatabaseError,
+          );
+          duckdb.destroyPrepared(prepHandle);
+        });
+      },
+    });
+
+    // Wrong parameter type - DuckDB coerces string to INTEGER
+    await t.step({
+      name: "bind wrong type coerces to column type",
+      async fn() {
+        await withConn((conn) => {
+          // Create table with explicit INTEGER column
+          exec(conn, "CREATE TABLE type_constrained_test(id INTEGER)");
+          exec(conn, "INSERT INTO type_constrained_test VALUES (1), (2), (3)");
+
+          const prepHandle = duckdb.prepare(
+            conn,
+            "SELECT * FROM type_constrained_test WHERE id = ?",
+          );
+          // Bind a string to an INTEGER column - DuckDB coerces it
+          duckdb.bind(prepHandle, ["2"]);
+          const execHandle = duckdb.executePrepared(prepHandle);
+          const rows = duckdb.fetchAll(execHandle);
+          // Should return row with id=2 (string "2" coerced to integer 2)
+          assertEquals(rows.length, 1);
+          assertEquals(rows[0][0], 2);
+          duckdb.destroyResult(execHandle);
+          duckdb.destroyPrepared(prepHandle);
+        });
+      },
+    });
+
+    // Rebinding should not leak old parameter state
+    await t.step({
+      name: "rebinding does not leak old parameter state",
+      async fn() {
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE leak_test(id INTEGER, value TEXT)");
+          exec(
+            conn,
+            "INSERT INTO leak_test VALUES (1, 'first'), (2, 'second')",
+          );
+
+          const prepHandle = duckdb.prepare(
+            conn,
+            "SELECT * FROM leak_test WHERE id = ?",
+          );
+
+          // First bind and execute - should return row 1
+          duckdb.bind(prepHandle, [1]);
+          let execHandle = duckdb.executePrepared(prepHandle);
+          let rows = duckdb.fetchAll(execHandle);
+          assertEquals(rows.length, 1);
+          assertEquals(rows[0][1], "first");
+          duckdb.destroyResult(execHandle);
+
+          // Rebind with new param (2) and execute - should return row 2
+          // If old params leaked, we might get unexpected results
+          duckdb.bind(prepHandle, [2]);
+          execHandle = duckdb.executePrepared(prepHandle);
+          rows = duckdb.fetchAll(execHandle);
+          assertEquals(rows.length, 1);
+          assertEquals(rows[0][1], "second"); // Must be "second", not "first"
+          duckdb.destroyResult(execHandle);
+
+          // Verify a third execution with the same bound param still works
+          duckdb.bind(prepHandle, [1]);
+          execHandle = duckdb.executePrepared(prepHandle);
+          rows = duckdb.fetchAll(execHandle);
+          assertEquals(rows.length, 1);
+          assertEquals(rows[0][1], "first"); // Must be "first", not "second"
+          duckdb.destroyResult(execHandle);
+
+          duckdb.destroyPrepared(prepHandle);
+        });
+      },
+    });
   },
 });

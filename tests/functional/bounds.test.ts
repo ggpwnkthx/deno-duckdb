@@ -9,7 +9,7 @@ import * as duckdb from "@ggpwnkthx/duckdb/functional";
 import { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
 import { exec, withConn } from "./utils.ts";
 
-// Warm-up test to trigger library loading once for all tests
+// Smoke test: verify library can be loaded and opened successfully
 Deno.test({
   name: "warmup: load library",
   sanitizeResources: false,
@@ -328,6 +328,90 @@ Deno.test({
             () => duckdb.getDouble(handle, 0, -1),
             RangeError,
           );
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+  },
+});
+
+Deno.test({
+  name: "bounds: non-integer numeric indices",
+  sanitizeResources: true,
+  sanitizeOps: true,
+  async fn(t) {
+    await t.step({
+      name: "columnName with NaN throws RangeError",
+      async fn() {
+        await withConn((conn) => {
+          const handle = duckdb.execute(conn, "SELECT 1, 2, 3");
+          assertThrows(() => duckdb.columnName(handle, NaN), RangeError);
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+
+    await t.step({
+      name: "columnName with 1.5 throws RangeError",
+      async fn() {
+        await withConn((conn) => {
+          const handle = duckdb.execute(conn, "SELECT 1, 2, 3");
+          assertThrows(() => duckdb.columnName(handle, 1.5), RangeError);
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+
+    await t.step({
+      name: "columnName with Infinity throws RangeError",
+      async fn() {
+        await withConn((conn) => {
+          const handle = duckdb.execute(conn, "SELECT 1, 2, 3");
+          assertThrows(() => duckdb.columnName(handle, Infinity), RangeError);
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+
+    await t.step({
+      name: "columnType with NaN throws RangeError",
+      async fn() {
+        await withConn((conn) => {
+          const handle = duckdb.execute(conn, "SELECT 1, 2, 3");
+          assertThrows(() => duckdb.columnType(handle, NaN), RangeError);
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+
+    await t.step({
+      name: "columnType with Infinity throws RangeError",
+      async fn() {
+        await withConn((conn) => {
+          const handle = duckdb.execute(conn, "SELECT 1, 2, 3");
+          assertThrows(() => duckdb.columnType(handle, Infinity), RangeError);
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+
+    await t.step({
+      name: "isNull with Infinity row throws RangeError",
+      async fn() {
+        await withConn((conn) => {
+          const handle = duckdb.execute(conn, "SELECT 1");
+          assertThrows(() => duckdb.isNull(handle, Infinity, 0), RangeError);
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+
+    await t.step({
+      name: "getInt32 with 1.5 column throws RangeError",
+      async fn() {
+        await withConn((conn) => {
+          const handle = duckdb.execute(conn, "SELECT 1");
+          assertThrows(() => duckdb.getInt32(handle, 0, 1.5), RangeError);
           duckdb.destroyResult(handle);
         });
       },

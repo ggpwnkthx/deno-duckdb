@@ -212,6 +212,59 @@ Deno.test({
           assertEquals(strVal, "hello world");
           duckdb.destroyResult(handle);
         });
+
+        // Typed getters return null on NULL values
+        await withConn((conn) => {
+          // getInt32 returns null for NULL
+          exec(conn, "CREATE TABLE null_int_test(val INTEGER)");
+          exec(conn, "INSERT INTO null_int_test VALUES (NULL)");
+          const handle = duckdb.execute(
+            conn,
+            "SELECT * FROM null_int_test",
+          );
+          const val = duckdb.getInt32(handle, 0, 0);
+          assertEquals(val, null);
+          duckdb.destroyResult(handle);
+        });
+
+        await withConn((conn) => {
+          // getInt64 returns null for NULL
+          exec(conn, "CREATE TABLE null_bigint_test(val BIGINT)");
+          exec(conn, "INSERT INTO null_bigint_test VALUES (NULL)");
+          const handle = duckdb.execute(
+            conn,
+            "SELECT * FROM null_bigint_test",
+          );
+          const val = duckdb.getInt64(handle, 0, 0);
+          assertEquals(val, null);
+          duckdb.destroyResult(handle);
+        });
+
+        await withConn((conn) => {
+          // getDouble returns null for NULL
+          exec(conn, "CREATE TABLE null_double_test(val DOUBLE)");
+          exec(conn, "INSERT INTO null_double_test VALUES (NULL)");
+          const handle = duckdb.execute(
+            conn,
+            "SELECT * FROM null_double_test",
+          );
+          const val = duckdb.getDouble(handle, 0, 0);
+          assertEquals(val, null);
+          duckdb.destroyResult(handle);
+        });
+
+        await withConn((conn) => {
+          // getString returns null for NULL
+          exec(conn, "CREATE TABLE null_str_test(val TEXT)");
+          exec(conn, "INSERT INTO null_str_test VALUES (NULL)");
+          const handle = duckdb.execute(
+            conn,
+            "SELECT * FROM null_str_test",
+          );
+          const val = duckdb.getString(handle, 0, 0);
+          assertEquals(val, null);
+          duckdb.destroyResult(handle);
+        });
       },
     });
 
@@ -473,6 +526,67 @@ Deno.test({
           const count = duckdb.rowCount(handle);
           assertEquals(count, 0n);
 
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+  },
+});
+
+// Non-integer numeric indices on getters
+Deno.test({
+  name: "query and value: non-integer indices on getters",
+  sanitizeResources: true,
+  sanitizeOps: true,
+  async fn(t) {
+    await t.step({
+      name: "getInt32 with Infinity column throws RangeError",
+      async fn() {
+        await withConn((conn) => {
+          const handle = duckdb.execute(conn, "SELECT 1");
+          assertThrows(() => duckdb.getInt32(handle, 0, Infinity), RangeError);
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+
+    await t.step({
+      name: "getDouble with 1.5 row throws RangeError",
+      async fn() {
+        await withConn((conn) => {
+          const handle = duckdb.execute(conn, "SELECT 1.5");
+          assertThrows(() => duckdb.getDouble(handle, 1.5, 0), RangeError);
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+
+    await t.step({
+      name: "getString with NaN column throws RangeError",
+      async fn() {
+        await withConn((conn) => {
+          const handle = duckdb.execute(conn, "SELECT 'test'");
+          assertThrows(() => duckdb.getString(handle, 0, NaN), RangeError);
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+
+    await t.step({
+      name: "getValueByType with Infinity row throws RangeError",
+      async fn() {
+        await withConn((conn) => {
+          const handle = duckdb.execute(conn, "SELECT 1");
+          assertThrows(
+            () =>
+              duckdb.getValueByType(
+                handle,
+                Infinity,
+                0,
+                DUCKDB_TYPE.DUCKDB_TYPE_INTEGER,
+              ),
+            RangeError,
+          );
           duckdb.destroyResult(handle);
         });
       },

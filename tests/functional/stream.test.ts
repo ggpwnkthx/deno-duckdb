@@ -323,30 +323,26 @@ Deno.test({
       name: "larger result set",
       async fn() {
         await withConn((conn) => {
-          // Create and populate table with 100+ rows
-          exec(conn, "CREATE TABLE large_test(id INTEGER, value TEXT)");
-          let sql = "INSERT INTO large_test VALUES ";
-          const expectedValues: number[] = [];
-          for (let i = 1; i <= 150; i++) {
-            sql += `(${i}, 'val_${i}')`;
-            if (i < 150) sql += ", ";
-            if (i % 2 === 0) expectedValues.push(i);
-          }
-          exec(conn, sql);
-
-          // Stream all rows
+          // Use generate_series to create 3500 rows efficiently
+          // This crosses multiple DuckDB internal chunk boundaries (default 1024 rows/chunk)
+          // Use Number() to convert bigint to regular number
           const rows: RowData[] = [];
           for (
-            const row of streamFn(conn, "SELECT * FROM large_test ORDER BY id")
+            const row of streamFn(
+              conn,
+              "SELECT * FROM generate_series(1, 3500) AS t(id) ORDER BY id",
+            )
           ) {
-            rows.push(row);
+            rows.push([Number(row[0])]);
           }
 
-          assertEquals(rows.length, 150);
+          assertEquals(rows.length, 3500);
+          // Verify first row
           assertEquals(rows[0][0], 1);
-          assertEquals(rows[149][0], 150);
-          assertEquals(rows[0][1], "val_1");
-          assertEquals(rows[149][1], "val_150");
+          // Verify middle row (around row 1750)
+          assertEquals(rows[1750][0], 1751);
+          // Verify last row
+          assertEquals(rows[3499][0], 3500);
         });
       },
     });

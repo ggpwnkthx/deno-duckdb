@@ -2,7 +2,7 @@
  * Functional connection operations tests
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals } from "@std/assert";
 import * as duckdb from "@ggpwnkthx/duckdb/functional";
 import { withDb } from "./utils.ts";
 
@@ -42,9 +42,24 @@ Deno.test({
         await withDb(async (db) => {
           const conn1 = await duckdb.create(db);
           const conn2 = await duckdb.create(db);
-          // They should be different handles
-          assertExists(conn1);
-          assertExists(conn2);
+
+          // Verify distinct handles via pointer values
+          const ptr1 = duckdb.getPointerValueConnection(conn1);
+          const ptr2 = duckdb.getPointerValueConnection(conn2);
+          assertEquals(ptr1 !== ptr2, true);
+
+          // Verify both are valid and independently usable
+          assertEquals(duckdb.isValidConnection(conn1), true);
+          assertEquals(duckdb.isValidConnection(conn2), true);
+
+          // Execute on each to confirm independent usability
+          const result1 = duckdb.execute(conn1, "SELECT 1");
+          const result2 = duckdb.execute(conn2, "SELECT 2");
+          assertEquals(duckdb.fetchAll(result1).length, 1);
+          assertEquals(duckdb.fetchAll(result2).length, 1);
+          duckdb.destroyResult(result1);
+          duckdb.destroyResult(result2);
+
           // Close both
           duckdb.closeConnection(conn1);
           duckdb.closeConnection(conn2);

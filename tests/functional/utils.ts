@@ -6,7 +6,33 @@
  */
 
 import * as duckdb from "@ggpwnkthx/duckdb/functional";
-import type { ConnectionHandle, DatabaseHandle } from "@ggpwnkthx/duckdb";
+import type { BindValue } from "@ggpwnkthx/duckdb/functional";
+
+/**
+ * Validate that params are valid BindValue types.
+ * This is needed because duckdb.bind requires BindValue[] but tests may pass unknown[].
+ * The cast is safe after this validation.
+ */
+function validateBindParams(params: unknown[]): asserts params is BindValue[] {
+  for (const p of params) {
+    const t = typeof p;
+    if (
+      t !== "boolean" && t !== "number" && t !== "bigint" &&
+      t !== "string" && p !== null
+    ) {
+      throw new Error(`Invalid bind parameter type: ${t}`);
+    }
+  }
+}
+import type {
+  ConnectionHandle,
+  DatabaseHandle,
+  PreparedStatementHandle,
+  ResultHandle,
+} from "@ggpwnkthx/duckdb";
+
+/** Row data as array of values */
+export type RowData = unknown[];
 
 /**
  * Open a database and run a function, always closing the database in finally
@@ -53,11 +79,76 @@ export function exec(conn: ConnectionHandle, sql: string): void {
 export function query(
   conn: ConnectionHandle,
   sql: string,
-): unknown[][] {
+): RowData[] {
   const handle = duckdb.execute(conn, sql);
   try {
     return duckdb.fetchAll(handle);
   } finally {
     duckdb.destroyResult(handle);
+  }
+}
+
+/**
+ * Query a single row. Returns first row or throws if empty.
+ */
+export function queryOne(conn: ConnectionHandle, sql: string): RowData {
+  const rows = query(conn, sql);
+  if (rows.length === 0) {
+    throw new Error(`Query returned no rows: ${sql}`);
+  }
+  return rows[0];
+}
+
+/**
+ * Execute multiple SQL statements (useful for test setup).
+ * Throws on first error.
+ */
+export function execBatch(conn: ConnectionHandle, sql: string): void {
+  const stmts = sql.split(";").map((s) => s.trim()).filter(Boolean);
+  for (const stmt of stmts) {
+    exec(conn, stmt);
+  }
+}
+
+/**
+ * Manage prepared statement lifecycle with automatic cleanup.
+ * Calls fn with (preparedHandle, executeResultHandle) and cleans up both.
+ */
+export function withPrepared<T>(
+  conn: ConnectionHandle,
+  sql: string,
+  fn: (prepHandle: PreparedStatementHandle, execHandle: ResultHandle) => T,
+): T {
+  const prepHandle = duckdb.prepare(conn, sql);
+  const execHandle = duckdb.executePrepared(prepHandle);
+  try {
+    return fn(prepHandle, execHandle);
+  } finally {
+    duckdb.destroyResult(execHandle);
+    duckdb.destroyPrepared(prepHandle);
+  }
+}
+
+/**
+ * Same as above but with parameter binding support.
+ */
+export function withPreparedParams<T>(
+  conn: ConnectionHandle,
+  sql: string,
+  params: unknown[],
+  fn: (prepHandle: PreparedStatementHandle, execHandle: ResultHandle) => T,
+): T {
+  const prepHandle = duckdb.prepare(conn, sql);
+  try {
+    validateBindParams(params);
+    duckdb.bind(prepHandle, params as Parameters<typeof duckdb.bind>[1]);
+    const execHandle = duckdb.executePrepared(prepHandle);
+    try {
+      return fn(prepHandle, execHandle);
+    } finally {
+      duckdb.destroyResult(execHandle);
+    }
+  } finally {
+    duckdb.destroyPrepared(prepHandle);
   }
 }

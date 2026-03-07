@@ -15,6 +15,7 @@ import { withConn, withDb } from "./utils.ts";
 
 Deno.test({
   name: "lifecycle: connection closed state",
+  // FFI loads dynamic library - cannot fully sanitize without explicit library unload
   sanitizeResources: false,
   sanitizeOps: false,
   async fn(t) {
@@ -71,7 +72,6 @@ Deno.test({
   name: "lifecycle: database close behavior",
   async fn(t) {
     // Database close - connection may remain valid (FFI behavior)
-    // This is the actual observed behavior - connection handle is not invalidated
     await t.step({
       name: "connection state after database close",
       async fn() {
@@ -88,8 +88,13 @@ Deno.test({
           // Database should now be invalid
           assertEquals(duckdb.isValidDatabase(db), false);
 
-          // Note: Connection may still report valid - this is FFI-level behavior
+          // Connection may still report valid - this is FFI-level behavior
           // The connection's internal pointer may not be automatically invalidated
+          // But we should still close it for proper cleanup
+          duckdb.closeConnection(conn);
+
+          // After explicit close, connection should be invalid
+          assertEquals(duckdb.isValidConnection(conn), false);
         });
       },
     });

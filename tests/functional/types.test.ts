@@ -60,6 +60,25 @@ Deno.test({
         });
       },
     });
+
+    await t.step({
+      name: "Negative zero handling",
+      async fn() {
+        await withConn((conn) => {
+          // Negative zero from SQL
+          const handle = duckdb.execute(conn, "SELECT '-0'::DOUBLE");
+          const rows = duckdb.fetchAll(handle);
+          assertExists(rows[0][0]);
+          // Negative zero should be returned as a number
+          assertEquals(typeof rows[0][0], "number");
+          // Check it's actually -0 (negative zero)
+          const val = rows[0][0] as number;
+          assertEquals(Object.is(val, -0), true);
+          assertEquals(1 / val, -Infinity); // Mathematical test for -0
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
   },
 });
 

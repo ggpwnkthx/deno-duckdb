@@ -116,6 +116,33 @@ export function preparedParameterCount(
 }
 
 /**
+ * Reset a prepared statement, clearing all bound parameters
+ *
+ * @param handle - Prepared statement handle
+ * @throws DatabaseError if reset fails
+ */
+export function resetPrepared(handle: PreparedStatementHandle): void {
+  validatePreparedHandle(handle);
+  const lib = getLibraryFast();
+  const ptr = getPointer(handle);
+  lib.symbols.duckdb_clear_bindings(ptr);
+}
+
+/**
+ * Reset a prepared statement (synchronous version)
+ *
+ * @param handle - Prepared statement handle
+ */
+export function resetPreparedSync(handle: PreparedStatementHandle): void {
+  validatePreparedHandle(handle);
+  const lib = getLibrarySync();
+  if (lib) {
+    const ptr = getPointer(handle);
+    lib.symbols.duckdb_clear_bindings(ptr);
+  }
+}
+
+/**
  * Bind parameters to a prepared statement
  *
  * @param handle - Prepared statement handle
@@ -127,6 +154,8 @@ export function bind(
   params: BindValue[],
 ): void {
   validatePreparedHandle(handle);
+  // Reset to clear any previous bindings
+  resetPrepared(handle);
   const lib = getLibraryFast();
   const stmtPtr = getPointer(handle);
 

@@ -540,3 +540,215 @@ Deno.test({
     });
   },
 });
+
+// Additional tests for binding state correctness
+Deno.test({
+  name: "prepared: binding state correctness",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn(t) {
+    // Multi-parameter state leakage test
+    await t.step({
+      name: "multi-parameter binding state isolation",
+      async fn() {
+        await withConn((conn) => {
+          exec(
+            conn,
+            "CREATE TABLE multi_param_test(id INTEGER, name TEXT, value INTEGER)",
+          );
+          exec(
+            conn,
+            "INSERT INTO multi_param_test VALUES (1, 'Alice', 100), (2, 'Bob', 200), (3, 'Charlie', 300)",
+          );
+
+          const prepHandle = duckdb.prepare(
+            conn,
+            "SELECT * FROM multi_param_test WHERE name = ? AND value > ?",
+          );
+
+          // First bind with name='Alice', value=50
+          duckdb.bind(prepHandle, ["Alice", 50]);
+          let execHandle = duckdb.executePrepared(prepHandle);
+          let rows = duckdb.fetchAll(execHandle);
+          assertEquals(rows.length, 1);
+          assertEquals(rows[0][1], "Alice");
+          assertEquals(rows[0][2], 100);
+          duckdb.destroyResult(execHandle);
+
+          // Rebind with name='Bob', value=150
+          // Should NOT include Alice with old value=50 leaking in
+          duckdb.bind(prepHandle, ["Bob", 150]);
+          execHandle = duckdb.executePrepared(prepHandle);
+          rows = duckdb.fetchAll(execHandle);
+          assertEquals(rows.length, 1);
+          assertEquals(rows[0][1], "Bob");
+          assertEquals(rows[0][2], 200);
+          duckdb.destroyResult(execHandle);
+
+          // Rebind with name='Charlie', value=250
+          // Should NOT include Bob with old value leaking in
+          duckdb.bind(prepHandle, ["Charlie", 250]);
+          execHandle = duckdb.executePrepared(prepHandle);
+          rows = duckdb.fetchAll(execHandle);
+          assertEquals(rows.length, 1);
+          assertEquals(rows[0][1], "Charlie");
+          assertEquals(rows[0][2], 300);
+          duckdb.destroyResult(execHandle);
+
+          // Back to Alice with different value threshold
+          duckdb.bind(prepHandle, ["Alice", 150]);
+          execHandle = duckdb.executePrepared(prepHandle);
+          rows = duckdb.fetchAll(execHandle);
+          // Alice has value=100, which is NOT > 150, so should return 0 rows
+          assertEquals(rows.length, 0);
+          duckdb.destroyResult(execHandle);
+
+          duckdb.destroyPrepared(prepHandle);
+        });
+      },
+    });
+
+    // Partial rebinding test - bind 2 params, then bind only 1
+    await t.step({
+      name: "partial rebinding with fewer parameters",
+      async fn() {
+        await withConn((conn) => {
+          exec(
+            conn,
+            "CREATE TABLE partial_bind_test(id INTEGER, name TEXT)",
+          );
+          exec(
+            conn,
+            "INSERT INTO partial_bind_test VALUES (1, 'Alice'), (2, 'Bob')",
+          );
+
+          // Prepare statement that expects 2 parameters
+          const prepHandle = duckdb.prepare(
+            conn,
+            "SELECT * FROM partial_bind_test WHERE id = ? AND name = ?",
+          );
+
+          // Bind both parameters
+          duckdb.bind(prepHandle, [1, "Alice"]);
+          let execHandle = duckdb.executePrepared(prepHandle);
+          let rows = duckdb.fetchAll(execHandle);
+          assertEquals(rows.length, 1);
+          assertEquals(rows[0][0], 1);
+          duckdb.destroyResult(execHandle);
+
+          // Now bind only 1 parameter (different from what was bound before)
+          // This should fail at execute since 2 are required
+          duckdb.bind(prepHandle, [2]);
+          assertThrows(
+            () => duckdb.executePrepared(prepHandle),
+            DatabaseError,
+          );
+
+          // But binding both again should work correctly
+          duckdb.bind(prepHandle, [2, "Bob"]);
+          execHandle = duckdb.executePrepared(prepHandle);
+          rows = duckdb.fetchAll(execHandle);
+          assertEquals(rows.length, 1);
+          assertEquals(rows[0][0], 2);
+          assertEquals(rows[0][1], "Bob");
+          duckdb.destroyResult(execHandle);
+
+          duckdb.destroyPrepared(prepHandle);
+        });
+      },
+    });
+
+    // Execution after failure test
+    await t.step({
+      name: "execution after failure recovers correctly",
+      async fn() {
+        await withConn((conn) => {
+          exec(
+            conn,
+            "CREATE TABLE after_fail_test(id INTEGER, value TEXT)",
+          );
+          exec(
+            conn,
+            "INSERT INTO after_fail_test VALUES (1, 'one'), (2, 'two')",
+          );
+
+          const prepHandle = duckdb.prepare(
+            conn,
+            "SELECT * FROM after_fail_test WHERE id = ?",
+          );
+
+          // Try to execute without binding any parameters - should fail
+          assertThrows(
+            () => duckdb.executePrepared(prepHandle),
+            DatabaseError,
+          );
+
+          // Now bind correct params and execute again - should work
+          duckdb.bind(prepHandle, [1]);
+          let execHandle = duckdb.executePrepared(prepHandle);
+          let rows = duckdb.fetchAll(execHandle);
+          assertEquals(rows.length, 1);
+          assertEquals(rows[0][1], "one");
+          duckdb.destroyResult(execHandle);
+
+          // Bind different param and execute again - should still work
+          duckdb.bind(prepHandle, [2]);
+          execHandle = duckdb.executePrepared(prepHandle);
+          rows = duckdb.fetchAll(execHandle);
+          assertEquals(rows.length, 1);
+          assertEquals(rows[0][1], "two");
+          duckdb.destroyResult(execHandle);
+
+          duckdb.destroyPrepared(prepHandle);
+        });
+      },
+    });
+
+    // Arity change test - binding behavior with different parameter counts
+    await t.step({
+      name: "arity change behavior",
+      async fn() {
+        await withConn((conn) => {
+          exec(
+            conn,
+            "CREATE TABLE arity_change_test(id INTEGER, name TEXT, value INTEGER)",
+          );
+          exec(
+            conn,
+            "INSERT INTO arity_change_test VALUES (1, 'test', 10)",
+          );
+
+          // Prepare a 2-parameter statement
+          const prepHandle = duckdb.prepare(
+            conn,
+            "SELECT * FROM arity_change_test WHERE name = ? AND value > ?",
+          );
+
+          // Bind 2 params - should work
+          duckdb.bind(prepHandle, ["test", 5]);
+          let execHandle = duckdb.executePrepared(prepHandle);
+          let rows = duckdb.fetchAll(execHandle);
+          assertEquals(rows.length, 1);
+          duckdb.destroyResult(execHandle);
+
+          // Bind 2 different params - should work
+          duckdb.bind(prepHandle, ["nonexistent", 100]);
+          execHandle = duckdb.executePrepared(prepHandle);
+          rows = duckdb.fetchAll(execHandle);
+          assertEquals(rows.length, 0);
+          duckdb.destroyResult(execHandle);
+
+          // Bind with different values again
+          duckdb.bind(prepHandle, ["test", 15]);
+          execHandle = duckdb.executePrepared(prepHandle);
+          rows = duckdb.fetchAll(execHandle);
+          // value=10 is NOT > 15, so should return 0 rows
+          assertEquals(rows.length, 0);
+          duckdb.destroyResult(execHandle);
+
+          duckdb.destroyPrepared(prepHandle);
+        });
+      },
+    });
+  },
+});

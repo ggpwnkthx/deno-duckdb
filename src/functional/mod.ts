@@ -25,3 +25,4 @@ export * from "./prepared.ts";
 export * from "./value.ts";
 export * from "./stream.ts";
 export * from "./types.ts";
+export { DatabaseError } from "../errors.ts";

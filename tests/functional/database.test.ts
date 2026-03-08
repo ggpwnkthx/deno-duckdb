@@ -101,5 +101,84 @@ Deno.test({
         assertEquals(typeof invalidPointer, "bigint");
       },
     });
+
+    // Step 4: extended config options
+    await t.step({
+      name: "open database with extended config",
+      async fn() {
+        // Test 1: Valid non-path config key (e.g., threads)
+        const db1 = await duckdb.open({ path: ":memory:", threads: "2" });
+        assertEquals(duckdb.isValidDatabase(db1), true);
+        duckdb.closeDatabase(db1);
+
+        // Test 2: accessMode -> access_mode mapping with read_write (read_only doesn't work with :memory:)
+        const db2 = await duckdb.open({
+          path: ":memory:",
+          accessMode: "read_write",
+        });
+        assertEquals(duckdb.isValidDatabase(db2), true);
+        duckdb.closeDatabase(db2);
+
+        // Test 3: Invalid config key - should throw DatabaseError
+        let threw = false;
+        try {
+          await duckdb.open({ path: ":memory:", invalid_key_xyz: "value" });
+        } catch (e) {
+          threw = true;
+          const err = e as Error;
+          assertEquals(e instanceof duckdb.DatabaseError, true);
+          // Error should mention config or open failure
+          assertEquals(
+            err.message.includes("config") || err.message.includes("open"),
+            true,
+          );
+        }
+        assertEquals(threw, true);
+
+        // Test 4: Invalid config value - should throw DatabaseError
+        threw = false;
+        try {
+          // access_mode doesn't accept "invalid_value" as valid
+          await duckdb.open({ path: ":memory:", access_mode: "invalid_value" });
+        } catch (e) {
+          threw = true;
+          assertEquals(e instanceof duckdb.DatabaseError, true);
+        }
+        assertEquals(threw, true);
+
+        // Test 5: File-backed with config
+        const tempDir = await Deno.makeTempDir();
+        const testDbPath = tempDir + "/test_config.duck.db";
+        try {
+          const db5 = await duckdb.open({ path: testDbPath, threads: "1" });
+          assertEquals(duckdb.isValidDatabase(db5), true);
+          duckdb.closeDatabase(db5);
+        } finally {
+          await Deno.remove(tempDir, { recursive: true });
+        }
+
+        // Test 6: File-backed with read_only access mode (requires existing file)
+        const tempDir2 = await Deno.makeTempDir();
+        const testDbPath2 = tempDir2 + "/test_readonly.duck.db";
+        try {
+          // First create the file
+          const dbCreate = await duckdb.open({ path: testDbPath2 });
+          const connCreate = await duckdb.create(dbCreate);
+          exec(connCreate, "CREATE TABLE test (id INTEGER)");
+          duckdb.closeConnection(connCreate);
+          duckdb.closeDatabase(dbCreate);
+
+          // Now open with read_only
+          const db6 = await duckdb.open({
+            path: testDbPath2,
+            accessMode: "read_only",
+          });
+          assertEquals(duckdb.isValidDatabase(db6), true);
+          duckdb.closeDatabase(db6);
+        } finally {
+          await Deno.remove(tempDir2, { recursive: true });
+        }
+      },
+    });
   },
 });

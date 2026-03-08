@@ -53,6 +53,7 @@ export async function open(
       let value = config?.[key] ?? "";
 
       // Handle special accessMode -> access_mode conversion
+      // DuckDB expects uppercase values like "READ_ONLY" or "READ_WRITE"
       if (key === "accessMode") {
         name = "access_mode";
         const normalizedValue = String(value).toLowerCase();
@@ -96,12 +97,20 @@ export async function open(
           errorPtr as unknown as Deno.PointerValue<unknown>,
         );
         if (errorView) {
-          errorMsg = errorView.getCString();
+          try {
+            errorMsg = errorView.getCString();
+          } catch {
+            // Error pointer was invalid, use default message
+          }
         }
-        // Free the error message allocated by DuckDB
-        lib.symbols.duckdb_free(
-          errorPtr as unknown as Deno.PointerValue<unknown>,
-        );
+        // Free the error message allocated by DuckDB if pointer is valid
+        try {
+          lib.symbols.duckdb_free(
+            errorPtr as unknown as Deno.PointerValue<unknown>,
+          );
+        } catch {
+          // Ignore free errors for invalid pointers
+        }
       }
       throw new DatabaseError(errorMsg);
     }

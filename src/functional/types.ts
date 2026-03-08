@@ -38,6 +38,53 @@ export function decodeHugeInt(
 }
 
 /**
+ * Convert days since epoch (1970-01-01) to ISO date string
+ */
+function daysToDateString(days: number): string {
+  const date = new Date(Date.UTC(1970, 0, 1));
+  date.setUTCDate(date.getUTCDate() + days);
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Convert microseconds since midnight to time string (HH:MM:SS)
+ */
+function microsecondsToTimeString(us: bigint): string {
+  // Convert to total seconds
+  const totalSeconds = Number(us / 1000000n);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(hours).padStart(2, "0")}:${
+    String(minutes).padStart(2, "0")
+  }:${String(seconds).padStart(2, "0")}`;
+}
+
+/**
+ * Convert microseconds since epoch to ISO timestamp string
+ */
+function microsecondsToTimestampString(us: bigint): string {
+  const ms = Number(us) / 1000; // Convert to milliseconds
+  const date = new Date(ms);
+  // Format as ISO string without timezone (DuckDB default format)
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  const hours = String(date.getUTCHours()).padStart(2, "0");
+  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+  const seconds = String(date.getUTCSeconds()).padStart(2, "0");
+  const msRemainder = Number(us % 1000000n);
+  if (msRemainder === 0) {
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  }
+  const micros = String(msRemainder).padStart(6, "0");
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${micros}`;
+}
+
+/**
  * Decode a value by type from pre-fetched column data and null mask
  *
  * This is a unified helper function that handles all DuckDB types consistently.
@@ -108,6 +155,27 @@ export function decodeValueByType(
       // DOUBLE - 8 bytes
       if (isNullValue()) return null;
       return dataView ? dataView.getFloat64(row * BYTE_SIZE_64) : 0;
+    case DUCKDB_TYPE.DUCKDB_TYPE_DATE: {
+      // DATE - stored as 32-bit integer (days since 1970-01-01)
+      if (isNullValue()) return null;
+      if (!dataView) return "";
+      const days = dataView.getInt32(row * BYTE_SIZE_32);
+      return daysToDateString(days);
+    }
+    case DUCKDB_TYPE.DUCKDB_TYPE_TIME: {
+      // TIME - stored as 64-bit integer (microseconds since midnight)
+      if (isNullValue()) return null;
+      if (!dataView) return "";
+      const timeUs = dataView.getBigInt64(row * BYTE_SIZE_64);
+      return microsecondsToTimeString(timeUs);
+    }
+    case DUCKDB_TYPE.DUCKDB_TYPE_TIMESTAMP: {
+      // TIMESTAMP - stored as 64-bit integer (microseconds since epoch)
+      if (isNullValue()) return null;
+      if (!dataView) return "";
+      const timestampUs = dataView.getBigInt64(row * BYTE_SIZE_64);
+      return microsecondsToTimestampString(timestampUs);
+    }
     default:
       // Fallback to string for unknown types
       if (isNullValue()) {

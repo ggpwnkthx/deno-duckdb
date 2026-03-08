@@ -4,6 +4,7 @@
 
 import { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
 import type { DuckDBLibrary } from "./lib.ts";
+import { getLibraryFast } from "./lib.ts";
 import type {
   ConnectionHandle,
   DatabaseHandle,
@@ -229,6 +230,38 @@ export function createPointerView(
 ): Deno.UnsafePointerView | null {
   if (!ptr) return null;
   return new Deno.UnsafePointerView(ptr as Deno.PointerObject<unknown>);
+}
+
+/**
+ * Validate a column index is a valid integer within bounds
+ *
+ * @param handle - Result handle
+ * @param index - Column index to validate
+ * @throws RangeError if index is not a valid integer or is out of bounds
+ */
+export function validateColumnIndex(handle: ResultHandle, index: number): void {
+  // Check for non-integer values first (NaN, Infinity, fractional)
+  if (!Number.isInteger(index)) {
+    throw new RangeError(
+      `Column index must be an integer, got ${index}`,
+    );
+  }
+
+  if (index < 0) {
+    const colCount = Number(
+      getLibraryFast().symbols.duckdb_column_count(handle),
+    );
+    throw new RangeError(
+      `Column index ${index} is out of bounds (valid range: 0-${colCount - 1})`,
+    );
+  }
+
+  const colCount = Number(getLibraryFast().symbols.duckdb_column_count(handle));
+  if (index >= colCount) {
+    throw new RangeError(
+      `Column index ${index} is out of bounds (valid range: 0-${colCount - 1})`,
+    );
+  }
 }
 
 /**

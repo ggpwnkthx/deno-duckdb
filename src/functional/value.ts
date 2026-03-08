@@ -23,6 +23,19 @@ import { decodeValueByType } from "./types.ts";
  * @param col - Column index
  */
 function validateIndices(handle: ResultHandle, row: number, col: number): void {
+  // Check for non-integer values first (NaN, Infinity, fractional)
+  if (!Number.isInteger(row)) {
+    throw new RangeError(
+      `Row index must be an integer, got ${row}`,
+    );
+  }
+
+  if (!Number.isInteger(col)) {
+    throw new RangeError(
+      `Column index must be an integer, got ${col}`,
+    );
+  }
+
   const lib = getLibraryFast();
   const rowCount = Number(lib.symbols.duckdb_row_count(handle));
   const colCount = Number(lib.symbols.duckdb_column_count(handle));

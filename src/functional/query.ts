@@ -14,6 +14,7 @@ import {
   getPointer,
   isValidHandle,
   stringToPointer,
+  validateColumnIndex,
   validateConnectionHandle,
   validateResultHandle,
 } from "../helpers.ts";
@@ -114,12 +115,14 @@ export function columnCount(
  * @param handle - Result handle
  * @param index - Column index (0-based)
  * @returns Column name
+ * @throws RangeError if index is not a valid integer or is out of bounds
  */
 export function columnName(
   handle: ResultHandle,
   index: number,
 ): string {
   validateResultHandle(handle);
+  validateColumnIndex(handle, index);
   const lib = getLibraryFast();
   const ptr = lib.symbols.duckdb_column_name(handle, BigInt(index));
   if (!ptr) return "";
@@ -136,12 +139,14 @@ export function columnName(
  * @param handle - Result handle
  * @param index - Column index (0-based)
  * @returns Column type enum value
+ * @throws RangeError if index is not a valid integer or is out of bounds
  */
 export function columnType(
   handle: ResultHandle,
   index: number,
 ): DUCKDB_TYPE {
   validateResultHandle(handle);
+  validateColumnIndex(handle, index);
   const lib = getLibraryFast();
   return lib.symbols.duckdb_column_type(
     handle,

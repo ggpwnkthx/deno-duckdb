@@ -120,8 +120,8 @@ Deno.test({
           const rows = duckdb.fetchAll(execHandle);
           assertEquals(rows.length, 1);
           assertEquals(rows[0][0], 1);
-          // BOOLEAN returns 1/0 via getInt8
-          assertEquals(rows[0][1], 1);
+          // BOOLEAN returns JS boolean
+          assertEquals(rows[0][1], true);
           duckdb.destroyResult(execHandle);
 
           // Rebind with false and execute again
@@ -130,7 +130,7 @@ Deno.test({
           const rows2 = duckdb.fetchAll(execHandle2);
           assertEquals(rows2.length, 1);
           assertEquals(rows2[0][0], 2);
-          assertEquals(rows2[0][1], 0);
+          assertEquals(rows2[0][1], false);
           duckdb.destroyResult(execHandle2);
 
           duckdb.destroyPrepared(prepHandle);

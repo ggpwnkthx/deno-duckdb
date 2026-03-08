@@ -36,7 +36,6 @@ Deno.test({
           const typedBig = duckdb.getInt64(handle, 0, 1);
           const typedDbl = duckdb.getDouble(handle, 0, 2);
           const typedStr = duckdb.getString(handle, 0, 3);
-          // Note: BOOLEAN returns as Int8 (0 or 1), not JS boolean
           const typedFlag = duckdb.getValueByType(
             handle,
             0,
@@ -64,7 +63,7 @@ Deno.test({
           assertEquals(typedBig, 9223372036854775807n);
           assertEquals(typedDbl, 3.14159);
           assertEquals(typedStr, "hello world");
-          assertEquals(typedFlag, 1); // BOOLEAN returns 0/1 as number
+          assertEquals(typedFlag, true);
 
           duckdb.destroyResult(handle);
         });
@@ -79,7 +78,7 @@ Deno.test({
   sanitizeOps: false,
   async fn(t) {
     await t.step({
-      name: "BOOLEAN returns 0/1 as numbers, not JS booleans",
+      name: "BOOLEAN returns JS boolean values (true/false)",
       async fn() {
         await withConn((conn) => {
           // Using SELECT with UNION to get true/false values
@@ -94,16 +93,16 @@ Deno.test({
           // Verify type is BOOLEAN
           assertEquals(boolType, DUCKDB_TYPE.DUCKDB_TYPE_BOOLEAN);
 
-          // fetchAll should return 0/1 for false/true
+          // fetchAll should return JS boolean
           const rows = duckdb.fetchAll(handle);
-          assertEquals(rows[0][0], 1); // true -> 1
-          assertEquals(rows[1][0], 0); // false -> 0
+          assertEquals(rows[0][0], true);
+          assertEquals(rows[1][0], false);
 
-          // getValueByType should return 0/1
+          // getValueByType should return JS boolean
           const val1 = duckdb.getValueByType(handle, 0, 0, boolType);
           const val2 = duckdb.getValueByType(handle, 1, 0, boolType);
-          assertEquals(val1, 1);
-          assertEquals(val2, 0);
+          assertEquals(val1, true);
+          assertEquals(val2, false);
 
           duckdb.destroyResult(handle);
         });
@@ -111,7 +110,7 @@ Deno.test({
     });
 
     await t.step({
-      name: "stream returns 0/1 for BOOLEAN like fetchAll",
+      name: "stream returns JS boolean like fetchAll",
       async fn() {
         await withConn((conn) => {
           exec(
@@ -142,7 +141,7 @@ Deno.test({
             streamRows.push(row);
           }
 
-          // Both should return 0/1 consistently
+          // Both should return JS boolean consistently
           assertEquals(fetchRows[0][0], streamRows[0][0]);
           assertEquals(fetchRows[1][0], streamRows[1][0]);
         });

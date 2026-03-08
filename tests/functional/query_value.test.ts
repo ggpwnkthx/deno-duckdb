@@ -359,15 +359,15 @@ Deno.test({
     await t.step({
       name: "type tests with exact values",
       async fn() {
-        // BOOLEAN true/false - API contract: returns 1/0 via getInt8
+        // BOOLEAN true/false returns JS boolean
         await withConn((conn) => {
           const handle = duckdb.execute(
             conn,
             "SELECT true as v UNION ALL SELECT false",
           );
           const rows = duckdb.fetchAll(handle);
-          assertEquals(rows[0][0], 1);
-          assertEquals(rows[1][0], 0);
+          assertEquals(rows[0][0], true);
+          assertEquals(rows[1][0], false);
           duckdb.destroyResult(handle);
         });
 

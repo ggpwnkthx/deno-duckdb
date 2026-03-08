@@ -424,11 +424,11 @@ Deno.test({
           const fetchRows = duckdb.fetchAll(handle);
           duckdb.destroyResult(handle);
 
-          // Both should return 1/0 for boolean (this is the API contract)
-          assertEquals(streamRows[0][1], 1);
-          assertEquals(streamRows[1][1], 0);
-          assertEquals(fetchRows[0][1], 1);
-          assertEquals(fetchRows[1][1], 0);
+          // Both should return JS boolean
+          assertEquals(streamRows[0][1], true);
+          assertEquals(streamRows[1][1], false);
+          assertEquals(fetchRows[0][1], true);
+          assertEquals(fetchRows[1][1], false);
 
           // Values should match
           assertEquals(streamRows[0][1], fetchRows[0][1]);

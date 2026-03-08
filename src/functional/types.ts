@@ -77,8 +77,11 @@ export function decodeValueByType(
   // Handle numeric types
   switch (type) {
     case DUCKDB_TYPE.DUCKDB_TYPE_BOOLEAN:
+      // BOOLEAN - 1 byte, convert to JS boolean
+      if (isNullValue()) return null;
+      return dataView ? dataView.getInt8(row * BYTE_SIZE_8) !== 0 : false;
     case DUCKDB_TYPE.DUCKDB_TYPE_TINYINT:
-      // BOOLEAN, TINYINT - 1 byte
+      // TINYINT - 1 byte
       if (isNullValue()) return null;
       return dataView ? dataView.getInt8(row * BYTE_SIZE_8) : 0;
     case DUCKDB_TYPE.DUCKDB_TYPE_SMALLINT:

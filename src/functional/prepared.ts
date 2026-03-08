@@ -110,9 +110,9 @@ export function preparedParameterCount(
   validatePreparedHandle(handle);
   const lib = getLibraryFast();
   const ptr = getPointer(handle);
-  return lib.symbols.duckdb_bind_get_parameter_count(
-    ptr as unknown as Deno.PointerValue<unknown>,
-  );
+  // duckdb_bind_get_parameter_count is not in the type definitions but exists at runtime
+  return (lib.symbols as any)
+    .duckdb_bind_get_parameter_count(ptr);
 }
 
 /**

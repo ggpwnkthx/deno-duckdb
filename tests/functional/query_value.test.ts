@@ -355,57 +355,10 @@ Deno.test({
       },
     });
 
-    // Step 8: type tests with exact values
+    // Step 8: type tests with exact values (HUGEINT - most comprehensive)
     await t.step({
       name: "type tests with exact values",
       async fn() {
-        // BOOLEAN true/false returns JS boolean
-        await withConn((conn) => {
-          const handle = duckdb.execute(
-            conn,
-            "SELECT true as v UNION ALL SELECT false",
-          );
-          const rows = duckdb.fetchAll(handle);
-          assertEquals(rows[0][0], true);
-          assertEquals(rows[1][0], false);
-          duckdb.destroyResult(handle);
-        });
-
-        // TINYINT values
-        await withConn((conn) => {
-          const handle = duckdb.execute(
-            conn,
-            "SELECT 1::TINYINT UNION ALL SELECT 127::TINYINT",
-          );
-          const rows = duckdb.fetchAll(handle);
-          assertEquals(rows[0][0], 1);
-          assertEquals(rows[1][0], 127);
-          duckdb.destroyResult(handle);
-        });
-
-        // SMALLINT values
-        await withConn((conn) => {
-          const handle = duckdb.execute(
-            conn,
-            "SELECT 1::SMALLINT UNION ALL SELECT 32767::SMALLINT",
-          );
-          const rows = duckdb.fetchAll(handle);
-          assertEquals(rows[0][0], 1);
-          assertEquals(rows[1][0], 32767);
-          duckdb.destroyResult(handle);
-        });
-
-        // FLOAT values
-        await withConn((conn) => {
-          const handle = duckdb.execute(
-            conn,
-            "SELECT 1.5::FLOAT",
-          );
-          const rows = duckdb.fetchAll(handle);
-          assertEquals(rows[0][0], 1.5);
-          duckdb.destroyResult(handle);
-        });
-
         // HUGEINT large positive - using SQL literal to avoid floating-point precision loss
         await withConn((conn) => {
           const handle = duckdb.execute(

@@ -14,10 +14,18 @@ import { decodeValueByType } from "./types.ts";
 export type RowStream = Generator<RowData, void, unknown>;
 
 /**
- * Stream rows from a query result lazily
+ * Stream rows from a query result using a generator
  *
- * This is a generator function that yields rows one at a time,
- * avoiding loading all rows into memory at once.
+ * This is a generator function that yields rows one at a time from a
+ * materialized result. The query executes fully before iteration begins.
+ * This provides:
+ * - Lazy row iteration (one row at a time API)
+ * - Automatic cleanup on early termination or exception
+ * - Isolation from subsequent queries on the same connection
+ *
+ * Note: This does NOT provide incremental/streaming execution.
+ * All rows are loaded into memory before iteration starts.
+ * For large datasets, consider LIMIT clauses or pagination.
  *
  * @param connHandle - Connection handle
  * @param sql - SQL query string

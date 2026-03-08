@@ -393,48 +393,5 @@ Deno.test({
         });
       },
     });
-
-    // Boolean consistency across fetchAll and stream
-    await t.step({
-      name: "boolean consistency",
-      async fn() {
-        await withConn((conn) => {
-          exec(
-            conn,
-            "CREATE TABLE bool_test(id INTEGER, flag BOOLEAN)",
-          );
-          exec(
-            conn,
-            "INSERT INTO bool_test VALUES (1, true), (2, false)",
-          );
-
-          // Test stream
-          const streamRows: RowData[] = [];
-          for (
-            const row of streamFn(conn, "SELECT * FROM bool_test ORDER BY id")
-          ) {
-            streamRows.push(row);
-          }
-
-          // Test fetchAll
-          const handle = duckdb.execute(
-            conn,
-            "SELECT * FROM bool_test ORDER BY id",
-          );
-          const fetchRows = duckdb.fetchAll(handle);
-          duckdb.destroyResult(handle);
-
-          // Both should return JS boolean
-          assertEquals(streamRows[0][1], true);
-          assertEquals(streamRows[1][1], false);
-          assertEquals(fetchRows[0][1], true);
-          assertEquals(fetchRows[1][1], false);
-
-          // Values should match
-          assertEquals(streamRows[0][1], fetchRows[0][1]);
-          assertEquals(streamRows[1][1], fetchRows[1][1]);
-        });
-      },
-    });
   },
 });

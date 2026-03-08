@@ -130,10 +130,15 @@ export class Connection {
   }
 
   /**
-   * Execute a query and stream rows lazily
+   * Execute a query and stream rows using a generator
    *
-   * This method returns a generator that yields rows one at a time,
-   * avoiding loading all rows into memory at once. Useful for large result sets.
+   * Returns a generator that yields rows one at a time from a materialized result.
+   * The query executes fully before iteration begins. This provides:
+   * - Lazy row iteration (one row at a time API)
+   * - Automatic cleanup on early termination or exception
+   *
+   * Note: This does NOT provide incremental/streaming execution.
+   * All rows are loaded into memory before iteration starts.
    *
    * @param sql - SQL query string
    * @returns Generator yielding rows

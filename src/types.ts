@@ -12,7 +12,7 @@ type SizedHandle<T, N extends number> = T & {
   __brand: never;
 };
 
-type Handle<N extends number> = SizedHandle<Uint8Array<ArrayBuffer>, N>
+type Handle<N extends number> = SizedHandle<Uint8Array<ArrayBuffer>, N>;
 
 /** 8-byte pointer buffer for database handle */
 export type DatabaseHandle = Handle<8>;
@@ -75,8 +75,22 @@ export interface PreparedResult {
   error?: string;
 }
 
+/** Interval value type */
+export type IntervalValue = {
+  months: number;
+  days: number;
+  micros: bigint;
+};
+
 /** Value types that can be retrieved from results */
-export type ValueType = number | bigint | string | boolean | null | Uint8Array;
+export type ValueType =
+  | number
+  | bigint
+  | string
+  | boolean
+  | null
+  | Uint8Array
+  | IntervalValue;
 
 /** Result of opening a database */
 export interface OpenResult {

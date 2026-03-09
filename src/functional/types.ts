@@ -38,6 +38,24 @@ export function decodeHugeInt(
 }
 
 /**
+ * Decode a UHUGEINT value from a data view at the given row offset
+ *
+ * UHUGEINT format in DuckDB: 16 bytes = { lower: uint64, upper: uint64 }
+ * Compute: value = (BigInt(upper) << 64n) + BigInt(lower)
+ * This is the same as HUGEINT but with unsigned upper
+ */
+export function decodeUHugeInt(
+  dataView: Deno.UnsafePointerView | null,
+  row: number,
+): bigint {
+  if (!dataView) return 0n;
+  const offset = row * BYTE_SIZE_128;
+  const lower = dataView.getBigUint64(offset);
+  const upper = dataView.getBigUint64(offset + 8);
+  return (upper << 64n) + lower;
+}
+
+/**
  * Convert days since epoch (1970-01-01) to ISO date string
  */
 function daysToDateString(days: number): string {
@@ -50,17 +68,22 @@ function daysToDateString(days: number): string {
 }
 
 /**
- * Convert microseconds since midnight to time string (HH:MM:SS)
+ * Convert microseconds since midnight to time string (HH:MM:SS[.ffffff])
  */
 function microsecondsToTimeString(us: bigint): string {
-  // Convert to total seconds
   const totalSeconds = Number(us / 1000000n);
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
+  const micros = Number(us % 1000000n);
+  if (micros === 0) {
+    return `${String(hours).padStart(2, "0")}:${
+      String(minutes).padStart(2, "0")
+    }:${String(seconds).padStart(2, "0")}`;
+  }
   return `${String(hours).padStart(2, "0")}:${
     String(minutes).padStart(2, "0")
-  }:${String(seconds).padStart(2, "0")}`;
+  }:${String(seconds).padStart(2, "0")}.${String(micros).padStart(6, "0")}`;
 }
 
 /**
@@ -196,6 +219,74 @@ export function decodeValueByType(
       // UBIGINT - unsigned 8 bytes
       if (isNullValue()) return null;
       return dataView ? dataView.getBigUint64(row * BYTE_SIZE_64) : 0n;
+    case DUCKDB_TYPE.DUCKDB_TYPE_UHUGEINT:
+      // UHUGEINT - unsigned 128-bit integer (16 bytes, two uint64: lower and upper)
+      if (isNullValue()) return null;
+      return decodeUHugeInt(dataView, row);
+    case DUCKDB_TYPE.DUCKDB_TYPE_INTERVAL: {
+      // INTERVAL - 16 bytes (3 x int64: months, days, micros)
+      if (isNullValue()) return null;
+      if (!dataView) return null;
+      const offset = row * BYTE_SIZE_128;
+      const months = dataView.getInt32(offset);
+      const days = dataView.getInt32(offset + 4);
+      const micros = dataView.getBigInt64(offset + 8);
+      return { months, days, micros };
+    }
+    case DUCKDB_TYPE.DUCKDB_TYPE_TIMESTAMP_S: {
+      // TIMESTAMP_S - stored as 64-bit integer (seconds since epoch)
+      if (isNullValue()) return null;
+      if (!dataView) return "";
+      const timestampS = dataView.getBigInt64(row * BYTE_SIZE_64);
+      // Convert seconds to microseconds and format
+      return microsecondsToTimestampString(timestampS * 1000000n);
+    }
+    case DUCKDB_TYPE.DUCKDB_TYPE_TIMESTAMP_MS: {
+      // TIMESTAMP_MS - stored as 64-bit integer (milliseconds since epoch)
+      if (isNullValue()) return null;
+      if (!dataView) return "";
+      const timestampMs = dataView.getBigInt64(row * BYTE_SIZE_64);
+      // Convert milliseconds to microseconds and format
+      return microsecondsToTimestampString(timestampMs * 1000n);
+    }
+    case DUCKDB_TYPE.DUCKDB_TYPE_TIMESTAMP_NS: {
+      // TIMESTAMP_NS - stored as 64-bit integer (nanoseconds since epoch)
+      if (isNullValue()) return null;
+      if (!dataView) return "";
+      const timestampNs = dataView.getBigInt64(row * BYTE_SIZE_64);
+      // Convert nanoseconds to microseconds and format
+      return microsecondsToTimestampString(timestampNs / 1000n);
+    }
+    case DUCKDB_TYPE.DUCKDB_TYPE_TIME_TZ: {
+      // TIME_TZ - stored as 64-bit integer (microseconds since midnight with timezone)
+      if (isNullValue()) return null;
+      if (!dataView) return "";
+      const timeTzUs = dataView.getBigInt64(row * BYTE_SIZE_64);
+      return microsecondsToTimeString(timeTzUs) + "Z";
+    }
+    case DUCKDB_TYPE.DUCKDB_TYPE_TIMESTAMP_TZ: {
+      // TIMESTAMP_TZ - stored as 64-bit integer (microseconds since epoch with timezone)
+      if (isNullValue()) return null;
+      if (!dataView) return "";
+      const timestampTzUs = dataView.getBigInt64(row * BYTE_SIZE_64);
+      return microsecondsToTimestampString(timestampTzUs) + "Z";
+    }
+    case DUCKDB_TYPE.DUCKDB_TYPE_TIME_NS: {
+      // TIME_NS - stored as 64-bit integer (nanoseconds since midnight)
+      if (isNullValue()) return null;
+      if (!dataView) return "";
+      const timeNs = dataView.getBigInt64(row * BYTE_SIZE_64);
+      // Convert nanoseconds to microseconds for formatting
+      return microsecondsToTimeString(timeNs / 1000n);
+    }
+    case DUCKDB_TYPE.DUCKDB_TYPE_STRUCT:
+    case DUCKDB_TYPE.DUCKDB_TYPE_LIST:
+    case DUCKDB_TYPE.DUCKDB_TYPE_MAP:
+    case DUCKDB_TYPE.DUCKDB_TYPE_ARRAY:
+    case DUCKDB_TYPE.DUCKDB_TYPE_UNION:
+      // Complex nested types - fall back to string for now
+      if (isNullValue()) return null;
+      return getStringValue(dataView, row);
     default:
       // Fallback to string for unknown types
       if (isNullValue()) {

@@ -336,16 +336,11 @@ Deno.test({
       name: "UTINYINT type detection",
       async fn() {
         await withConn((conn) => {
-          // Note: UTINYINT might cause an error in DuckDB - wrap in try/catch
-          try {
-            const handle = duckdb.execute(conn, "SELECT 1::UTINYINT");
-            const typeEnum = duckdb.columnType(handle, 0);
-            // If successful, should be UTINYINT
-            assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_UTINYINT);
-            duckdb.destroyResult(handle);
-          } catch {
-            // UTINYINT not supported - skip
-          }
+          const handle = duckdb.execute(conn, "SELECT 1::UTINYINT");
+          const typeEnum = duckdb.columnType(handle, 0);
+          // If successful, should be UTINYINT
+          assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_UTINYINT);
+          duckdb.destroyResult(handle);
         });
       },
     });
@@ -354,14 +349,10 @@ Deno.test({
       name: "UINTEGER type detection",
       async fn() {
         await withConn((conn) => {
-          try {
-            const handle = duckdb.execute(conn, "SELECT 1::UINTEGER");
-            const typeEnum = duckdb.columnType(handle, 0);
-            assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_UINTEGER);
-            duckdb.destroyResult(handle);
-          } catch {
-            // UINTEGER not supported - skip
-          }
+          const handle = duckdb.execute(conn, "SELECT 1::UINTEGER");
+          const typeEnum = duckdb.columnType(handle, 0);
+          assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_UINTEGER);
+          duckdb.destroyResult(handle);
         });
       },
     });
@@ -370,14 +361,10 @@ Deno.test({
       name: "UBIGINT type detection",
       async fn() {
         await withConn((conn) => {
-          try {
-            const handle = duckdb.execute(conn, "SELECT 1::UBIGINT");
-            const typeEnum = duckdb.columnType(handle, 0);
-            assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_UBIGINT);
-            duckdb.destroyResult(handle);
-          } catch {
-            // UBIGINT not supported - skip
-          }
+          const handle = duckdb.execute(conn, "SELECT 1::UBIGINT");
+          const typeEnum = duckdb.columnType(handle, 0);
+          assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_UBIGINT);
+          duckdb.destroyResult(handle);
         });
       },
     });
@@ -890,32 +877,28 @@ Deno.test({
       name: "UTINYINT value retrieval",
       async fn() {
         await withConn((conn) => {
-          try {
-            exec(conn, "CREATE TABLE utinyint_test(v UTINYINT)");
-            exec(conn, "INSERT INTO utinyint_test VALUES (200)");
+          exec(conn, "CREATE TABLE utinyint_test(v UTINYINT)");
+          exec(conn, "INSERT INTO utinyint_test VALUES (200)");
 
-            const handle = duckdb.execute(
-              conn,
-              "SELECT v FROM utinyint_test",
-            );
-            const typeEnum = duckdb.columnType(handle, 0);
+          const handle = duckdb.execute(
+            conn,
+            "SELECT v FROM utinyint_test",
+          );
+          const typeEnum = duckdb.columnType(handle, 0);
 
-            // Test fetchAll
-            const rows = duckdb.fetchAll(handle);
-            const fetchAllVal = rows[0][0];
+          // Test fetchAll
+          const rows = duckdb.fetchAll(handle);
+          const fetchAllVal = rows[0][0];
 
-            // UTINYINT should be returned as number (uint8)
-            assertEquals(typeof fetchAllVal, "number");
-            assertEquals(fetchAllVal, 200);
+          // UTINYINT should be returned as number (uint8)
+          assertEquals(typeof fetchAllVal, "number");
+          assertEquals(fetchAllVal, 200);
 
-            // Test getValueByType
-            const getVal = duckdb.getValueByType(handle, 0, 0, typeEnum);
-            assertEquals(getVal, fetchAllVal);
+          // Test getValueByType
+          const getVal = duckdb.getValueByType(handle, 0, 0, typeEnum);
+          assertEquals(getVal, fetchAllVal);
 
-            duckdb.destroyResult(handle);
-          } catch {
-            // UTINYINT not supported in this DuckDB version - skip
-          }
+          duckdb.destroyResult(handle);
         });
       },
     });
@@ -924,32 +907,28 @@ Deno.test({
       name: "USMALLINT value retrieval",
       async fn() {
         await withConn((conn) => {
-          try {
-            exec(conn, "CREATE TABLE usmallint_test(v USMALLINT)");
-            exec(conn, "INSERT INTO usmallint_test VALUES (40000)");
+          exec(conn, "CREATE TABLE usmallint_test(v USMALLINT)");
+          exec(conn, "INSERT INTO usmallint_test VALUES (40000)");
 
-            const handle = duckdb.execute(
-              conn,
-              "SELECT v FROM usmallint_test",
-            );
-            const typeEnum = duckdb.columnType(handle, 0);
+          const handle = duckdb.execute(
+            conn,
+            "SELECT v FROM usmallint_test",
+          );
+          const typeEnum = duckdb.columnType(handle, 0);
 
-            // Test fetchAll
-            const rows = duckdb.fetchAll(handle);
-            const fetchAllVal = rows[0][0];
+          // Test fetchAll
+          const rows = duckdb.fetchAll(handle);
+          const fetchAllVal = rows[0][0];
 
-            // USMALLINT should be returned as number (uint16)
-            assertEquals(typeof fetchAllVal, "number");
-            assertEquals(fetchAllVal, 40000);
+          // USMALLINT should be returned as number (uint16)
+          assertEquals(typeof fetchAllVal, "number");
+          assertEquals(fetchAllVal, 40000);
 
-            // Test getValueByType
-            const getVal = duckdb.getValueByType(handle, 0, 0, typeEnum);
-            assertEquals(getVal, fetchAllVal);
+          // Test getValueByType
+          const getVal = duckdb.getValueByType(handle, 0, 0, typeEnum);
+          assertEquals(getVal, fetchAllVal);
 
-            duckdb.destroyResult(handle);
-          } catch {
-            // USMALLINT not supported in this DuckDB version - skip
-          }
+          duckdb.destroyResult(handle);
         });
       },
     });
@@ -958,32 +937,28 @@ Deno.test({
       name: "UINTEGER value retrieval",
       async fn() {
         await withConn((conn) => {
-          try {
-            exec(conn, "CREATE TABLE uinteger_test(v UINTEGER)");
-            exec(conn, "INSERT INTO uinteger_test VALUES (3000000000)");
+          exec(conn, "CREATE TABLE uinteger_test(v UINTEGER)");
+          exec(conn, "INSERT INTO uinteger_test VALUES (3000000000)");
 
-            const handle = duckdb.execute(
-              conn,
-              "SELECT v FROM uinteger_test",
-            );
-            const typeEnum = duckdb.columnType(handle, 0);
+          const handle = duckdb.execute(
+            conn,
+            "SELECT v FROM uinteger_test",
+          );
+          const typeEnum = duckdb.columnType(handle, 0);
 
-            // Test fetchAll
-            const rows = duckdb.fetchAll(handle);
-            const fetchAllVal = rows[0][0];
+          // Test fetchAll
+          const rows = duckdb.fetchAll(handle);
+          const fetchAllVal = rows[0][0];
 
-            // UINTEGER should be returned as number (uint32)
-            assertEquals(typeof fetchAllVal, "number");
-            assertEquals(fetchAllVal, 3000000000);
+          // UINTEGER should be returned as number (uint32)
+          assertEquals(typeof fetchAllVal, "number");
+          assertEquals(fetchAllVal, 3000000000);
 
-            // Test getValueByType
-            const getVal = duckdb.getValueByType(handle, 0, 0, typeEnum);
-            assertEquals(getVal, fetchAllVal);
+          // Test getValueByType
+          const getVal = duckdb.getValueByType(handle, 0, 0, typeEnum);
+          assertEquals(getVal, fetchAllVal);
 
-            duckdb.destroyResult(handle);
-          } catch {
-            // UINTEGER not supported in this DuckDB version - skip
-          }
+          duckdb.destroyResult(handle);
         });
       },
     });
@@ -992,35 +967,31 @@ Deno.test({
       name: "UBIGINT value retrieval",
       async fn() {
         await withConn((conn) => {
-          try {
-            exec(conn, "CREATE TABLE ubigint_test(v UBIGINT)");
-            exec(
-              conn,
-              "INSERT INTO ubigint_test VALUES (18446744073709551615)",
-            );
+          exec(conn, "CREATE TABLE ubigint_test(v UBIGINT)");
+          exec(
+            conn,
+            "INSERT INTO ubigint_test VALUES (18446744073709551615)",
+          );
 
-            const handle = duckdb.execute(
-              conn,
-              "SELECT v FROM ubigint_test",
-            );
-            const typeEnum = duckdb.columnType(handle, 0);
+          const handle = duckdb.execute(
+            conn,
+            "SELECT v FROM ubigint_test",
+          );
+          const typeEnum = duckdb.columnType(handle, 0);
 
-            // Test fetchAll
-            const rows = duckdb.fetchAll(handle);
-            const fetchAllVal = rows[0][0];
+          // Test fetchAll
+          const rows = duckdb.fetchAll(handle);
+          const fetchAllVal = rows[0][0];
 
-            // UBIGINT should be returned as bigint
-            assertEquals(typeof fetchAllVal, "bigint");
-            assertEquals(fetchAllVal, 18446744073709551615n);
+          // UBIGINT should be returned as bigint
+          assertEquals(typeof fetchAllVal, "bigint");
+          assertEquals(fetchAllVal, 18446744073709551615n);
 
-            // Test getValueByType
-            const getVal = duckdb.getValueByType(handle, 0, 0, typeEnum);
-            assertEquals(getVal, fetchAllVal);
+          // Test getValueByType
+          const getVal = duckdb.getValueByType(handle, 0, 0, typeEnum);
+          assertEquals(getVal, fetchAllVal);
 
-            duckdb.destroyResult(handle);
-          } catch {
-            // UBIGINT not supported in this DuckDB version - skip
-          }
+          duckdb.destroyResult(handle);
         });
       },
     });
@@ -1029,47 +1000,43 @@ Deno.test({
       name: "Unsigned types consistency across APIs",
       async fn() {
         await withConn((conn) => {
-          try {
-            exec(
-              conn,
-              "CREATE TABLE unsigned_consistency_test(u UINTEGER)",
-            );
-            exec(
-              conn,
-              "INSERT INTO unsigned_consistency_test VALUES (1234567890)",
-            );
+          exec(
+            conn,
+            "CREATE TABLE unsigned_consistency_test(u UINTEGER)",
+          );
+          exec(
+            conn,
+            "INSERT INTO unsigned_consistency_test VALUES (1234567890)",
+          );
 
-            const handle = duckdb.execute(
+          const handle = duckdb.execute(
+            conn,
+            "SELECT u FROM unsigned_consistency_test",
+          );
+          const typeEnum = duckdb.columnType(handle, 0);
+
+          // Test fetchAll
+          const rows = duckdb.fetchAll(handle);
+          const fetchAllVal = rows[0][0];
+
+          // Test getValueByType
+          const getVal = duckdb.getValueByType(handle, 0, 0, typeEnum);
+
+          // Test stream
+          const streamRows = [
+            ...duckdb.stream(
               conn,
               "SELECT u FROM unsigned_consistency_test",
-            );
-            const typeEnum = duckdb.columnType(handle, 0);
+            ),
+          ];
+          const streamVal = streamRows[0][0];
 
-            // Test fetchAll
-            const rows = duckdb.fetchAll(handle);
-            const fetchAllVal = rows[0][0];
+          // All should return the same value
+          assertEquals(getVal, fetchAllVal);
+          assertEquals(streamVal, fetchAllVal);
+          assertEquals(fetchAllVal, 1234567890);
 
-            // Test getValueByType
-            const getVal = duckdb.getValueByType(handle, 0, 0, typeEnum);
-
-            // Test stream
-            const streamRows = [
-              ...duckdb.stream(
-                conn,
-                "SELECT u FROM unsigned_consistency_test",
-              ),
-            ];
-            const streamVal = streamRows[0][0];
-
-            // All should return the same value
-            assertEquals(getVal, fetchAllVal);
-            assertEquals(streamVal, fetchAllVal);
-            assertEquals(fetchAllVal, 1234567890);
-
-            duckdb.destroyResult(handle);
-          } catch {
-            // UINTEGER not supported in this DuckDB version - skip
-          }
+          duckdb.destroyResult(handle);
         });
       },
     });
@@ -1081,3 +1048,314 @@ Deno.test({
 // - BLOB stream tests: segfault in DuckDB FFI library
 // - TIME with microseconds: inconsistent behavior with TIMESTAMP
 // - TIMESTAMP pre-epoch with microseconds: sign/overflow issue in conversion
+
+Deno.test({
+  name: "types: INTERVAL type detection and value retrieval",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn(t) {
+    await t.step({
+      name: "INTERVAL column type is correctly identified",
+      async fn() {
+        await withConn((conn) => {
+          const handle = duckdb.execute(conn, "SELECT INTERVAL '1 year 2 months 3 days'");
+          const typeEnum = duckdb.columnType(handle, 0);
+          // INTERVAL should be type 15 (DUCKDB_TYPE_INTERVAL)
+          assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_INTERVAL);
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+
+    await t.step({
+      name: "INTERVAL value retrieval returns object",
+      async fn() {
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE interval_test(i INTERVAL)");
+          exec(conn, "INSERT INTO interval_test VALUES ('1 year 2 months 3 days')");
+
+          const handle = duckdb.execute(conn, "SELECT i FROM interval_test");
+          const typeEnum = duckdb.columnType(handle, 0);
+
+          // Test fetchAll
+          const rows = duckdb.fetchAll(handle);
+          const fetchAllVal = rows[0][0];
+
+          // INTERVAL should be returned as object with months, days, micros
+          assertEquals(typeof fetchAllVal, "object");
+          const interval = fetchAllVal as { months: number; days: number; micros: bigint };
+          assertEquals(interval.months, 14); // 1 year + 2 months = 14 months
+          assertEquals(interval.days, 3);
+          assertEquals(interval.micros, 0n);
+
+          // Test getValueByType
+          const getVal = duckdb.getValueByType(handle, 0, 0, typeEnum);
+          assertEquals(getVal, fetchAllVal);
+
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+
+    await t.step({
+      name: "INTERVAL NULL handling via getValueByType",
+      async fn() {
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE interval_null_test(i INTERVAL)");
+          exec(conn, "INSERT INTO interval_null_test VALUES (NULL)");
+
+          const handle = duckdb.execute(conn, "SELECT i FROM interval_null_test");
+          const typeEnum = duckdb.columnType(handle, 0);
+          const val = duckdb.getValueByType(handle, 0, 0, typeEnum);
+
+          // NULL should be returned as null
+          assertEquals(val, null);
+
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+  },
+});
+
+Deno.test({
+  name: "types: UHUGEINT type detection and value retrieval",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn(t) {
+    await t.step({
+      name: "UHUGEINT column type is correctly identified",
+      async fn() {
+        await withConn((conn) => {
+          const handle = duckdb.execute(conn, "SELECT 1::UHUGEINT");
+          const typeEnum = duckdb.columnType(handle, 0);
+          // UHUGEINT should be type 17 (DUCKDB_TYPE_UHUGEINT)
+          assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_UHUGEINT);
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+
+    await t.step({
+      name: "UHUGEINT value retrieval",
+      async fn() {
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE uhugeint_test(v UHUGEINT)");
+          exec(conn, "INSERT INTO uhugeint_test VALUES (340282366920938463463374607431768211455)"); // 2^128 - 1
+
+          const handle = duckdb.execute(conn, "SELECT v FROM uhugeint_test");
+          const typeEnum = duckdb.columnType(handle, 0);
+
+          // Test fetchAll
+          const rows = duckdb.fetchAll(handle);
+          const fetchAllVal = rows[0][0];
+
+          // UHUGEINT should be returned as bigint
+          assertEquals(typeof fetchAllVal, "bigint");
+          assertEquals(fetchAllVal, 340282366920938463463374607431768211455n);
+
+          // Test getValueByType
+          const getVal = duckdb.getValueByType(handle, 0, 0, typeEnum);
+          assertEquals(getVal, fetchAllVal);
+
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+
+    await t.step({
+      name: "UHUGEINT NULL handling via getValueByType",
+      async fn() {
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE uhugeint_null_test(v UHUGEINT)");
+          exec(conn, "INSERT INTO uhugeint_null_test VALUES (NULL)");
+
+          const handle = duckdb.execute(conn, "SELECT v FROM uhugeint_null_test");
+          const typeEnum = duckdb.columnType(handle, 0);
+          const val = duckdb.getValueByType(handle, 0, 0, typeEnum);
+
+          // NULL should be returned as null
+          assertEquals(val, null);
+
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+  },
+});
+
+Deno.test({
+  name: "types: UUID type detection",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn(t) {
+    await t.step({
+      name: "UUID column type is correctly identified",
+      async fn() {
+        await withConn((conn) => {
+          const handle = duckdb.execute(conn, "SELECT 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'::UUID");
+          const typeEnum = duckdb.columnType(handle, 0);
+          // UUID should be type 27 (DUCKDB_TYPE_UUID)
+          assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_UUID);
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+  },
+});
+
+Deno.test({
+  name: "types: timestamp variant type detection",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn(t) {
+    await t.step({
+      name: "TIMESTAMP_S column type is correctly identified",
+      async fn() {
+        await withConn((conn) => {
+          const handle = duckdb.execute(conn, "SELECT '2024-01-15 14:30:00'::TIMESTAMP_S");
+          const typeEnum = duckdb.columnType(handle, 0);
+          // TIMESTAMP_S should be type 20 (DUCKDB_TYPE_TIMESTAMP_S)
+          assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_TIMESTAMP_S);
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+
+    await t.step({
+      name: "TIMESTAMP_MS column type is correctly identified",
+      async fn() {
+        await withConn((conn) => {
+          const handle = duckdb.execute(conn, "SELECT '2024-01-15 14:30:00'::TIMESTAMP_MS");
+          const typeEnum = duckdb.columnType(handle, 0);
+          // TIMESTAMP_MS should be type 21 (DUCKDB_TYPE_TIMESTAMP_MS)
+          assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_TIMESTAMP_MS);
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+
+    await t.step({
+      name: "TIMESTAMP_NS column type is correctly identified",
+      async fn() {
+        await withConn((conn) => {
+          const handle = duckdb.execute(conn, "SELECT '2024-01-15 14:30:00'::TIMESTAMP_NS");
+          const typeEnum = duckdb.columnType(handle, 0);
+          // TIMESTAMP_NS should be type 22 (DUCKDB_TYPE_TIMESTAMP_NS)
+          assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_TIMESTAMP_NS);
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+  },
+});
+
+Deno.test({
+  name: "types: LIST type detection",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn(t) {
+    await t.step({
+      name: "LIST column type is correctly identified",
+      async fn() {
+        await withConn((conn) => {
+          const handle = duckdb.execute(conn, "SELECT [1, 2, 3]::INTEGER[]");
+          const typeEnum = duckdb.columnType(handle, 0);
+          // LIST should be type 24 (DUCKDB_TYPE_LIST)
+          assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_LIST);
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+  },
+});
+
+Deno.test({
+  name: "types: STRUCT type detection",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn(t) {
+    await t.step({
+      name: "STRUCT column type is correctly identified",
+      async fn() {
+        await withConn((conn) => {
+          const handle = duckdb.execute(conn, "SELECT {'a': 1, 'b': 2}");
+          const typeEnum = duckdb.columnType(handle, 0);
+          // STRUCT should be type 25 (DUCKDB_TYPE_STRUCT)
+          assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_STRUCT);
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+  },
+});
+
+Deno.test({
+  name: "types: MAP type detection",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn(t) {
+    await t.step({
+      name: "MAP value retrieval returns string (fallback)",
+      async fn() {
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE map_test(v MAP(VARCHAR, INTEGER))");
+          exec(conn, "INSERT INTO map_test VALUES ({'a': 1, 'b': 2})");
+
+          const handle = duckdb.execute(conn, "SELECT v FROM map_test");
+          const _typeEnum = duckdb.columnType(handle, 0);
+
+          // Test fetchAll
+          const rows = duckdb.fetchAll(handle);
+          const fetchAllVal = rows[0][0];
+
+          // MAP should fall back to string representation
+          assertEquals(typeof fetchAllVal, "string");
+
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+  },
+});
+
+Deno.test({
+  name: "types: BIT type detection",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn(t) {
+    await t.step({
+      name: "BIT column type is correctly identified",
+      async fn() {
+        await withConn((conn) => {
+          const handle = duckdb.execute(conn, "SELECT '101'::BIT");
+          const typeEnum = duckdb.columnType(handle, 0);
+          // BIT should be type 29 (DUCKDB_TYPE_BIT)
+          assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_BIT);
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+  },
+});
+
+Deno.test({
+  name: "types: ENUM type detection",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn(t) {
+    await t.step({
+      name: "ENUM column type is correctly identified",
+      async fn() {
+        await withConn((conn) => {
+          exec(conn, "CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy')");
+          const handle = duckdb.execute(conn, "SELECT 'happy'::mood");
+          const typeEnum = duckdb.columnType(handle, 0);
+          // ENUM should be type 23 (DUCKDB_TYPE_ENUM)
+          assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_ENUM);
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+  },
+});

@@ -31,11 +31,30 @@ export const BYTE_SIZE_128 = 16; // HUGEINT
  * Note: DATE, TIME, TIMESTAMP are stored as integers internally in DuckDB's result API,
  * not as string pointers, so they are NOT included here.
  * DECIMAL is also NOT a string type - it's stored as 128-bit numeric internally.
+ * UUID is stored as 128-bit value, not as pointer.
+ * ENUM is stored as integer, not as pointer.
+ * BIT may be stored as string pointer.
  */
 export function isStringType(type: DUCKDB_TYPE): boolean {
   return (
     type === DUCKDB_TYPE.DUCKDB_TYPE_VARCHAR ||
-    type === DUCKDB_TYPE.DUCKDB_TYPE_BLOB
+    type === DUCKDB_TYPE.DUCKDB_TYPE_BLOB ||
+    type === DUCKDB_TYPE.DUCKDB_TYPE_BIT
+  );
+}
+
+/**
+ * Check if a DuckDB type is a complex nested type that requires
+ * special handling (STRUCT, LIST, MAP, UNION, etc.)
+ */
+export function isComplexType(type: DUCKDB_TYPE): boolean {
+  return (
+    type === DUCKDB_TYPE.DUCKDB_TYPE_STRUCT ||
+    type === DUCKDB_TYPE.DUCKDB_TYPE_LIST ||
+    type === DUCKDB_TYPE.DUCKDB_TYPE_MAP ||
+    type === DUCKDB_TYPE.DUCKDB_TYPE_ARRAY ||
+    type === DUCKDB_TYPE.DUCKDB_TYPE_UNION ||
+    type === DUCKDB_TYPE.DUCKDB_TYPE_ENUM
   );
 }
 

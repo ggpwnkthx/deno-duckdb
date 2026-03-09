@@ -176,6 +176,26 @@ export function decodeValueByType(
       const timestampUs = dataView.getBigInt64(row * BYTE_SIZE_64);
       return microsecondsToTimestampString(timestampUs);
     }
+    case DUCKDB_TYPE.DUCKDB_TYPE_DECIMAL:
+      // DECIMAL - stored as 128-bit integer (same format as HUGEINT)
+      if (isNullValue()) return null;
+      return decodeHugeInt(dataView, row);
+    case DUCKDB_TYPE.DUCKDB_TYPE_UTINYINT:
+      // UTINYINT - unsigned 1 byte
+      if (isNullValue()) return null;
+      return dataView ? dataView.getUint8(row * BYTE_SIZE_8) : 0;
+    case DUCKDB_TYPE.DUCKDB_TYPE_USMALLINT:
+      // USMALLINT - unsigned 2 bytes
+      if (isNullValue()) return null;
+      return dataView ? dataView.getUint16(row * BYTE_SIZE_16) : 0;
+    case DUCKDB_TYPE.DUCKDB_TYPE_UINTEGER:
+      // UINTEGER - unsigned 4 bytes
+      if (isNullValue()) return null;
+      return dataView ? dataView.getUint32(row * BYTE_SIZE_32) : 0;
+    case DUCKDB_TYPE.DUCKDB_TYPE_UBIGINT:
+      // UBIGINT - unsigned 8 bytes
+      if (isNullValue()) return null;
+      return dataView ? dataView.getBigUint64(row * BYTE_SIZE_64) : 0n;
     default:
       // Fallback to string for unknown types
       if (isNullValue()) {

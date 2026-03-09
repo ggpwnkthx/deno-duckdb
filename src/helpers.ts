@@ -27,15 +27,15 @@ export const BYTE_SIZE_128 = 16; // HUGEINT
 
 /**
  * Check if a DuckDB type is a string type (requires pointer dereferencing)
- * String types: VARCHAR, BLOB, DECIMAL
+ * String types: VARCHAR, BLOB
  * Note: DATE, TIME, TIMESTAMP are stored as integers internally in DuckDB's result API,
  * not as string pointers, so they are NOT included here.
+ * DECIMAL is also NOT a string type - it's stored as 128-bit numeric internally.
  */
 export function isStringType(type: DUCKDB_TYPE): boolean {
   return (
     type === DUCKDB_TYPE.DUCKDB_TYPE_VARCHAR ||
-    type === DUCKDB_TYPE.DUCKDB_TYPE_BLOB ||
-    type === DUCKDB_TYPE.DUCKDB_TYPE_DECIMAL
+    type === DUCKDB_TYPE.DUCKDB_TYPE_BLOB
   );
 }
 

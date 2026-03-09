@@ -513,3 +513,64 @@ Deno.test({
     });
   },
 });
+
+Deno.test({
+  name: "bounds: columnInfos edge cases",
+  sanitizeResources: true,
+  sanitizeOps: true,
+  async fn(t) {
+    // columnInfos returns metadata even for empty results
+    await t.step({
+      name: "columnInfos on empty result returns column metadata",
+      async fn() {
+        await withConn((conn) => {
+          const handle = duckdb.execute(
+            conn,
+            "SELECT id::INTEGER, name::TEXT, value::DOUBLE FROM (SELECT 1 AS id, 'x' AS name, 1.5 AS value) t WHERE 1=0",
+          );
+          const infos = duckdb.columnInfos(handle);
+          // Should return 3 columns of metadata even though no rows
+          assertEquals(infos.length, 3);
+          assertEquals(infos[0].name.includes("id"), true);
+          assertEquals(infos[1].name.includes("name"), true);
+          assertEquals(infos[2].name.includes("value"), true);
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+
+    // columnInfos returns correct metadata for query result
+    await t.step({
+      name: "columnInfos returns correct metadata",
+      async fn() {
+        await withConn((conn) => {
+          const handle = duckdb.execute(
+            conn,
+            "SELECT a, b, c FROM (VALUES (1, 'x', 1.5)) AS t(a, b, c)",
+          );
+          const infos = duckdb.columnInfos(handle);
+          assertEquals(infos.length, 3);
+          assertEquals(infos[0].name, "a");
+          assertEquals(infos[1].name, "b");
+          assertEquals(infos[2].name, "c");
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+
+    // columnInfos on result with zero columns
+    await t.step({
+      name: "columnInfos on zero-column result",
+      async fn() {
+        await withConn((conn) => {
+          // Some queries can return 0 columns (e.g., pure expressions without alias)
+          const handle = duckdb.execute(conn, "SELECT 1+1");
+          const infos = duckdb.columnInfos(handle);
+          // Should return at least 1 column
+          assertEquals(infos.length >= 1, true);
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+  },
+});

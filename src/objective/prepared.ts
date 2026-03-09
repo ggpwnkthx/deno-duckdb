@@ -58,14 +58,6 @@ export class PreparedStatement {
   }
 
   /**
-   * Get the number of parameters in the statement
-   */
-  parameterCount(): bigint {
-    const handle = this.getHandle();
-    return prep.preparedParameterCount(handle);
-  }
-
-  /**
    * Close the prepared statement (synchronous for use with Symbol.dispose)
    */
   close(): void {

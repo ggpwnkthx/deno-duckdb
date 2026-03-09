@@ -11,7 +11,8 @@
       "mcp__ide__getDiagnostics",
       "Bash(deno:*)",
       "Bash(sed:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(ls:*)"
     ]
   },
   "hooks": {

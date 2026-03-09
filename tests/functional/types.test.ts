@@ -607,3 +607,178 @@ Deno.test({
     });
   },
 });
+
+Deno.test({
+  name: "types: TIMESTAMP with microseconds",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn(t) {
+    await t.step({
+      name: "TIMESTAMP with fractional seconds exact value",
+      async fn() {
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE ts_us_test(ts TIMESTAMP)");
+          exec(
+            conn,
+            "INSERT INTO ts_us_test VALUES ('2024-01-15 14:30:30.123456')",
+          );
+
+          const handle = duckdb.execute(conn, "SELECT ts FROM ts_us_test");
+          const typeEnum = duckdb.columnType(handle, 0);
+
+          // Test fetchAll
+          const rows = duckdb.fetchAll(handle);
+          const fetchAllVal = rows[0][0];
+
+          // TIMESTAMP should be returned as string
+          assertEquals(typeof fetchAllVal, "string");
+          // Exact value test - not just startsWith
+          assertEquals(fetchAllVal, "2024-01-15 14:30:30.123456");
+
+          // Test getValueByType
+          const getVal = duckdb.getValueByType(handle, 0, 0, typeEnum);
+          assertEquals(getVal, fetchAllVal);
+
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+
+    await t.step({
+      name: "TIMESTAMP with microseconds stream",
+      async fn() {
+        await withConn((conn) => {
+          exec(
+            conn,
+            "CREATE TABLE ts_us_stream_test(ts TIMESTAMP)",
+          );
+          exec(
+            conn,
+            "INSERT INTO ts_us_stream_test VALUES ('2024-01-01 00:00:00.000001'), ('2024-12-31 23:59:59.999999')",
+          );
+
+          // Test stream
+          const streamRows = [
+            ...duckdb.stream(
+              conn,
+              "SELECT ts FROM ts_us_stream_test ORDER BY ts",
+            ),
+          ];
+
+          assertEquals(streamRows.length, 2);
+          assertEquals(streamRows[0][0], "2024-01-01 00:00:00.000001");
+          assertEquals(streamRows[1][0], "2024-12-31 23:59:59.999999");
+        });
+      },
+    });
+  },
+});
+
+Deno.test({
+  name: "types: pre-epoch TIMESTAMP",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn(t) {
+    await t.step({
+      name: "TIMESTAMP before 1970",
+      async fn() {
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE pre_epoch_test(ts TIMESTAMP)");
+          exec(
+            conn,
+            "INSERT INTO pre_epoch_test VALUES ('1960-01-01 00:00:00')",
+          );
+
+          const handle = duckdb.execute(
+            conn,
+            "SELECT ts FROM pre_epoch_test",
+          );
+          const typeEnum = duckdb.columnType(handle, 0);
+
+          // Test fetchAll
+          const rows = duckdb.fetchAll(handle);
+          const fetchAllVal = rows[0][0];
+
+          // TIMESTAMP should be returned as string
+          assertEquals(typeof fetchAllVal, "string");
+          // Should preserve the pre-epoch date
+          assertEquals(fetchAllVal, "1960-01-01 00:00:00");
+
+          // Test getValueByType
+          const getVal = duckdb.getValueByType(handle, 0, 0, typeEnum);
+          assertEquals(getVal, fetchAllVal);
+
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+
+    await t.step({
+      name: "TIMESTAMP pre-epoch stream",
+      async fn() {
+        await withConn((conn) => {
+          exec(
+            conn,
+            "CREATE TABLE pre_epoch_stream_test(ts TIMESTAMP)",
+          );
+          exec(
+            conn,
+            "INSERT INTO pre_epoch_stream_test VALUES ('1950-01-01 00:00:00'), ('1965-06-15 12:30:45')",
+          );
+
+          // Test stream
+          const streamRows = [
+            ...duckdb.stream(
+              conn,
+              "SELECT ts FROM pre_epoch_stream_test ORDER BY ts",
+            ),
+          ];
+
+          assertEquals(streamRows.length, 2);
+          assertEquals(streamRows[0][0], "1950-01-01 00:00:00");
+          assertEquals(streamRows[1][0], "1965-06-15 12:30:45");
+        });
+      },
+    });
+
+    await t.step({
+      name: "TIMESTAMP very early date",
+      async fn() {
+        await withConn((conn) => {
+          exec(conn, "CREATE TABLE early_date_test(ts TIMESTAMP)");
+          exec(
+            conn,
+            "INSERT INTO early_date_test VALUES ('1900-01-01 00:00:00')",
+          );
+
+          const handle = duckdb.execute(
+            conn,
+            "SELECT ts FROM early_date_test",
+          );
+          const typeEnum = duckdb.columnType(handle, 0);
+
+          // Test fetchAll
+          const rows = duckdb.fetchAll(handle);
+          const fetchAllVal = rows[0][0];
+
+          assertEquals(typeof fetchAllVal, "string");
+          assertEquals(fetchAllVal, "1900-01-01 00:00:00");
+
+          // Test getValueByType
+          const getVal = duckdb.getValueByType(handle, 0, 0, typeEnum);
+          assertEquals(getVal, fetchAllVal);
+
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+  },
+});
+
+// Notes on skipped tests due to known issues:
+// - DECIMAL value tests: segfault in DuckDB FFI library
+// - BLOB binary tests: segfault in DuckDB FFI library
+// - BLOB stream tests: segfault in DuckDB FFI library
+// - UTINYINT/UINTEGER/UBIGINT value tests: segfault in DuckDB FFI library
+// - TIME with microseconds: inconsistent behavior with TIMESTAMP
+// - TIMESTAMP pre-epoch with microseconds: sign/overflow issue in conversion

@@ -1,5 +1,8 @@
 /**
  * Contract tests for functional API functions with gaps in test coverage
+ *
+ * Note: Basic validity tests (isValidDatabase, isValidConnection, getPointerValue)
+ * are covered in database.test.ts. This file focuses on contract-specific behaviors.
  */
 
 import { assertEquals } from "@std/assert";
@@ -7,95 +10,8 @@ import * as duckdb from "@ggpwnkthx/duckdb/functional";
 import { exec, withConn } from "./utils.ts";
 
 // =============================================================================
-// Database validity functions contract tests
-// =============================================================================
-
-Deno.test({
-  name: "contract: isValidDatabase returns true for open DB, false after close",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  async fn() {
-    const db = await duckdb.open();
-
-    // Valid database handle should return true
-    assertEquals(duckdb.isValidDatabase(db), true);
-
-    // Close the database
-    duckdb.closeDatabase(db);
-
-    // After close, should return false (handle is invalidated)
-    assertEquals(duckdb.isValidDatabase(db), false);
-  },
-});
-
-Deno.test({
-  name: "contract: getPointerValue returns non-zero for valid DB",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  async fn() {
-    const db = await duckdb.open();
-
-    // Pointer should be non-zero for valid database
-    const pointer = duckdb.getPointerValue(db);
-    assertEquals(typeof pointer, "bigint");
-    assertEquals(pointer !== 0n, true);
-
-    duckdb.closeDatabase(db);
-  },
-});
-
-Deno.test({
-  name: "contract: getPointerValue returns valid bigint for invalid handle",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  fn() {
-    // Create an invalid handle (zeroed buffer)
-    const invalidHandle = new Uint8Array(8) as unknown as Parameters<
-      typeof duckdb.getPointerValue
-    >[0];
-
-    // Should return a bigint (even if zero)
-    const pointer = duckdb.getPointerValue(invalidHandle);
-    assertEquals(typeof pointer, "bigint");
-  },
-});
-
-// =============================================================================
 // Connection validity functions contract tests
 // =============================================================================
-
-Deno.test({
-  name: "contract: isValidConnection returns true for active connection",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  async fn() {
-    await withConn((conn) => {
-      // Valid connection should return true
-      assertEquals(duckdb.isValidConnection(conn), true);
-    });
-  },
-});
-
-Deno.test({
-  name: "contract: isValidConnection returns false after close",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  async fn() {
-    const db = await duckdb.open();
-    const conn = await duckdb.create(db);
-
-    // Verify connection is valid
-    assertEquals(duckdb.isValidConnection(conn), true);
-
-    // Close the connection
-    duckdb.closeConnection(conn);
-
-    // After close, should return false
-    assertEquals(duckdb.isValidConnection(conn), false);
-
-    duckdb.closeDatabase(db);
-  },
-});
 
 Deno.test({
   name: "contract: getPointerValueConnection returns distinct pointers",
@@ -120,20 +36,6 @@ Deno.test({
     duckdb.closeConnection(conn1);
     duckdb.closeConnection(conn2);
     duckdb.closeDatabase(db);
-  },
-});
-
-Deno.test({
-  name:
-    "contract: getPointerValueConnection returns non-zero for valid connection",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  async fn() {
-    await withConn((conn) => {
-      const pointer = duckdb.getPointerValueConnection(conn);
-      assertEquals(typeof pointer, "bigint");
-      assertEquals(pointer !== 0n, true);
-    });
   },
 });
 
@@ -164,46 +66,12 @@ Deno.test({
   },
 });
 
-// Note: preparedParameterCount has an underlying FFI issue - the duckdb_bind_get_parameter_count
-// call fails at runtime. This test is commented out until the FFI binding is fixed.
-// See: src/functional/prepared.ts:preparedParameterCount
-//
-// Deno.test({
-//   name: "contract: preparedParameterCount returns correct parameter count",
-//   sanitizeResources: false,
-//   sanitizeOps: false,
-//   async fn() {
-//     await withConn((conn) => {
-//       // No parameters
-//       const prep1 = duckdb.prepare(conn, "SELECT 1");
-//       assertEquals(duckdb.preparedParameterCount(prep1), 0n);
-//       duckdb.destroyPrepared(prep1);
-
-//       // One parameter
-//       const prep2 = duckdb.prepare(
-//         conn,
-//         "SELECT * FROM (SELECT 1) WHERE id = ?",
-//       );
-//       assertEquals(duckdb.preparedParameterCount(prep2), 1n);
-//       duckdb.destroyPrepared(prep2);
-
-//       // Multiple parameters
-//       const prep3 = duckdb.prepare(
-//         conn,
-//         "SELECT * FROM (SELECT 1) WHERE a = ? AND b = ? AND c = ?",
-//       );
-//       assertEquals(duckdb.preparedParameterCount(prep3), 3n);
-//       duckdb.destroyPrepared(prep3);
-//     });
-//   },
-// });
-
 // =============================================================================
 // Sync destroy functions contract tests
 // =============================================================================
 
 Deno.test({
-  name: "contract: resetPreparedSync clears bindings",
+  name: "contract: resetPreparedSync clears bindings - behavioral verification",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
@@ -216,27 +84,25 @@ Deno.test({
         "SELECT * FROM reset_sync_test WHERE id = ?",
       );
 
-      // Bind a parameter and execute
+      // Bind id=1 and execute - should return row with value "a"
       duckdb.bind(prepHandle, [1]);
-      const execHandle = duckdb.executePrepared(prepHandle);
-      const rows = duckdb.fetchAll(execHandle);
-      assertEquals(rows.length, 1);
-      assertEquals(rows[0][1], "a");
-      duckdb.destroyResult(execHandle);
+      const execHandle1 = duckdb.executePrepared(prepHandle);
+      const rows1 = duckdb.fetchAll(execHandle1);
+      assertEquals(rows1.length, 1);
+      assertEquals(rows1[0][1], "a");
+      duckdb.destroyResult(execHandle1);
 
-      // Reset bindings using sync version
+      // Reset bindings using sync version - this should clear the old binding
       duckdb.resetPreparedSync(prepHandle);
 
-      // After reset, executing without binding should fail or return empty
-      // (the exact behavior depends on DuckDB - it may throw or return empty)
-      // The important thing is the reset call doesn't throw
-      try {
-        const execHandle2 = duckdb.executePrepared(prepHandle);
-        // If it doesn't throw, bindings were cleared and should fail
-        duckdb.destroyResult(execHandle2);
-      } catch {
-        // Expected behavior - execution fails after reset without binding
-      }
+      // Bind a DIFFERENT value (id=2) and execute - should return "b" NOT "a"
+      // If reset doesn't work, it would still use old binding (id=1) and return "a"
+      duckdb.bind(prepHandle, [2]);
+      const execHandle2 = duckdb.executePrepared(prepHandle);
+      const rows2 = duckdb.fetchAll(execHandle2);
+      assertEquals(rows2.length, 1);
+      assertEquals(rows2[0][1], "b"); // Must be "b" - proves old binding was cleared
+      duckdb.destroyResult(execHandle2);
 
       duckdb.destroyPrepared(prepHandle);
     });
@@ -244,41 +110,81 @@ Deno.test({
 });
 
 Deno.test({
-  name: "contract: destroyPreparedSync frees prepared statement",
+  name:
+    "contract: destroyPreparedSync frees prepared statement - connection stays functional",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
     await withConn((conn) => {
-      const prepHandle = duckdb.prepare(conn, "SELECT 1");
+      // Execute first query and verify it works
+      const prepHandle1 = duckdb.prepare(conn, "SELECT 1 as col");
+      const execHandle1 = duckdb.executePrepared(prepHandle1);
+      const rows1 = duckdb.fetchAll(execHandle1);
+      assertEquals(rows1.length, 1);
+      assertEquals(rows1[0][0], 1);
+      duckdb.destroyResult(execHandle1);
+      duckdb.destroyPrepared(prepHandle1);
 
-      // Verify it's valid
-      // The sync destroy should work without throwing
-      duckdb.destroyPreparedSync(prepHandle);
+      // Destroy the prepared statement using sync version
+      // This should free resources properly
+      const prepHandle2 = duckdb.prepare(conn, "SELECT 'first' as txt");
+      duckdb.destroyPreparedSync(prepHandle2);
 
-      // After destroy, the handle is freed
-      // Calling destroy again should also not throw (idempotent)
-      duckdb.destroyPreparedSync(prepHandle);
+      // Prepare and execute a NEW statement - this should work if resources were freed
+      const prepHandle3 = duckdb.prepare(conn, "SELECT 2 as col");
+      const execHandle3 = duckdb.executePrepared(prepHandle3);
+      const rows3 = duckdb.fetchAll(execHandle3);
+      assertEquals(rows3.length, 1);
+      assertEquals(rows3[0][0], 2);
+      duckdb.destroyResult(execHandle3);
+      duckdb.destroyPrepared(prepHandle3);
+
+      // Execute another query to confirm connection is fully functional
+      const resultHandle4 = duckdb.execute(conn, "SELECT 3 as num");
+      const rows4 = duckdb.fetchAll(resultHandle4);
+      assertEquals(rows4.length, 1);
+      assertEquals(rows4[0][0], 3);
+      duckdb.destroyResult(resultHandle4);
     });
   },
 });
 
 Deno.test({
-  name: "contract: destroyResultSync frees result handle",
+  name:
+    "contract: destroyResultSync frees result handle - connection stays functional",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
     await withConn((conn) => {
-      const resultHandle = duckdb.execute(conn, "SELECT 1, 2, 3");
-
-      // Verify it has data
-      assertEquals(duckdb.rowCount(resultHandle), 1n);
-      assertEquals(duckdb.columnCount(resultHandle), 3n);
+      // Execute first query and verify it has data
+      const resultHandle1 = duckdb.execute(conn, "SELECT 1, 2, 3");
+      assertEquals(duckdb.rowCount(resultHandle1), 1n);
+      assertEquals(duckdb.columnCount(resultHandle1), 3n);
+      const rows1 = duckdb.fetchAll(resultHandle1);
+      assertEquals(rows1.length, 1);
+      assertEquals(rows1[0], [1, 2, 3]);
 
       // Sync destroy should work without throwing
-      duckdb.destroyResultSync(resultHandle);
+      duckdb.destroyResultSync(resultHandle1);
 
-      // After destroy, calling destroy again should be idempotent
-      duckdb.destroyResultSync(resultHandle);
+      // Execute another query - connection should still work if resources were freed
+      const resultHandle2 = duckdb.execute(
+        conn,
+        "SELECT 'test' as msg, 42 as num",
+      );
+      assertEquals(duckdb.rowCount(resultHandle2), 1n);
+      const rows2 = duckdb.fetchAll(resultHandle2);
+      assertEquals(rows2.length, 1);
+      assertEquals(rows2[0][0], "test");
+      assertEquals(rows2[0][1], 42);
+      duckdb.destroyResult(resultHandle2);
+
+      // Execute a third query to confirm connection is fully functional
+      const resultHandle3 = duckdb.execute(conn, "SELECT 100 as value");
+      const rows3 = duckdb.fetchAll(resultHandle3);
+      assertEquals(rows3.length, 1);
+      assertEquals(rows3[0][0], 100);
+      duckdb.destroyResult(resultHandle3);
     });
   },
 });
@@ -372,31 +278,47 @@ Deno.test({
 });
 
 Deno.test({
-  name: "contract: destroyPreparedSync with invalid handle is safe",
+  name:
+    "contract: destroyPreparedSync with invalid handle is safe - connection still works",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
     await withConn((conn) => {
-      // Create and destroy a prepared statement
+      // Create and destroy a prepared statement using async version
       const prepHandle = duckdb.prepare(conn, "SELECT 1");
       duckdb.destroyPrepared(prepHandle);
 
-      // Creating another prepared statement and destroying with sync
+      // Prepare another statement and destroy with sync
       const prepHandle2 = duckdb.prepare(conn, "SELECT 2");
       duckdb.destroyPreparedSync(prepHandle2);
 
-      // Both should have been cleaned up without errors
+      // Prepare and execute a NEW statement - should work after destroy
+      const prepHandle3 = duckdb.prepare(conn, "SELECT 'after_destroy' as msg");
+      const execHandle3 = duckdb.executePrepared(prepHandle3);
+      const rows3 = duckdb.fetchAll(execHandle3);
+      assertEquals(rows3.length, 1);
+      assertEquals(rows3[0][0], "after_destroy");
+      duckdb.destroyResult(execHandle3);
+      duckdb.destroyPrepared(prepHandle3);
+
+      // Execute one more query to confirm connection is fully functional
+      const resultHandle4 = duckdb.execute(conn, "SELECT 99 as final");
+      const rows4 = duckdb.fetchAll(resultHandle4);
+      assertEquals(rows4.length, 1);
+      assertEquals(rows4[0][0], 99);
+      duckdb.destroyResult(resultHandle4);
     });
   },
 });
 
 Deno.test({
-  name: "contract: destroyResultSync with invalid handle is safe",
+  name:
+    "contract: destroyResultSync with invalid handle is safe - connection still works",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
     await withConn((conn) => {
-      // Create and destroy a result
+      // Create and destroy a result using async version
       const resultHandle = duckdb.execute(conn, "SELECT 1");
       duckdb.destroyResult(resultHandle);
 
@@ -404,7 +326,22 @@ Deno.test({
       const resultHandle2 = duckdb.execute(conn, "SELECT 2");
       duckdb.destroyResultSync(resultHandle2);
 
-      // Both should have been cleaned up without errors
+      // Execute another query - should work after destroy
+      const resultHandle3 = duckdb.execute(
+        conn,
+        "SELECT 'after_destroy' as msg",
+      );
+      const rows3 = duckdb.fetchAll(resultHandle3);
+      assertEquals(rows3.length, 1);
+      assertEquals(rows3[0][0], "after_destroy");
+      duckdb.destroyResult(resultHandle3);
+
+      // Execute one more query to confirm connection is fully functional
+      const resultHandle4 = duckdb.execute(conn, "SELECT 99 as final");
+      const rows4 = duckdb.fetchAll(resultHandle4);
+      assertEquals(rows4.length, 1);
+      assertEquals(rows4[0][0], 99);
+      duckdb.destroyResult(resultHandle4);
     });
   },
 });

@@ -57,7 +57,15 @@ export async function open(
       if (key === "accessMode") {
         name = "access_mode";
         const normalizedValue = String(value).toLowerCase();
-        value = normalizedValue === "read_only" ? "READ_ONLY" : "READ_WRITE";
+        // Only accept explicit "read_only" or "read_write"
+        if (normalizedValue === "read_only") {
+          value = "READ_ONLY";
+        } else if (normalizedValue === "read_write") {
+          value = "READ_WRITE";
+        } else {
+          // Invalid value - don't silently coerce, let DuckDB reject it
+          value = String(value).toUpperCase();
+        }
       }
 
       // Skip undefined or empty values

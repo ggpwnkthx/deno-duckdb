@@ -99,23 +99,6 @@ export function preparedColumnCount(
 }
 
 /**
- * Get the number of parameters in a prepared statement
- *
- * @param handle - Prepared statement handle
- * @returns Number of parameters
- */
-export function preparedParameterCount(
-  handle: PreparedStatementHandle,
-): bigint {
-  validatePreparedHandle(handle);
-  const lib = getLibraryFast();
-  const ptr = getPointer(handle);
-  // duckdb_bind_get_parameter_count is not in the type definitions but exists at runtime
-  return (lib.symbols as any)
-    .duckdb_bind_get_parameter_count(ptr);
-}
-
-/**
  * Reset a prepared statement, clearing all bound parameters
  *
  * @param handle - Prepared statement handle

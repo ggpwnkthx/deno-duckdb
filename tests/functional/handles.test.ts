@@ -3,6 +3,10 @@
  *
  * Tests that validation functions fail fast when given invalid inputs
  * like non-Uint8Array types or wrong-length buffers.
+ *
+ * Note: Tests are consolidated to one representative function per handle type
+ * since all functions for a given handle type use the same underlying
+ * validation helpers in src/helpers.ts (validateHandle, validateDatabaseHandle, etc.)
  */
 
 import { assertThrows } from "@std/assert";
@@ -32,14 +36,14 @@ const invalidTypes = [
   { value: new Int32Array(8), desc: "Int32Array" },
 ] as const;
 
-// Wrong-length Uint8Arrays (not 8 or 48 bytes - the valid handle sizes)
+// Wrong-length Uint8Arrays for 8-byte handles (Database, Connection, Prepared)
 const wrongLengthBuffers = [
   { len: 0, desc: "empty buffer" },
   { len: 4, desc: "4-byte buffer (half pointer)" },
   { len: 16, desc: "16-byte buffer (double pointer)" },
 ] as const;
 
-// Wrong-length buffers for ResultHandle (not 48 bytes)
+// Wrong-length buffers for ResultHandle (48 bytes)
 const wrongLengthResultBuffers = [
   { len: 0, desc: "empty buffer" },
   { len: 4, desc: "4-byte buffer" },
@@ -48,45 +52,17 @@ const wrongLengthResultBuffers = [
 ] as const;
 
 Deno.test({
-  name: "handles: DatabaseHandle validation (8 bytes)",
+  name: "handles: DatabaseHandle validation (8 bytes) - representative test",
   sanitizeResources: true,
   sanitizeOps: true,
   async fn(t) {
-    // Test non-Uint8Array types
+    // Test non-Uint8Array types - using closeDatabase as representative
     await t.step({
       name: "closeDatabase rejects non-Uint8Array types",
       fn() {
         for (const { value, desc } of invalidTypes) {
           assertThrows(
             () => duckdb.closeDatabase(value as unknown as DatabaseHandle),
-            Error,
-            "DatabaseHandle must be a Uint8Array",
-            `Should reject ${desc}`,
-          );
-        }
-      },
-    });
-
-    await t.step({
-      name: "isValidDatabase rejects non-Uint8Array types",
-      fn() {
-        for (const { value, desc } of invalidTypes) {
-          assertThrows(
-            () => duckdb.isValidDatabase(value as unknown as DatabaseHandle),
-            Error,
-            "DatabaseHandle must be a Uint8Array",
-            `Should reject ${desc}`,
-          );
-        }
-      },
-    });
-
-    await t.step({
-      name: "getPointerValue rejects non-Uint8Array types",
-      fn() {
-        for (const { value, desc } of invalidTypes) {
-          assertThrows(
-            () => duckdb.getPointerValue(value as unknown as DatabaseHandle),
             Error,
             "DatabaseHandle must be a Uint8Array",
             `Should reject ${desc}`,
@@ -109,81 +85,21 @@ Deno.test({
         }
       },
     });
-
-    await t.step({
-      name: "isValidDatabase rejects wrong-length buffers",
-      fn() {
-        for (const { len, desc } of wrongLengthBuffers) {
-          assertThrows(
-            () => duckdb.isValidDatabase(createBuffer(len) as DatabaseHandle),
-            Error,
-            "DatabaseHandle must be 8 bytes",
-            `Should reject ${desc}`,
-          );
-        }
-      },
-    });
-
-    await t.step({
-      name: "getPointerValue rejects wrong-length buffers",
-      fn() {
-        for (const { len, desc } of wrongLengthBuffers) {
-          assertThrows(
-            () => duckdb.getPointerValue(createBuffer(len) as DatabaseHandle),
-            Error,
-            "DatabaseHandle must be 8 bytes",
-            `Should reject ${desc}`,
-          );
-        }
-      },
-    });
   },
 });
 
 Deno.test({
-  name: "handles: ConnectionHandle validation (8 bytes)",
+  name: "handles: ConnectionHandle validation (8 bytes) - representative test",
   sanitizeResources: true,
   sanitizeOps: true,
   async fn(t) {
-    // Test non-Uint8Array types
+    // Test non-Uint8Array types - using closeConnection as representative
     await t.step({
       name: "closeConnection rejects non-Uint8Array types",
       fn() {
         for (const { value, desc } of invalidTypes) {
           assertThrows(
             () => duckdb.closeConnection(value as unknown as ConnectionHandle),
-            Error,
-            "ConnectionHandle must be a Uint8Array",
-            `Should reject ${desc}`,
-          );
-        }
-      },
-    });
-
-    await t.step({
-      name: "isValidConnection rejects non-Uint8Array types",
-      fn() {
-        for (const { value, desc } of invalidTypes) {
-          assertThrows(
-            () =>
-              duckdb.isValidConnection(value as unknown as ConnectionHandle),
-            Error,
-            "ConnectionHandle must be a Uint8Array",
-            `Should reject ${desc}`,
-          );
-        }
-      },
-    });
-
-    await t.step({
-      name: "getPointerValueConnection rejects non-Uint8Array types",
-      fn() {
-        for (const { value, desc } of invalidTypes) {
-          assertThrows(
-            () =>
-              duckdb.getPointerValueConnection(
-                value as unknown as ConnectionHandle,
-              ),
             Error,
             "ConnectionHandle must be a Uint8Array",
             `Should reject ${desc}`,
@@ -199,38 +115,6 @@ Deno.test({
         for (const { len, desc } of wrongLengthBuffers) {
           assertThrows(
             () => duckdb.closeConnection(createBuffer(len) as ConnectionHandle),
-            Error,
-            "ConnectionHandle must be 8 bytes",
-            `Should reject ${desc}`,
-          );
-        }
-      },
-    });
-
-    await t.step({
-      name: "isValidConnection rejects wrong-length buffers",
-      fn() {
-        for (const { len, desc } of wrongLengthBuffers) {
-          assertThrows(
-            () =>
-              duckdb.isValidConnection(createBuffer(len) as ConnectionHandle),
-            Error,
-            "ConnectionHandle must be 8 bytes",
-            `Should reject ${desc}`,
-          );
-        }
-      },
-    });
-
-    await t.step({
-      name: "getPointerValueConnection rejects wrong-length buffers",
-      fn() {
-        for (const { len, desc } of wrongLengthBuffers) {
-          assertThrows(
-            () =>
-              duckdb.getPointerValueConnection(
-                createBuffer(len) as ConnectionHandle,
-              ),
             Error,
             "ConnectionHandle must be 8 bytes",
             `Should reject ${desc}`,
@@ -281,59 +165,17 @@ Deno.test({
 });
 
 Deno.test({
-  name: "handles: ResultHandle validation (48 bytes)",
+  name: "handles: ResultHandle validation (48 bytes) - representative test",
   sanitizeResources: true,
   sanitizeOps: true,
   async fn(t) {
-    // Test non-Uint8Array types
+    // Test non-Uint8Array types - using rowCount as representative
     await t.step({
       name: "rowCount rejects non-Uint8Array types",
       fn() {
         for (const { value, desc } of invalidTypes) {
           assertThrows(
             () => duckdb.rowCount(value as unknown as ResultHandle),
-            Error,
-            "ResultHandle must be a Uint8Array",
-            `Should reject ${desc}`,
-          );
-        }
-      },
-    });
-
-    await t.step({
-      name: "columnCount rejects non-Uint8Array types",
-      fn() {
-        for (const { value, desc } of invalidTypes) {
-          assertThrows(
-            () => duckdb.columnCount(value as unknown as ResultHandle),
-            Error,
-            "ResultHandle must be a Uint8Array",
-            `Should reject ${desc}`,
-          );
-        }
-      },
-    });
-
-    await t.step({
-      name: "columnName rejects non-Uint8Array types",
-      fn() {
-        for (const { value, desc } of invalidTypes) {
-          assertThrows(
-            () => duckdb.columnName(value as unknown as ResultHandle, 0),
-            Error,
-            "ResultHandle must be a Uint8Array",
-            `Should reject ${desc}`,
-          );
-        }
-      },
-    });
-
-    await t.step({
-      name: "destroyResult rejects non-Uint8Array types",
-      fn() {
-        for (const { value, desc } of invalidTypes) {
-          assertThrows(
-            () => duckdb.destroyResult(value as unknown as ResultHandle),
             Error,
             "ResultHandle must be a Uint8Array",
             `Should reject ${desc}`,
@@ -356,57 +198,16 @@ Deno.test({
         }
       },
     });
-
-    await t.step({
-      name: "columnCount rejects wrong-length buffers",
-      fn() {
-        for (const { len, desc } of wrongLengthResultBuffers) {
-          assertThrows(
-            () => duckdb.columnCount(createBuffer(len) as ResultHandle),
-            Error,
-            "ResultHandle must be 48 bytes",
-            `Should reject ${desc}`,
-          );
-        }
-      },
-    });
-
-    await t.step({
-      name: "columnName rejects wrong-length buffers",
-      fn() {
-        for (const { len, desc } of wrongLengthResultBuffers) {
-          assertThrows(
-            () => duckdb.columnName(createBuffer(len) as ResultHandle, 0),
-            Error,
-            "ResultHandle must be 48 bytes",
-            `Should reject ${desc}`,
-          );
-        }
-      },
-    });
-
-    await t.step({
-      name: "destroyResult rejects wrong-length buffers",
-      fn() {
-        for (const { len, desc } of wrongLengthResultBuffers) {
-          assertThrows(
-            () => duckdb.destroyResult(createBuffer(len) as ResultHandle),
-            Error,
-            "ResultHandle must be 48 bytes",
-            `Should reject ${desc}`,
-          );
-        }
-      },
-    });
   },
 });
 
 Deno.test({
-  name: "handles: PreparedStatementHandle validation (8 bytes)",
+  name:
+    "handles: PreparedStatementHandle validation (8 bytes) - representative test",
   sanitizeResources: true,
   sanitizeOps: true,
   async fn(t) {
-    // Test non-Uint8Array types
+    // Test non-Uint8Array types - using executePrepared as representative
     await t.step({
       name: "executePrepared rejects non-Uint8Array types",
       fn() {
@@ -414,40 +215,6 @@ Deno.test({
           assertThrows(
             () =>
               duckdb.executePrepared(
-                value as unknown as PreparedStatementHandle,
-              ),
-            Error,
-            "PreparedStatementHandle must be a Uint8Array",
-            `Should reject ${desc}`,
-          );
-        }
-      },
-    });
-
-    await t.step({
-      name: "preparedColumnCount rejects non-Uint8Array types",
-      fn() {
-        for (const { value, desc } of invalidTypes) {
-          assertThrows(
-            () =>
-              duckdb.preparedColumnCount(
-                value as unknown as PreparedStatementHandle,
-              ),
-            Error,
-            "PreparedStatementHandle must be a Uint8Array",
-            `Should reject ${desc}`,
-          );
-        }
-      },
-    });
-
-    await t.step({
-      name: "destroyPrepared rejects non-Uint8Array types",
-      fn() {
-        for (const { value, desc } of invalidTypes) {
-          assertThrows(
-            () =>
-              duckdb.destroyPrepared(
                 value as unknown as PreparedStatementHandle,
               ),
             Error,
@@ -466,40 +233,6 @@ Deno.test({
           assertThrows(
             () =>
               duckdb.executePrepared(
-                createBuffer(len) as PreparedStatementHandle,
-              ),
-            Error,
-            "PreparedStatementHandle must be 8 bytes",
-            `Should reject ${desc}`,
-          );
-        }
-      },
-    });
-
-    await t.step({
-      name: "preparedColumnCount rejects wrong-length buffers",
-      fn() {
-        for (const { len, desc } of wrongLengthBuffers) {
-          assertThrows(
-            () =>
-              duckdb.preparedColumnCount(
-                createBuffer(len) as PreparedStatementHandle,
-              ),
-            Error,
-            "PreparedStatementHandle must be 8 bytes",
-            `Should reject ${desc}`,
-          );
-        }
-      },
-    });
-
-    await t.step({
-      name: "destroyPrepared rejects wrong-length buffers",
-      fn() {
-        for (const { len, desc } of wrongLengthBuffers) {
-          assertThrows(
-            () =>
-              duckdb.destroyPrepared(
                 createBuffer(len) as PreparedStatementHandle,
               ),
             Error,

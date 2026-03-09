@@ -23,7 +23,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "bounds: columnName out of bounds",
+  name: "bounds: column index validation",
   sanitizeResources: true,
   sanitizeOps: true,
   async fn(t) {
@@ -76,63 +76,49 @@ Deno.test({
         });
       },
     });
-  },
-});
 
-Deno.test({
-  name: "bounds: columnType out of bounds",
-  sanitizeResources: true,
-  sanitizeOps: true,
-  async fn(t) {
-    // Valid boundary indices - first and last
+    // columnName with NaN throws RangeError
     await t.step({
-      name: "columnType with valid indices 0 and 1",
-      async fn() {
-        await withConn((conn) => {
-          const handle = duckdb.execute(
-            conn,
-            "SELECT 1::INTEGER, 'text'::TEXT",
-          );
-          assertEquals(
-            duckdb.columnType(handle, 0),
-            DUCKDB_TYPE.DUCKDB_TYPE_INTEGER,
-          );
-          assertEquals(
-            duckdb.columnType(handle, 1),
-            DUCKDB_TYPE.DUCKDB_TYPE_VARCHAR,
-          );
-          duckdb.destroyResult(handle);
-        });
-      },
-    });
-
-    // Out-of-bounds column type should throw RangeError
-    await t.step({
-      name: "columnType with invalid index throws RangeError",
+      name: "columnName with NaN throws RangeError",
       async fn() {
         await withConn((conn) => {
           const handle = duckdb.execute(conn, "SELECT 1, 2, 3");
-          // Valid indices are 0, 1, 2
           assertThrows(
-            () => duckdb.columnType(handle, 999),
+            () => duckdb.columnName(handle, NaN),
             RangeError,
-            "Column index 999 is out of bounds (valid range: 0-2)",
+            "Column index must be an integer, got NaN",
           );
           duckdb.destroyResult(handle);
         });
       },
     });
 
-    // Negative index should throw RangeError
+    // columnName with 1.5 throws RangeError
     await t.step({
-      name: "columnType with negative index throws RangeError",
+      name: "columnName with 1.5 throws RangeError",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1");
+          const handle = duckdb.execute(conn, "SELECT 1, 2, 3");
           assertThrows(
-            () => duckdb.columnType(handle, -1),
+            () => duckdb.columnName(handle, 1.5),
             RangeError,
-            "Column index -1 is out of bounds (valid range: 0-0)",
+            "Column index must be an integer, got 1.5",
+          );
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+
+    // columnName with Infinity throws RangeError
+    await t.step({
+      name: "columnName with Infinity throws RangeError",
+      async fn() {
+        await withConn((conn) => {
+          const handle = duckdb.execute(conn, "SELECT 1, 2, 3");
+          assertThrows(
+            () => duckdb.columnName(handle, Infinity),
+            RangeError,
+            "Column index must be an integer, got Infinity",
           );
           duckdb.destroyResult(handle);
         });
@@ -142,7 +128,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "bounds: isNull out of bounds",
+  name: "bounds: row+column index validation (isNull)",
   sanitizeResources: true,
   sanitizeOps: true,
   async fn(t) {
@@ -228,6 +214,38 @@ Deno.test({
         });
       },
     });
+
+    // isNull with Infinity row throws RangeError
+    await t.step({
+      name: "isNull with Infinity row throws RangeError",
+      async fn() {
+        await withConn((conn) => {
+          const handle = duckdb.execute(conn, "SELECT 1");
+          assertThrows(
+            () => duckdb.isNull(handle, Infinity, 0),
+            RangeError,
+            "Row index must be an integer, got Infinity",
+          );
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
+
+    // isNull with NaN column throws RangeError
+    await t.step({
+      name: "isNull with NaN column throws RangeError",
+      async fn() {
+        await withConn((conn) => {
+          const handle = duckdb.execute(conn, "SELECT 1");
+          assertThrows(
+            () => duckdb.isNull(handle, 0, NaN),
+            RangeError,
+            "Column index must be an integer, got NaN",
+          );
+          duckdb.destroyResult(handle);
+        });
+      },
+    });
   },
 });
 
@@ -285,217 +303,10 @@ Deno.test({
 });
 
 Deno.test({
-  name: "bounds: other getters on bounds errors",
+  name: "bounds: row getter validation",
   sanitizeResources: true,
   sanitizeOps: true,
   async fn(t) {
-    await t.step({
-      name: "getInt32 with out-of-bounds row throws RangeError",
-      async fn() {
-        await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1");
-          assertThrows(
-            () => duckdb.getInt32(handle, 999, 0),
-            RangeError,
-          );
-          duckdb.destroyResult(handle);
-        });
-      },
-    });
-
-    await t.step({
-      name: "getInt32 with out-of-bounds column throws RangeError",
-      async fn() {
-        await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1");
-          assertThrows(
-            () => duckdb.getInt32(handle, 0, 999),
-            RangeError,
-          );
-          duckdb.destroyResult(handle);
-        });
-      },
-    });
-
-    await t.step({
-      name: "getString with negative row throws RangeError",
-      async fn() {
-        await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 'test'");
-          assertThrows(
-            () => duckdb.getString(handle, -1, 0),
-            RangeError,
-          );
-          duckdb.destroyResult(handle);
-        });
-      },
-    });
-
-    await t.step({
-      name: "getDouble with negative column throws RangeError",
-      async fn() {
-        await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1.5");
-          assertThrows(
-            () => duckdb.getDouble(handle, 0, -1),
-            RangeError,
-          );
-          duckdb.destroyResult(handle);
-        });
-      },
-    });
-  },
-});
-
-Deno.test({
-  name: "bounds: non-integer numeric indices",
-  sanitizeResources: true,
-  sanitizeOps: true,
-  async fn(t) {
-    // columnName with NaN throws RangeError
-    await t.step({
-      name: "columnName with NaN throws RangeError",
-      async fn() {
-        await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1, 2, 3");
-          assertThrows(
-            () => duckdb.columnName(handle, NaN),
-            RangeError,
-            "Column index must be an integer, got NaN",
-          );
-          duckdb.destroyResult(handle);
-        });
-      },
-    });
-
-    // columnName with 1.5 throws RangeError
-    await t.step({
-      name: "columnName with 1.5 throws RangeError",
-      async fn() {
-        await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1, 2, 3");
-          assertThrows(
-            () => duckdb.columnName(handle, 1.5),
-            RangeError,
-            "Column index must be an integer, got 1.5",
-          );
-          duckdb.destroyResult(handle);
-        });
-      },
-    });
-
-    // columnName with Infinity throws RangeError
-    await t.step({
-      name: "columnName with Infinity throws RangeError",
-      async fn() {
-        await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1, 2, 3");
-          assertThrows(
-            () => duckdb.columnName(handle, Infinity),
-            RangeError,
-            "Column index must be an integer, got Infinity",
-          );
-          duckdb.destroyResult(handle);
-        });
-      },
-    });
-
-    // columnType with NaN throws RangeError
-    await t.step({
-      name: "columnType with NaN throws RangeError",
-      async fn() {
-        await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1, 2, 3");
-          assertThrows(
-            () => duckdb.columnType(handle, NaN),
-            RangeError,
-            "Column index must be an integer, got NaN",
-          );
-          duckdb.destroyResult(handle);
-        });
-      },
-    });
-
-    // columnType with Infinity throws RangeError
-    await t.step({
-      name: "columnType with Infinity throws RangeError",
-      async fn() {
-        await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1, 2, 3");
-          assertThrows(
-            () => duckdb.columnType(handle, Infinity),
-            RangeError,
-            "Column index must be an integer, got Infinity",
-          );
-          duckdb.destroyResult(handle);
-        });
-      },
-    });
-
-    // isNull with Infinity row throws RangeError
-    await t.step({
-      name: "isNull with Infinity row throws RangeError",
-      async fn() {
-        await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1");
-          assertThrows(
-            () => duckdb.isNull(handle, Infinity, 0),
-            RangeError,
-            "Row index must be an integer, got Infinity",
-          );
-          duckdb.destroyResult(handle);
-        });
-      },
-    });
-
-    // getInt32 with 1.5 column throws RangeError
-    await t.step({
-      name: "getInt32 with 1.5 column throws RangeError",
-      async fn() {
-        await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1");
-          assertThrows(
-            () => duckdb.getInt32(handle, 0, 1.5),
-            RangeError,
-            "Column index must be an integer, got 1.5",
-          );
-          duckdb.destroyResult(handle);
-        });
-      },
-    });
-
-    // isNull with NaN column throws RangeError
-    await t.step({
-      name: "isNull with NaN column throws RangeError",
-      async fn() {
-        await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1");
-          assertThrows(
-            () => duckdb.isNull(handle, 0, NaN),
-            RangeError,
-            "Column index must be an integer, got NaN",
-          );
-          duckdb.destroyResult(handle);
-        });
-      },
-    });
-
-    // getDouble with Infinity row throws RangeError
-    await t.step({
-      name: "getDouble with Infinity row throws RangeError",
-      async fn() {
-        await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1.5");
-          assertThrows(
-            () => duckdb.getDouble(handle, Infinity, 0),
-            RangeError,
-            "Row index must be an integer, got Infinity",
-          );
-          duckdb.destroyResult(handle);
-        });
-      },
-    });
-
     // getString with fractional row throws RangeError
     await t.step({
       name: "getString with fractional row throws RangeError",

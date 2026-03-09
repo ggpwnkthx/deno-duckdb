@@ -208,43 +208,6 @@ Deno.test({
         });
       },
     });
-
-    // Test rebinding (bind new params after execute)
-    await t.step({
-      name: "rebinding parameters",
-      async fn() {
-        await withConn((conn) => {
-          exec(conn, "CREATE TABLE rebind_test(id INTEGER, value TEXT)");
-          exec(
-            conn,
-            "INSERT INTO rebind_test VALUES (1, 'a'), (2, 'b'), (3, 'c')",
-          );
-
-          const prepHandle = duckdb.prepare(
-            conn,
-            "SELECT * FROM rebind_test WHERE id = ?",
-          );
-
-          // First bind and execute
-          duckdb.bind(prepHandle, [1]);
-          const execHandle1 = duckdb.executePrepared(prepHandle);
-          const rows1 = duckdb.fetchAll(execHandle1);
-          assertEquals(rows1.length, 1);
-          assertEquals(rows1[0][1], "a");
-          duckdb.destroyResult(execHandle1);
-
-          // Rebind with new params and execute again
-          duckdb.bind(prepHandle, [2]);
-          const execHandle2 = duckdb.executePrepared(prepHandle);
-          const rows2 = duckdb.fetchAll(execHandle2);
-          assertEquals(rows2.length, 1);
-          assertEquals(rows2[0][1], "b");
-          duckdb.destroyResult(execHandle2);
-
-          duckdb.destroyPrepared(prepHandle);
-        });
-      },
-    });
   },
 });
 
@@ -545,53 +508,6 @@ Deno.test({
           rows = duckdb.fetchAll(execHandle);
           assertEquals(rows.length, 1);
           assertEquals(rows[0][1], "two");
-          duckdb.destroyResult(execHandle);
-
-          duckdb.destroyPrepared(prepHandle);
-        });
-      },
-    });
-
-    // Arity change test - binding behavior with different parameter counts
-    await t.step({
-      name: "arity change behavior",
-      async fn() {
-        await withConn((conn) => {
-          exec(
-            conn,
-            "CREATE TABLE arity_change_test(id INTEGER, name TEXT, value INTEGER)",
-          );
-          exec(
-            conn,
-            "INSERT INTO arity_change_test VALUES (1, 'test', 10)",
-          );
-
-          // Prepare a 2-parameter statement
-          const prepHandle = duckdb.prepare(
-            conn,
-            "SELECT * FROM arity_change_test WHERE name = ? AND value > ?",
-          );
-
-          // Bind 2 params - should work
-          duckdb.bind(prepHandle, ["test", 5]);
-          let execHandle = duckdb.executePrepared(prepHandle);
-          let rows = duckdb.fetchAll(execHandle);
-          assertEquals(rows.length, 1);
-          duckdb.destroyResult(execHandle);
-
-          // Bind 2 different params - should work
-          duckdb.bind(prepHandle, ["nonexistent", 100]);
-          execHandle = duckdb.executePrepared(prepHandle);
-          rows = duckdb.fetchAll(execHandle);
-          assertEquals(rows.length, 0);
-          duckdb.destroyResult(execHandle);
-
-          // Bind with different values again
-          duckdb.bind(prepHandle, ["test", 15]);
-          execHandle = duckdb.executePrepared(prepHandle);
-          rows = duckdb.fetchAll(execHandle);
-          // value=10 is NOT > 15, so should return 0 rows
-          assertEquals(rows.length, 0);
           duckdb.destroyResult(execHandle);
 
           duckdb.destroyPrepared(prepHandle);

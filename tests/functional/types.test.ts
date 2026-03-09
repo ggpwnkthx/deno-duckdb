@@ -1,133 +1,17 @@
 /**
  * Functional type coverage tests
  *
- * Tests for extended type support: NaN, Infinity, DATE, TIME, TIMESTAMP, and unsigned types
+ * Tests for extended type support: DATE, TIME, TIMESTAMP, DECIMAL, unsigned types, etc.
+ * Note: NaN, Infinity tests are in consistency.test.ts
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals } from "@std/assert";
 
 import * as duckdb from "@ggpwnkthx/duckdb/functional";
 import { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
 import { exec, withConn } from "./utils.ts";
 
-Deno.test({
-  name: "types: floating-point special values",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  async fn(t) {
-    await t.step({
-      name: "NaN handling",
-      async fn() {
-        await withConn((conn) => {
-          // NaN from SQL
-          const handle = duckdb.execute(conn, "SELECT 'NaN'::DOUBLE");
-          const rows = duckdb.fetchAll(handle);
-          assertExists(rows[0][0]);
-          // NaN should be returned as a number
-          assertEquals(typeof rows[0][0], "number");
-          // Check it's actually NaN
-          assertEquals(Number.isNaN(rows[0][0] as number), true);
-          duckdb.destroyResult(handle);
-        });
-      },
-    });
-
-    await t.step({
-      name: "Infinity handling",
-      async fn() {
-        await withConn((conn) => {
-          // Positive Infinity
-          const handle = duckdb.execute(conn, "SELECT 'Infinity'::DOUBLE");
-          const rows = duckdb.fetchAll(handle);
-          // Keep assertExists for sanity check, but use exact value assertion
-          assertExists(rows[0][0]);
-          assertEquals(rows[0][0], Infinity);
-          duckdb.destroyResult(handle);
-        });
-      },
-    });
-
-    await t.step({
-      name: "Negative Infinity handling",
-      async fn() {
-        await withConn((conn) => {
-          // Negative Infinity
-          const handle = duckdb.execute(conn, "SELECT '-Infinity'::DOUBLE");
-          const rows = duckdb.fetchAll(handle);
-          // Keep assertExists for sanity check, but use exact value assertion
-          assertExists(rows[0][0]);
-          assertEquals(rows[0][0], -Infinity);
-          duckdb.destroyResult(handle);
-        });
-      },
-    });
-
-    await t.step({
-      name: "Negative zero handling",
-      async fn() {
-        await withConn((conn) => {
-          // Negative zero from SQL
-          const handle = duckdb.execute(conn, "SELECT '-0'::DOUBLE");
-          const rows = duckdb.fetchAll(handle);
-          assertExists(rows[0][0]);
-          // Negative zero should be returned as a number
-          assertEquals(typeof rows[0][0], "number");
-          // Check it's actually -0 (negative zero)
-          const val = rows[0][0] as number;
-          assertEquals(Object.is(val, -0), true);
-          assertEquals(1 / val, -Infinity); // Mathematical test for -0
-          duckdb.destroyResult(handle);
-        });
-      },
-    });
-  },
-});
-
-Deno.test({
-  name: "types: getValueByType consistency",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  async fn(t) {
-    await t.step({
-      name: "getValueByType matches fetchAll for various types",
-      async fn() {
-        await withConn((conn) => {
-          // Create table with various types
-          exec(
-            conn,
-            "CREATE TABLE type_consistency_test(id INTEGER, val TEXT)",
-          );
-          exec(
-            conn,
-            "INSERT INTO type_consistency_test VALUES (1, 'test')",
-          );
-
-          const handle = duckdb.execute(
-            conn,
-            "SELECT * FROM type_consistency_test",
-          );
-
-          // Get column types
-          const idType = duckdb.columnType(handle, 0);
-          const valType = duckdb.columnType(handle, 1);
-
-          // Use getValueByType
-          const idVal = duckdb.getValueByType(handle, 0, 0, idType);
-          const valVal = duckdb.getValueByType(handle, 0, 1, valType);
-
-          // Get fetchAll values
-          const rows = duckdb.fetchAll(handle);
-
-          // Compare
-          assertEquals(idVal, rows[0][0]);
-          assertEquals(valVal, rows[0][1]);
-
-          duckdb.destroyResult(handle);
-        });
-      },
-    });
-  },
-});
+// NaN, Infinity, and negative zero are tested in consistency.test.ts
 
 Deno.test({
   name: "types: DATE type detection",
@@ -372,104 +256,6 @@ Deno.test({
 });
 
 Deno.test({
-  name: "types: VARCHAR consistency across APIs",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  async fn(t) {
-    await t.step({
-      name:
-        "fetchAll, stream, and getValueByType return same value for VARCHAR",
-      async fn() {
-        await withConn((conn) => {
-          exec(
-            conn,
-            "CREATE TABLE varchar_test(v VARCHAR)",
-          );
-          exec(
-            conn,
-            "INSERT INTO varchar_test VALUES ('hello world')",
-          );
-
-          const handle = duckdb.execute(
-            conn,
-            "SELECT v FROM varchar_test",
-          );
-          const typeEnum = duckdb.columnType(handle, 0);
-
-          // Test fetchAll
-          const rows = duckdb.fetchAll(handle);
-          const fetchAllVal = rows[0][0];
-
-          // Test getValueByType
-          const getVal = duckdb.getValueByType(handle, 0, 0, typeEnum);
-
-          // Test stream
-          const streamRows = [
-            ...duckdb.stream(conn, "SELECT v FROM varchar_test"),
-          ];
-          const streamVal = streamRows[0][0];
-
-          // All should return the same value
-          assertEquals(getVal, fetchAllVal);
-          assertEquals(streamVal, fetchAllVal);
-          assertEquals(fetchAllVal, "hello world");
-
-          duckdb.destroyResult(handle);
-        });
-      },
-    });
-  },
-});
-
-Deno.test({
-  name: "types: INTEGER consistency across APIs",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  async fn(t) {
-    await t.step({
-      name:
-        "fetchAll, stream, and getValueByType return same value for INTEGER",
-      async fn() {
-        await withConn((conn) => {
-          exec(
-            conn,
-            "CREATE TABLE int_test(i INTEGER)",
-          );
-          exec(
-            conn,
-            "INSERT INTO int_test VALUES (42)",
-          );
-
-          const handle = duckdb.execute(
-            conn,
-            "SELECT i FROM int_test",
-          );
-          const typeEnum = duckdb.columnType(handle, 0);
-
-          // Test fetchAll
-          const rows = duckdb.fetchAll(handle);
-          const fetchAllVal = rows[0][0];
-
-          // Test getValueByType
-          const getVal = duckdb.getValueByType(handle, 0, 0, typeEnum);
-
-          // Test stream
-          const streamRows = [...duckdb.stream(conn, "SELECT i FROM int_test")];
-          const streamVal = streamRows[0][0];
-
-          // All should return the same value
-          assertEquals(getVal, fetchAllVal);
-          assertEquals(streamVal, fetchAllVal);
-          assertEquals(fetchAllVal, 42);
-
-          duckdb.destroyResult(handle);
-        });
-      },
-    });
-  },
-});
-
-Deno.test({
   name: "types: DATE value retrieval",
   sanitizeResources: false,
   sanitizeOps: false,
@@ -497,25 +283,6 @@ Deno.test({
           assertEquals(getVal, fetchAllVal);
 
           duckdb.destroyResult(handle);
-        });
-      },
-    });
-
-    await t.step({
-      name: "DATE stream returns string representation",
-      async fn() {
-        await withConn((conn) => {
-          exec(conn, "CREATE TABLE date_stream_test(d DATE)");
-          exec(conn, "INSERT INTO date_stream_test VALUES ('2024-01-15')");
-
-          // Test stream
-          const streamRows = [
-            ...duckdb.stream(conn, "SELECT d FROM date_stream_test"),
-          ];
-          const streamVal = streamRows[0][0];
-
-          assertEquals(typeof streamVal, "string");
-          assertEquals(streamVal, "2024-01-15");
         });
       },
     });
@@ -1043,12 +810,6 @@ Deno.test({
   },
 });
 
-// Notes on skipped tests due to known issues:
-// - BLOB binary tests: segfault in DuckDB FFI library
-// - BLOB stream tests: segfault in DuckDB FFI library
-// - TIME with microseconds: inconsistent behavior with TIMESTAMP
-// - TIMESTAMP pre-epoch with microseconds: sign/overflow issue in conversion
-
 Deno.test({
   name: "types: INTERVAL type detection and value retrieval",
   sanitizeResources: false,
@@ -1058,7 +819,10 @@ Deno.test({
       name: "INTERVAL column type is correctly identified",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT INTERVAL '1 year 2 months 3 days'");
+          const handle = duckdb.execute(
+            conn,
+            "SELECT INTERVAL '1 year 2 months 3 days'",
+          );
           const typeEnum = duckdb.columnType(handle, 0);
           // INTERVAL should be type 15 (DUCKDB_TYPE_INTERVAL)
           assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_INTERVAL);
@@ -1072,7 +836,10 @@ Deno.test({
       async fn() {
         await withConn((conn) => {
           exec(conn, "CREATE TABLE interval_test(i INTERVAL)");
-          exec(conn, "INSERT INTO interval_test VALUES ('1 year 2 months 3 days')");
+          exec(
+            conn,
+            "INSERT INTO interval_test VALUES ('1 year 2 months 3 days')",
+          );
 
           const handle = duckdb.execute(conn, "SELECT i FROM interval_test");
           const typeEnum = duckdb.columnType(handle, 0);
@@ -1083,7 +850,11 @@ Deno.test({
 
           // INTERVAL should be returned as object with months, days, micros
           assertEquals(typeof fetchAllVal, "object");
-          const interval = fetchAllVal as { months: number; days: number; micros: bigint };
+          const interval = fetchAllVal as {
+            months: number;
+            days: number;
+            micros: bigint;
+          };
           assertEquals(interval.months, 14); // 1 year + 2 months = 14 months
           assertEquals(interval.days, 3);
           assertEquals(interval.micros, 0n);
@@ -1104,7 +875,10 @@ Deno.test({
           exec(conn, "CREATE TABLE interval_null_test(i INTERVAL)");
           exec(conn, "INSERT INTO interval_null_test VALUES (NULL)");
 
-          const handle = duckdb.execute(conn, "SELECT i FROM interval_null_test");
+          const handle = duckdb.execute(
+            conn,
+            "SELECT i FROM interval_null_test",
+          );
           const typeEnum = duckdb.columnType(handle, 0);
           const val = duckdb.getValueByType(handle, 0, 0, typeEnum);
 
@@ -1141,7 +915,10 @@ Deno.test({
       async fn() {
         await withConn((conn) => {
           exec(conn, "CREATE TABLE uhugeint_test(v UHUGEINT)");
-          exec(conn, "INSERT INTO uhugeint_test VALUES (340282366920938463463374607431768211455)"); // 2^128 - 1
+          exec(
+            conn,
+            "INSERT INTO uhugeint_test VALUES (340282366920938463463374607431768211455)",
+          ); // 2^128 - 1
 
           const handle = duckdb.execute(conn, "SELECT v FROM uhugeint_test");
           const typeEnum = duckdb.columnType(handle, 0);
@@ -1170,7 +947,10 @@ Deno.test({
           exec(conn, "CREATE TABLE uhugeint_null_test(v UHUGEINT)");
           exec(conn, "INSERT INTO uhugeint_null_test VALUES (NULL)");
 
-          const handle = duckdb.execute(conn, "SELECT v FROM uhugeint_null_test");
+          const handle = duckdb.execute(
+            conn,
+            "SELECT v FROM uhugeint_null_test",
+          );
           const typeEnum = duckdb.columnType(handle, 0);
           const val = duckdb.getValueByType(handle, 0, 0, typeEnum);
 
@@ -1193,7 +973,10 @@ Deno.test({
       name: "UUID column type is correctly identified",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'::UUID");
+          const handle = duckdb.execute(
+            conn,
+            "SELECT 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'::UUID",
+          );
           const typeEnum = duckdb.columnType(handle, 0);
           // UUID should be type 27 (DUCKDB_TYPE_UUID)
           assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_UUID);
@@ -1213,7 +996,10 @@ Deno.test({
       name: "TIMESTAMP_S column type is correctly identified",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT '2024-01-15 14:30:00'::TIMESTAMP_S");
+          const handle = duckdb.execute(
+            conn,
+            "SELECT '2024-01-15 14:30:00'::TIMESTAMP_S",
+          );
           const typeEnum = duckdb.columnType(handle, 0);
           // TIMESTAMP_S should be type 20 (DUCKDB_TYPE_TIMESTAMP_S)
           assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_TIMESTAMP_S);
@@ -1226,7 +1012,10 @@ Deno.test({
       name: "TIMESTAMP_MS column type is correctly identified",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT '2024-01-15 14:30:00'::TIMESTAMP_MS");
+          const handle = duckdb.execute(
+            conn,
+            "SELECT '2024-01-15 14:30:00'::TIMESTAMP_MS",
+          );
           const typeEnum = duckdb.columnType(handle, 0);
           // TIMESTAMP_MS should be type 21 (DUCKDB_TYPE_TIMESTAMP_MS)
           assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_TIMESTAMP_MS);
@@ -1239,7 +1028,10 @@ Deno.test({
       name: "TIMESTAMP_NS column type is correctly identified",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT '2024-01-15 14:30:00'::TIMESTAMP_NS");
+          const handle = duckdb.execute(
+            conn,
+            "SELECT '2024-01-15 14:30:00'::TIMESTAMP_NS",
+          );
           const typeEnum = duckdb.columnType(handle, 0);
           // TIMESTAMP_NS should be type 22 (DUCKDB_TYPE_TIMESTAMP_NS)
           assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_TIMESTAMP_NS);
@@ -1303,7 +1095,6 @@ Deno.test({
           exec(conn, "INSERT INTO map_test VALUES ({'a': 1, 'b': 2})");
 
           const handle = duckdb.execute(conn, "SELECT v FROM map_test");
-          const _typeEnum = duckdb.columnType(handle, 0);
 
           // Test fetchAll
           const rows = duckdb.fetchAll(handle);

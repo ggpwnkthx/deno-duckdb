@@ -132,24 +132,25 @@ export class Connection {
   /**
    * Execute a query and stream rows using a generator
    *
-   * Returns a generator that yields rows one at a time from a materialized result.
-   * The query executes fully before iteration begins. This provides:
-   * - Lazy row iteration (one row at a time API)
-   * - Automatic cleanup on early termination or exception
+   * Returns a generator that yields rows one at a time using lazy chunked fetching.
+   * Only one chunk is materialized at a time, making it memory-efficient for large datasets.
    *
-   * Note: This does NOT provide incremental/streaming execution.
-   * All rows are loaded into memory before iteration starts.
+   * Features:
+   * - Lazy row iteration (rows fetched on-demand in chunks)
+   * - Automatic cleanup on early termination or exception
+   * - Memory efficient (doesn't load all rows into memory)
    *
    * @param sql - SQL query string
+   * @param chunkSize - Number of rows per chunk (default: 1024)
    * @returns Generator yielding rows
    */
-  *stream(sql: string): RowStream {
+  *stream(sql: string, chunkSize?: number): RowStream {
     this.checkNotClosed();
     if (!sql || !sql.trim()) {
       throw new DatabaseError("SQL query cannot be empty");
     }
     // Delegate to functional stream
-    yield* stream(this.handle!, sql);
+    yield* stream(this.handle!, sql, chunkSize);
   }
 
   /**

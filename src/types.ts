@@ -26,6 +26,9 @@ export type ResultHandle = Handle<48>;
 /** 8-byte pointer buffer for prepared statement */
 export type PreparedStatementHandle = Handle<8>;
 
+/** 8-byte pointer buffer for data chunk */
+export type DataChunkHandle = Handle<8>;
+
 /** Database configuration options */
 export interface DatabaseConfig {
   /** Path to database file, or ":memory:" for in-memory database */

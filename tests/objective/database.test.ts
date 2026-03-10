@@ -104,5 +104,58 @@ Deno.test({
         db.close();
       },
     });
+
+    // Step 4: Symbol.dispose
+    await t.step({
+      name: "Symbol.dispose",
+      async fn() {
+        // Database with Symbol.dispose
+        {
+          using db = new Database();
+          await db.open();
+          const conn = await db.connect();
+          const result = conn.query("SELECT 1 as val");
+          assertEquals(result.isSuccess(), true);
+          result.close();
+          conn.close();
+          // db.close() called automatically by Symbol.dispose
+        }
+
+        // Connection with Symbol.dispose
+        {
+          const db = new Database();
+          await db.open();
+          using conn = await db.connect();
+          const result = conn.query("SELECT 2 as val");
+          assertEquals(result.isSuccess(), true);
+          result.close();
+          // conn.close() called automatically by Symbol.dispose
+          db.close();
+        }
+
+        // QueryResult with Symbol.dispose
+        {
+          const db = new Database();
+          await db.open();
+          const conn = await db.connect();
+          using result = conn.query("SELECT 3 as val");
+          assertEquals(result.isSuccess(), true);
+          assertEquals(result.rowCount(), 1n);
+          // result.close() called automatically by Symbol.dispose
+          conn.close();
+          db.close();
+        }
+
+        // Combined Symbol.dispose usage
+        {
+          using db = new Database();
+          await db.open();
+          using conn = await db.connect();
+          using result = conn.query("SELECT 4 as val");
+          assertEquals(result.isSuccess(), true);
+          // All resources cleaned up automatically
+        }
+      },
+    });
   },
 });

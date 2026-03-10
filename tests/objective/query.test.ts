@@ -48,8 +48,7 @@ Deno.test({
         const db = await setupTestDb();
         const conn = await db.connect();
         const result = conn.query("SELECT * FROM test_data ORDER BY id");
-
-        const rows = await result.fetchAll();
+        const rows = result.fetchAll();
 
         assertEquals(rows.length, 3);
         assertEquals(rows[0][0], 1);
@@ -65,13 +64,13 @@ Deno.test({
         const conn2 = await db2.connect();
         const result2 = conn2.query("SELECT * FROM test_data ORDER BY id");
 
-        const row0 = await result2.getRow(0);
+        const row0 = result2.getRow(0);
         assertEquals(row0[0], 1);
 
-        const row1 = await result2.getRow(1);
+        const row1 = result2.getRow(1);
         assertEquals(row1[0], 2);
 
-        const row2 = await result2.getRow(2);
+        const row2 = result2.getRow(2);
         assertEquals(row2[0], 3);
 
         result2.close();
@@ -84,7 +83,7 @@ Deno.test({
         const result3 = conn3.query("SELECT * FROM test_data");
 
         try {
-          await result3.getRow(100);
+          result3.getRow(100);
           throw new Error("Should have thrown");
         } catch (e) {
           assertEquals((e as Error).message, "Row index out of bounds");
@@ -100,7 +99,7 @@ Deno.test({
         const result4 = conn4.query("SELECT * FROM test_data");
 
         try {
-          await result4.getRow(-1);
+          result4.getRow(-1);
           throw new Error("Should have thrown");
         } catch (e) {
           assertEquals((e as Error).message, "Row index out of bounds");
@@ -115,7 +114,7 @@ Deno.test({
         const conn5 = await db5.connect();
         const result5 = conn5.query("SELECT * FROM test_data ORDER BY id");
 
-        const objects = await result5.toArrayOfObjects();
+        const objects = result5.toArrayOfObjects();
 
         assertEquals(objects.length, 3);
         assertEquals(objects[0].id, 1);
@@ -152,7 +151,7 @@ Deno.test({
         const conn2 = await db2.connect();
         const result2 = conn2.query("SELECT * FROM test_data");
 
-        assertEquals(await result2.columnCount(), 3n);
+        assertEquals(result2.columnCount(), 3n);
 
         result2.close();
         conn2.close();
@@ -163,7 +162,7 @@ Deno.test({
         const conn3 = await db3.connect();
         const result3 = conn3.query("SELECT * FROM test_data");
 
-        const infos = await result3.getColumnInfos();
+        const infos = result3.getColumnInfos();
 
         assertEquals(infos.length, 3);
         assertEquals(infos[0].name, "id");
@@ -256,7 +255,7 @@ Deno.test({
         result4.close();
 
         try {
-          await result4.columnCount();
+          result4.columnCount();
           throw new Error("Should have thrown");
         } catch (e) {
           assertEquals((e as Error).message, "Result has been freed");
@@ -273,7 +272,7 @@ Deno.test({
         result5.close();
 
         try {
-          await result5.getColumnInfos();
+          result5.getColumnInfos();
           throw new Error("Should have thrown");
         } catch (e) {
           assertEquals((e as Error).message, "Result has been freed");
@@ -290,7 +289,7 @@ Deno.test({
         result6.close();
 
         try {
-          await result6.toArrayOfObjects();
+          result6.toArrayOfObjects();
           throw new Error("Should have thrown");
         } catch (e) {
           assertEquals((e as Error).message, "Result has been freed");
@@ -311,7 +310,125 @@ Deno.test({
         const result = conn.query("SELECT * FROM test_data WHERE id = 999");
 
         assertEquals(result.rowCount(), 0n);
-        assertEquals((await result.fetchAll()).length, 0);
+        assertEquals((result.fetchAll()).length, 0);
+
+        result.close();
+        conn.close();
+        db.close();
+      },
+    });
+  },
+});
+
+Deno.test({
+  name: "query: caching behavior tests",
+  async fn(t) {
+    // Helper to set up a fresh database with test data
+    async function setupTestDbForCache(): Promise<Database> {
+      const db = new Database();
+      await db.open();
+
+      const conn = await db.connect();
+      const createResult = conn.query(
+        "CREATE TABLE cache_data (id INTEGER, name TEXT, value DOUBLE)",
+      );
+      createResult.close();
+
+      const insertResult = conn.query(
+        "INSERT INTO cache_data VALUES (1, 'one', 1.5), (2, 'two', 2.5), (3, 'three', 3.5)",
+      );
+      insertResult.close();
+
+      conn.close();
+      return db;
+    }
+
+    await t.step({
+      name: "fetchAll returns cached rows on second call",
+      async fn() {
+        const db = await setupTestDbForCache();
+        const conn = await db.connect();
+        const result = conn.query("SELECT * FROM cache_data ORDER BY id");
+
+        const firstCall = result.fetchAll();
+        const secondCall = result.fetchAll();
+
+        // Should be the same array reference (cached)
+        assertEquals(firstCall === secondCall, true);
+        assertEquals(firstCall.length, 3);
+
+        result.close();
+        conn.close();
+        db.close();
+      },
+    });
+
+    await t.step({
+      name: "caching works up to 10K rows",
+      async fn() {
+        const db = new Database();
+        await db.open();
+        const conn = await db.connect();
+
+        // Create a table with 100 rows
+        const createResult = conn.query(
+          "CREATE TABLE cache_test (id INTEGER)",
+        );
+        createResult.close();
+
+        // Insert 100 rows
+        const insertParts = [];
+        for (let i = 1; i <= 100; i++) {
+          insertParts.push(`(${i})`);
+        }
+        const insertResult = conn.query(
+          `INSERT INTO cache_test VALUES ${insertParts.join(", ")}`,
+        );
+        insertResult.close();
+
+        const result = conn.query("SELECT * FROM cache_test ORDER BY id");
+        const firstFetch = result.fetchAll();
+        const secondFetch = result.fetchAll();
+
+        // Should be cached
+        assertEquals(firstFetch === secondFetch, true);
+        assertEquals(firstFetch.length, 100);
+
+        result.close();
+        conn.close();
+        db.close();
+      },
+    });
+
+    await t.step({
+      name: "large results over 10K not cached",
+      async fn() {
+        const db = new Database();
+        await db.open();
+        const conn = await db.connect();
+
+        const createResult = conn.query(
+          "CREATE TABLE large_test (id INTEGER)",
+        );
+        createResult.close();
+
+        // Insert 10001 rows (just over the cache limit)
+        const insertParts = [];
+        for (let i = 1; i <= 10001; i++) {
+          insertParts.push(`(${i})`);
+        }
+        const insertResult = conn.query(
+          `INSERT INTO large_test VALUES ${insertParts.join(", ")}`,
+        );
+        insertResult.close();
+
+        const result = conn.query("SELECT * FROM large_test ORDER BY id");
+        const firstLarge = result.fetchAll();
+        const secondLarge = result.fetchAll();
+
+        // Should NOT be cached (over limit)
+        assertEquals(firstLarge === secondLarge, false);
+        assertEquals(firstLarge.length, 10001);
 
         result.close();
         conn.close();

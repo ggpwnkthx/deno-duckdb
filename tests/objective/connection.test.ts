@@ -17,6 +17,26 @@ Deno.test({
   },
 });
 
+// Helper to set up a fresh database with test data for each test
+async function setupTestDb(): Promise<Database> {
+  const db = new Database();
+  await db.open();
+
+  const conn = await db.connect();
+  const createResult = conn.query(
+    "CREATE TABLE test_data (id INTEGER, name TEXT, value DOUBLE)",
+  );
+  createResult.close();
+
+  const insertResult = conn.query(
+    "INSERT INTO test_data VALUES (1, 'one', 1.5), (2, 'two', 2.5), (3, 'three', 3.5)",
+  );
+  insertResult.close();
+
+  conn.close();
+  return db;
+}
+
 Deno.test({
   name: "connection: manage connection operations",
   async fn(t) {
@@ -165,6 +185,187 @@ Deno.test({
         const conn4 = await db4.connect();
         conn4.close();
         // Should not throw, close is idempotent
+        conn4.close();
+        db4.close();
+      },
+    });
+
+    // Step 4: queryTyped
+    await t.step({
+      name: "queryTyped",
+      async fn() {
+        // Returns typed objects with default mapping
+        const db = await setupTestDb();
+        const conn = await db.connect();
+
+        const rows = conn.queryTyped<{ id: number; name: string }>(
+          "SELECT id, name FROM test_data ORDER BY id",
+        );
+
+        assertEquals(rows.length, 3);
+        assertEquals(rows[0].id, 1);
+        assertEquals(rows[0].name, "one");
+        assertEquals(rows[1].id, 2);
+        assertEquals(rows[1].name, "two");
+        assertEquals(rows[2].id, 3);
+        assertEquals(rows[2].name, "three");
+
+        conn.close();
+        db.close();
+
+        // Works with custom mapper function
+        const db2 = await setupTestDb();
+        const conn2 = await db2.connect();
+
+        const mapped = conn2.queryTyped(
+          "SELECT id, name FROM test_data ORDER BY id",
+          (row, cols) => ({
+            userId: row[cols.indexOf("id")],
+            displayName: row[cols.indexOf("name")],
+          }),
+        );
+
+        assertEquals(mapped[0].userId, 1);
+        assertEquals(mapped[0].displayName, "one");
+        assertEquals(mapped[1].userId, 2);
+        assertEquals(mapped[1].displayName, "two");
+
+        conn2.close();
+        db2.close();
+
+        // Returns empty array for empty result
+        const db3 = await setupTestDb();
+        const conn3 = await db3.connect();
+
+        const empty = conn3.queryTyped<{ id: number }>(
+          "SELECT id FROM test_data WHERE id = 999",
+        );
+
+        assertEquals(empty.length, 0);
+
+        conn3.close();
+        db3.close();
+      },
+    });
+
+    // Step 5: stream
+    await t.step({
+      name: "stream",
+      async fn() {
+        // Basic streaming iteration
+        const db = await setupTestDb();
+        const conn = await db.connect();
+
+        const rows: number[] = [];
+        for (const row of conn.stream("SELECT id FROM test_data ORDER BY id")) {
+          rows.push(row[0] as number);
+        }
+
+        assertEquals(rows, [1, 2, 3]);
+
+        conn.close();
+        db.close();
+
+        // Early termination works
+        const db2 = await setupTestDb();
+        const conn2 = await db2.connect();
+
+        let count = 0;
+        for (
+          const _row of conn2.stream("SELECT id FROM test_data ORDER BY id")
+        ) {
+          count++;
+          if (count === 2) break; // Early termination
+        }
+
+        assertEquals(count, 2);
+
+        conn2.close();
+        db2.close();
+
+        // Connection stays functional after stream
+        const db3 = await setupTestDb();
+        const conn3 = await db3.connect();
+
+        // Exhaust stream
+        for (const _row of conn3.stream("SELECT 1 as val")) {
+          // Process row
+        }
+
+        // Should still be able to query
+        const result = conn3.query("SELECT 'still works' as msg");
+        const rows3 = result.fetchAll();
+        assertEquals(rows3[0][0], "still works");
+        result.close();
+
+        conn3.close();
+        db3.close();
+      },
+    });
+
+    // Step 6: SQL validation
+    await t.step({
+      name: "SQL validation",
+      async fn() {
+        // Empty SQL throws DatabaseError
+        const db = new Database();
+        await db.open();
+        const conn = await db.connect();
+
+        try {
+          conn.query("");
+          throw new Error("Should have thrown");
+        } catch (e) {
+          assertEquals((e as Error).message, "SQL query cannot be empty");
+        }
+
+        conn.close();
+        db.close();
+
+        // Whitespace-only SQL throws DatabaseError
+        const db2 = new Database();
+        await db2.open();
+        const conn2 = await db2.connect();
+
+        try {
+          conn2.query("   ");
+          throw new Error("Should have thrown");
+        } catch (e) {
+          assertEquals((e as Error).message, "SQL query cannot be empty");
+        }
+
+        conn2.close();
+        db2.close();
+
+        // queryTyped also validates
+        const db3 = new Database();
+        await db3.open();
+        const conn3 = await db3.connect();
+
+        try {
+          conn3.queryTyped("");
+          throw new Error("Should have thrown");
+        } catch (e) {
+          assertEquals((e as Error).message, "SQL query cannot be empty");
+        }
+
+        conn3.close();
+        db3.close();
+
+        // stream also validates
+        const db4 = new Database();
+        await db4.open();
+        const conn4 = await db4.connect();
+
+        try {
+          for (const _row of conn4.stream("")) {
+            // should not get here
+          }
+          throw new Error("Should have thrown");
+        } catch (e) {
+          assertEquals((e as Error).message, "SQL query cannot be empty");
+        }
+
         conn4.close();
         db4.close();
       },

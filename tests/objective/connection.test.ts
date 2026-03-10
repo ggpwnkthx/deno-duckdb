@@ -248,62 +248,7 @@ Deno.test({
       },
     });
 
-    // Step 5: stream
-    await t.step({
-      name: "stream",
-      async fn() {
-        // Basic streaming iteration
-        const db = await setupTestDb();
-        const conn = await db.connect();
-
-        const rows: number[] = [];
-        for (const row of conn.stream("SELECT id FROM test_data ORDER BY id")) {
-          rows.push(row[0] as number);
-        }
-
-        assertEquals(rows, [1, 2, 3]);
-
-        conn.close();
-        db.close();
-
-        // Early termination works
-        const db2 = await setupTestDb();
-        const conn2 = await db2.connect();
-
-        let count = 0;
-        for (
-          const _row of conn2.stream("SELECT id FROM test_data ORDER BY id")
-        ) {
-          count++;
-          if (count === 2) break; // Early termination
-        }
-
-        assertEquals(count, 2);
-
-        conn2.close();
-        db2.close();
-
-        // Connection stays functional after stream
-        const db3 = await setupTestDb();
-        const conn3 = await db3.connect();
-
-        // Exhaust stream
-        for (const _row of conn3.stream("SELECT 1 as val")) {
-          // Process row
-        }
-
-        // Should still be able to query
-        const result = conn3.query("SELECT 'still works' as msg");
-        const rows3 = result.fetchAll();
-        assertEquals(rows3[0][0], "still works");
-        result.close();
-
-        conn3.close();
-        db3.close();
-      },
-    });
-
-    // Step 6: SQL validation
+    // Step 5: SQL validation
     await t.step({
       name: "SQL validation",
       async fn() {
@@ -351,23 +296,6 @@ Deno.test({
 
         conn3.close();
         db3.close();
-
-        // stream also validates
-        const db4 = new Database();
-        await db4.open();
-        const conn4 = await db4.connect();
-
-        try {
-          for (const _row of conn4.stream("")) {
-            // should not get here
-          }
-          throw new Error("Should have thrown");
-        } catch (e) {
-          assertEquals((e as Error).message, "SQL query cannot be empty");
-        }
-
-        conn4.close();
-        db4.close();
       },
     });
   },

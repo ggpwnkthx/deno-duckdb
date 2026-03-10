@@ -37,7 +37,6 @@ export { Connection } from "./connection.ts";
 export { QueryResult } from "./query.ts";
 export { PreparedStatement } from "./prepared.ts";
 export type { Disposable } from "./disposable.ts";
-export type { RowStream } from "../functional/stream.ts";
 
 // Re-export error classes for convenience
 export {

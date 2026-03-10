@@ -171,14 +171,14 @@ export class QueryResult {
   /**
    * Get number of rows
    */
-  rowCount(): bigint {
+  rowCount(): number {
     this.checkNotFreed();
     // Use cached count if available
     if (this.cachedRowCount !== 0n) {
-      return this.cachedRowCount;
+      return Number(this.cachedRowCount);
     }
     this.cachedRowCount = query.rowCount(this.handle!);
-    return this.cachedRowCount;
+    return Number(this.cachedRowCount);
   }
 
   /**

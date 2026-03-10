@@ -138,27 +138,6 @@ Deno.test({
           const rows = query(conn, "SELECT * FROM str_test");
           assertEquals(rows[0][0], null);
         });
-
-        // String extraction via stream
-        await withConn((conn) => {
-          exec(conn, "CREATE TABLE str_test(val TEXT)");
-          exec(
-            conn,
-            "INSERT INTO str_test VALUES ('hello'), (''), ('café'), ('😀')",
-          );
-          const rows: unknown[][] = [];
-          for (
-            const row of duckdb.stream(conn, "SELECT * FROM str_test")
-          ) {
-            rows.push(row);
-          }
-
-          assertEquals(rows.length, 4);
-          assertEquals(rows[0][0], "hello");
-          assertEquals(rows[1][0], "");
-          assertEquals(rows[2][0], "café");
-          assertEquals(rows[3][0], "😀");
-        });
       },
     });
 

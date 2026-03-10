@@ -397,34 +397,6 @@ Deno.test({
         });
       },
     });
-
-    await t.step({
-      name: "TIMESTAMP with microseconds stream",
-      async fn() {
-        await withConn((conn) => {
-          exec(
-            conn,
-            "CREATE TABLE ts_us_stream_test(ts TIMESTAMP)",
-          );
-          exec(
-            conn,
-            "INSERT INTO ts_us_stream_test VALUES ('2024-01-01 00:00:00.000001'), ('2024-12-31 23:59:59.999999')",
-          );
-
-          // Test stream
-          const streamRows = [
-            ...duckdb.stream(
-              conn,
-              "SELECT ts FROM ts_us_stream_test ORDER BY ts",
-            ),
-          ];
-
-          assertEquals(streamRows.length, 2);
-          assertEquals(streamRows[0][0], "2024-01-01 00:00:00.000001");
-          assertEquals(streamRows[1][0], "2024-12-31 23:59:59.999999");
-        });
-      },
-    });
   },
 });
 
@@ -463,34 +435,6 @@ Deno.test({
           assertEquals(getVal, fetchAllVal);
 
           duckdb.destroyResult(handle);
-        });
-      },
-    });
-
-    await t.step({
-      name: "TIMESTAMP pre-epoch stream",
-      async fn() {
-        await withConn((conn) => {
-          exec(
-            conn,
-            "CREATE TABLE pre_epoch_stream_test(ts TIMESTAMP)",
-          );
-          exec(
-            conn,
-            "INSERT INTO pre_epoch_stream_test VALUES ('1950-01-01 00:00:00'), ('1965-06-15 12:30:45')",
-          );
-
-          // Test stream
-          const streamRows = [
-            ...duckdb.stream(
-              conn,
-              "SELECT ts FROM pre_epoch_stream_test ORDER BY ts",
-            ),
-          ];
-
-          assertEquals(streamRows.length, 2);
-          assertEquals(streamRows[0][0], "1950-01-01 00:00:00");
-          assertEquals(streamRows[1][0], "1965-06-15 12:30:45");
         });
       },
     });
@@ -562,37 +506,6 @@ Deno.test({
           assertEquals(getVal, fetchAllVal);
 
           duckdb.destroyResult(handle);
-        });
-      },
-    });
-
-    await t.step({
-      name: "DECIMAL stream returns bigint value",
-      async fn() {
-        await withConn((conn) => {
-          // DECIMAL(4,1) stores 100.0 as 1000, 200.5 as 2005
-          exec(
-            conn,
-            "CREATE TABLE decimal_stream_test(d DECIMAL(4,1))",
-          );
-          exec(
-            conn,
-            "INSERT INTO decimal_stream_test VALUES (100.0), (200.5)",
-          );
-
-          // Test stream
-          const streamRows = [
-            ...duckdb.stream(
-              conn,
-              "SELECT d FROM decimal_stream_test ORDER BY d",
-            ),
-          ];
-
-          assertEquals(streamRows.length, 2);
-          assertEquals(typeof streamRows[0][0], "bigint");
-          // Internal representation: 100.0 -> 1000, 200.5 -> 2005
-          assertEquals(streamRows[0][0], 1000n);
-          assertEquals(streamRows[1][0], 2005n);
         });
       },
     });
@@ -789,18 +702,8 @@ Deno.test({
           // Test getValueByType
           const getVal = duckdb.getValueByType(handle, 0, 0, typeEnum);
 
-          // Test stream
-          const streamRows = [
-            ...duckdb.stream(
-              conn,
-              "SELECT u FROM unsigned_consistency_test",
-            ),
-          ];
-          const streamVal = streamRows[0][0];
-
           // All should return the same value
           assertEquals(getVal, fetchAllVal);
-          assertEquals(streamVal, fetchAllVal);
           assertEquals(fetchAllVal, 1234567890);
 
           duckdb.destroyResult(handle);

@@ -35,12 +35,12 @@ const db1 = await open();
 const conn1 = await create(db1);
 
 // Create tables and insert data
-await execute(conn1, CREATE_PRODUCTS);
-await execute(conn1, CREATE_CUSTOMERS);
-await execute(conn1, CREATE_ORDERS);
-await execute(conn1, INSERT_PRODUCTS);
-await execute(conn1, INSERT_CUSTOMERS);
-await execute(conn1, INSERT_ORDERS);
+execute(conn1, CREATE_PRODUCTS);
+execute(conn1, CREATE_CUSTOMERS);
+execute(conn1, CREATE_ORDERS);
+execute(conn1, INSERT_PRODUCTS);
+execute(conn1, INSERT_CUSTOMERS);
+execute(conn1, INSERT_ORDERS);
 
 console.log("Tables created and data inserted\n");
 

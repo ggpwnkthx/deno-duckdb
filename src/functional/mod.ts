@@ -23,10 +23,9 @@ export * from "./connection.ts";
 export * from "./query.ts";
 export * from "./prepared.ts";
 export * from "./value.ts";
-export * from "./stream.ts";
+export * from "./arrow.ts";
 // Note: types.ts is internal - contains helpers for value decoding
 export { DatabaseError } from "../errors.ts";
 
 // Re-export types for public API
 export type { BindValue } from "./prepared.ts";
-export type { RowStream } from "./stream.ts";

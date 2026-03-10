@@ -1,12 +1,11 @@
 /**
  * Functional cross-API consistency tests
  *
- * Tests that all APIs return identical results: fetchAll, typed getters, getValueByType, stream
+ * Tests that all APIs return identical results: fetchAll, typed getters, getValueByType
  */
 
 import { assertEquals, assertThrows } from "@std/assert";
 
-import type { RowData } from "@ggpwnkthx/duckdb";
 import * as duckdb from "@ggpwnkthx/duckdb/functional";
 import { exec, withConn } from "./utils.ts";
 import { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
@@ -108,45 +107,6 @@ Deno.test({
         });
       },
     });
-
-    await t.step({
-      name: "stream returns JS boolean like fetchAll",
-      async fn() {
-        await withConn((conn) => {
-          exec(
-            conn,
-            "CREATE TABLE bool_stream_test(val BOOLEAN)",
-          );
-          exec(
-            conn,
-            "INSERT INTO bool_stream_test VALUES (true), (false)",
-          );
-
-          // fetchAll
-          const handle1 = duckdb.execute(
-            conn,
-            "SELECT * FROM bool_stream_test ORDER BY val",
-          );
-          const fetchRows = duckdb.fetchAll(handle1);
-          duckdb.destroyResult(handle1);
-
-          // stream
-          const streamRows: RowData[] = [];
-          for (
-            const row of duckdb.stream(
-              conn,
-              "SELECT * FROM bool_stream_test ORDER BY val",
-            )
-          ) {
-            streamRows.push(row);
-          }
-
-          // Both should return JS boolean consistently
-          assertEquals(fetchRows[0][0], streamRows[0][0]);
-          assertEquals(fetchRows[1][0], streamRows[1][0]);
-        });
-      },
-    });
   },
 });
 
@@ -156,7 +116,7 @@ Deno.test({
   sanitizeOps: false,
   async fn(t) {
     await t.step({
-      name: "empty result returns empty array across all APIs",
+      name: "empty result returns empty array for fetchAll",
       async fn() {
         await withConn((conn) => {
           exec(conn, "CREATE TABLE empty_test(id INTEGER, val TEXT)");
@@ -168,15 +128,6 @@ Deno.test({
           const fetchRows = duckdb.fetchAll(handle1);
           duckdb.destroyResult(handle1);
           assertEquals(fetchRows, []);
-
-          // stream should yield no rows
-          const streamRows: RowData[] = [];
-          for (
-            const row of duckdb.stream(conn, "SELECT * FROM empty_test")
-          ) {
-            streamRows.push(row);
-          }
-          assertEquals(streamRows, []);
 
           // getValueByType should handle gracefully (out of bounds)
           const handle2 = duckdb.execute(conn, "SELECT * FROM empty_test");
@@ -220,7 +171,7 @@ Deno.test({
   sanitizeOps: false,
   async fn(t) {
     await t.step({
-      name: "fetchAll matches stream for 5+ rows with all columns",
+      name: "fetchAll returns ordered results for 5+ rows with all columns",
       async fn() {
         await withConn((conn) => {
           exec(
@@ -245,28 +196,8 @@ Deno.test({
           const fetchRows = duckdb.fetchAll(handle1);
           duckdb.destroyResult(handle1);
 
-          // stream with ORDER BY
-          const streamRows: RowData[] = [];
-          for (
-            const row of duckdb.stream(
-              conn,
-              "SELECT * FROM multi_row_test ORDER BY id",
-            )
-          ) {
-            streamRows.push(row);
-          }
-
           // Should have 5 rows
           assertEquals(fetchRows.length, 5);
-          assertEquals(streamRows.length, 5);
-
-          // Each full row should match
-          for (let i = 0; i < fetchRows.length; i++) {
-            assertEquals(streamRows[i].length, fetchRows[i].length);
-            for (let j = 0; j < fetchRows[i].length; j++) {
-              assertEquals(streamRows[i][j], fetchRows[i][j]);
-            }
-          }
 
           // Verify specific values
           assertEquals(fetchRows[0][0], 1); // alpha
@@ -366,45 +297,6 @@ Deno.test({
         });
       },
     });
-
-    await t.step({
-      name: "stream matches fetchAll for HUGEINT",
-      async fn() {
-        await withConn((conn) => {
-          exec(
-            conn,
-            "CREATE TABLE hugeint_stream_test(id INTEGER, val HUGEINT)",
-          );
-          exec(
-            conn,
-            "INSERT INTO hugeint_stream_test VALUES (1, 12345678901234567890), (2, 98765432109876543210)",
-          );
-
-          // fetchAll
-          const handle1 = duckdb.execute(
-            conn,
-            "SELECT * FROM hugeint_stream_test ORDER BY id",
-          );
-          const fetchRows = duckdb.fetchAll(handle1);
-          duckdb.destroyResult(handle1);
-
-          // stream
-          const streamRows: RowData[] = [];
-          for (
-            const row of duckdb.stream(
-              conn,
-              "SELECT * FROM hugeint_stream_test ORDER BY id",
-            )
-          ) {
-            streamRows.push(row);
-          }
-
-          // Should match
-          assertEquals(streamRows[0][1], fetchRows[0][1]);
-          assertEquals(streamRows[1][1], fetchRows[1][1]);
-        });
-      },
-    });
   },
 });
 
@@ -449,40 +341,6 @@ Deno.test({
           assertEquals(fetchNegInf, -Infinity);
 
           duckdb.destroyResult(handle);
-        });
-      },
-    });
-
-    await t.step({
-      name: "stream matches fetchAll for NaN/Infinity",
-      async fn() {
-        await withConn((conn) => {
-          // Use 'NaN'::DOUBLE and 'Infinity'::DOUBLE syntax
-          // fetchAll
-          const handle1 = duckdb.execute(
-            conn,
-            "SELECT 'NaN'::DOUBLE as nan_val, 'Infinity'::DOUBLE as inf_val",
-          );
-          const fetchRows = duckdb.fetchAll(handle1);
-          duckdb.destroyResult(handle1);
-
-          // stream
-          const streamRows: RowData[] = [];
-          for (
-            const row of duckdb.stream(
-              conn,
-              "SELECT 'NaN'::DOUBLE as nan_val, 'Infinity'::DOUBLE as inf_val",
-            )
-          ) {
-            streamRows.push(row);
-          }
-
-          // NaN should match (NaN === NaN is false, use isNaN)
-          assertEquals(
-            Number.isNaN(streamRows[0][0] as number),
-            Number.isNaN(fetchRows[0][0] as number),
-          );
-          assertEquals(streamRows[0][1], fetchRows[0][1]);
         });
       },
     });
@@ -531,50 +389,6 @@ Deno.test({
 
           duckdb.destroyResult(handle1);
           duckdb.destroyResult(handle2);
-        });
-      },
-    });
-
-    await t.step({
-      name: "stream with repeated execution",
-      async fn() {
-        await withConn((conn) => {
-          exec(
-            conn,
-            "CREATE TABLE repeat_stream_test(val INTEGER)",
-          );
-          exec(
-            conn,
-            "INSERT INTO repeat_stream_test VALUES (10), (20), (30)",
-          );
-
-          // First stream
-          const stream1: RowData[] = [];
-          for (
-            const row of duckdb.stream(
-              conn,
-              "SELECT * FROM repeat_stream_test ORDER BY val",
-            )
-          ) {
-            stream1.push(row);
-          }
-
-          // Second stream
-          const stream2: RowData[] = [];
-          for (
-            const row of duckdb.stream(
-              conn,
-              "SELECT * FROM repeat_stream_test ORDER BY val",
-            )
-          ) {
-            stream2.push(row);
-          }
-
-          // Should be identical
-          assertEquals(stream1.length, stream2.length);
-          for (let i = 0; i < stream1.length; i++) {
-            assertEquals(stream1[i][0], stream2[i][0]);
-          }
         });
       },
     });
@@ -627,109 +441,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "consistency: fetchAll vs stream",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  async fn(t) {
-    await t.step({
-      name: "fetchAll returns same values as stream",
-      async fn() {
-        await withConn((conn) => {
-          exec(
-            conn,
-            "CREATE TABLE stream_consistency(id INTEGER, name TEXT)",
-          );
-          exec(
-            conn,
-            "INSERT INTO stream_consistency VALUES (1, 'Alice'), (2, 'Bob'), (3, 'Charlie')",
-          );
-
-          // Get via fetchAll
-          const handle1 = duckdb.execute(
-            conn,
-            "SELECT * FROM stream_consistency ORDER BY id",
-          );
-          const fetchAllRows = duckdb.fetchAll(handle1);
-          duckdb.destroyResult(handle1);
-
-          // Get via stream
-          const streamRows: RowData[] = [];
-          for (
-            const row of duckdb.stream(
-              conn,
-              "SELECT * FROM stream_consistency ORDER BY id",
-            )
-          ) {
-            streamRows.push(row);
-          }
-
-          // Should have same length
-          assertEquals(streamRows.length, fetchAllRows.length);
-
-          // Each row should match
-          for (let i = 0; i < fetchAllRows.length; i++) {
-            assertEquals(streamRows[i][0], fetchAllRows[i][0]);
-            assertEquals(streamRows[i][1], fetchAllRows[i][1]);
-          }
-        });
-      },
-    });
-  },
-});
-
-Deno.test({
-  name: "consistency: typed getters vs stream",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  async fn(t) {
-    await t.step({
-      name: "typed getters return same values as stream",
-      async fn() {
-        await withConn((conn) => {
-          exec(
-            conn,
-            "CREATE TABLE typed_stream_test(id INTEGER, val TEXT)",
-          );
-          exec(
-            conn,
-            "INSERT INTO typed_stream_test VALUES (1, 'test')",
-          );
-
-          // Get via typed getters
-          const handle = duckdb.execute(
-            conn,
-            "SELECT * FROM typed_stream_test",
-          );
-          const typedInt = duckdb.getInt32(handle, 0, 0);
-          const typedStr = duckdb.getString(handle, 0, 1);
-          duckdb.destroyResult(handle);
-
-          // Get via stream
-          const streamRows: RowData[] = [];
-          for (
-            const row of duckdb.stream(
-              conn,
-              "SELECT * FROM typed_stream_test",
-            )
-          ) {
-            streamRows.push(row);
-          }
-
-          assertEquals(typedInt, streamRows[0][0]);
-          assertEquals(typedStr, streamRows[0][1]);
-        });
-      },
-    });
-  },
-});
-
-Deno.test({
   name: "consistency: NULL handling across APIs",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn(t) {
     await t.step({
-      name: "NULL handling is consistent across APIs",
+      name: "NULL handling is consistent between fetchAll and getValueByType",
       async fn() {
         await withConn((conn) => {
           exec(conn, "CREATE TABLE null_consistency(id INTEGER, val TEXT)");
@@ -739,31 +456,28 @@ Deno.test({
           );
 
           // fetchAll
-          const handle1 = duckdb.execute(
+          const handle = duckdb.execute(
             conn,
             "SELECT * FROM null_consistency ORDER BY id",
           );
-          const fetchRows = duckdb.fetchAll(handle1);
-          duckdb.destroyResult(handle1);
+          const fetchRows = duckdb.fetchAll(handle);
 
-          // stream
-          const streamRows: RowData[] = [];
-          for (
-            const row of duckdb.stream(
-              conn,
-              "SELECT * FROM null_consistency ORDER BY id",
-            )
-          ) {
-            streamRows.push(row);
-          }
+          // Get column type
+          const valType = duckdb.columnType(handle, 1);
+
+          // getValueByType for each row
+          const val1 = duckdb.getValueByType(handle, 0, 1, valType);
+          const val2 = duckdb.getValueByType(handle, 1, 1, valType);
 
           // Both should return null for the NULL value
           assertEquals(fetchRows[0][1], null);
-          assertEquals(streamRows[0][1], null);
+          assertEquals(val1, null);
 
           // Both should return 'test' for the non-NULL value
           assertEquals(fetchRows[1][1], "test");
-          assertEquals(streamRows[1][1], "test");
+          assertEquals(val2, "test");
+
+          duckdb.destroyResult(handle);
         });
       },
     });

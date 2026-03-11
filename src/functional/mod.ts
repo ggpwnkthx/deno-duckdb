@@ -6,6 +6,7 @@
  *
  * @example
  * ```typescript
+ * // Legacy API (backward compatible)
  * import { open, closeDatabase, create, closeConnection, execute, destroyResult, fetchAll } from "jsr:@ggpwnkthx/duckdb/functional";
  *
  * const db = await open();
@@ -20,10 +21,10 @@
 
 export * from "./database.ts";
 export * from "./connection.ts";
-export * from "./query.ts";
 export * from "./prepared.ts";
 export * from "./value.ts";
-export * from "./arrow.ts";
+export * from "./query.ts";
+
 // Note: types.ts is internal - contains helpers for value decoding
 export { DatabaseError } from "../errors.ts";
 

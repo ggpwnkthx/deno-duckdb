@@ -29,18 +29,6 @@ export type PreparedStatementHandle = Handle<8>;
 /** 8-byte pointer buffer for data chunk */
 export type DataChunkHandle = Handle<8>;
 
-/** 8-byte pointer buffer for Arrow result handle */
-export type ArrowHandle = Handle<8>;
-
-/** 8-byte pointer buffer for Arrow schema handle */
-export type ArrowSchemaHandle = Handle<8>;
-
-/** 8-byte pointer buffer for Arrow array handle */
-export type ArrowArrayHandle = Handle<8>;
-
-/** 8-byte pointer buffer for Arrow stream handle */
-export type ArrowStreamHandle = Handle<8>;
-
 /** Database configuration options */
 export interface DatabaseConfig {
   /** Path to database file, or ":memory:" for in-memory database */

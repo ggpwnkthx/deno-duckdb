@@ -1,12 +1,11 @@
 /**
- * Functional query operations
+ * Functional query operations (internal use)
  */
 import type { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
 import type {
   ColumnInfo,
   ConnectionHandle,
   ResultHandle,
-  RowData,
 } from "../types.ts";
 import {
   createPointerView,
@@ -20,17 +19,16 @@ import {
 } from "../helpers.ts";
 import { QueryError } from "../errors.ts";
 import { getLibraryFast, getLibrarySync } from "../lib.ts";
-import * as value from "./value.ts";
 
 /**
- * Execute a SQL query
+ * Execute a SQL query (internal use)
  *
  * @param connHandle - Connection handle
  * @param sql - SQL query string
  * @returns ResultHandle
  * @throws QueryError if query fails or handle is invalid
  */
-export function execute(
+export function query(
   connHandle: ConnectionHandle,
   sql: string,
 ): ResultHandle {
@@ -58,31 +56,7 @@ export function execute(
 }
 
 /**
- * Execute a SQL query and fetch all rows with automatic cleanup
- *
- * This is a convenience function that executes a query and automatically
- * destroys the result handle when done, returning just the rows.
- * Use this when you don't need to keep the result handle for further operations.
- *
- * @param connHandle - Connection handle
- * @param sql - SQL query string
- * @returns Array of rows
- * @throws QueryError if query fails
- */
-export function executeAndFetchAll(
-  connHandle: ConnectionHandle,
-  sql: string,
-): RowData[] {
-  const resultHandle = execute(connHandle, sql);
-  try {
-    return value.fetchAll(resultHandle);
-  } finally {
-    destroyResult(resultHandle);
-  }
-}
-
-/**
- * Get the number of rows in a result
+ * Get the number of rows in a result (internal use)
  *
  * @param handle - Result handle
  * @returns Number of rows
@@ -96,7 +70,7 @@ export function rowCount(
 }
 
 /**
- * Get the number of columns in a result
+ * Get the number of columns in a result (internal use)
  *
  * @param handle - Result handle
  * @returns Number of columns
@@ -110,7 +84,7 @@ export function columnCount(
 }
 
 /**
- * Get the name of a column
+ * Get the name of a column (internal use)
  *
  * @param handle - Result handle
  * @param index - Column index (0-based)
@@ -134,7 +108,7 @@ export function columnName(
 }
 
 /**
- * Get the type of a column
+ * Get the type of a column (internal use)
  *
  * @param handle - Result handle
  * @param index - Column index (0-based)
@@ -155,7 +129,7 @@ export function columnType(
 }
 
 /**
- * Get all column information
+ * Get all column information (internal use)
  *
  * @param handle - Result handle
  * @returns Array of ColumnInfo
@@ -178,7 +152,7 @@ export function columnInfos(
 }
 
 /**
- * Destroy a query result
+ * Destroy a query result (internal use)
  *
  * @param handle - Result handle to destroy
  * @throws Error if handle is invalid
@@ -195,8 +169,6 @@ export function destroyResult(
 
 /**
  * Destroy a query result (synchronous version)
- *
- * @param handle - Result handle to destroy
  */
 export function destroyResultSync(
   handle: ResultHandle,

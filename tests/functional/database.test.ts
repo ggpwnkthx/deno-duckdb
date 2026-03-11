@@ -48,7 +48,7 @@ Deno.test({
           // Reopen and verify data persisted
           const db2 = await duckdb.open({ path: testDbPath });
           const conn2 = await duckdb.create(db2);
-          const result = duckdb.execute(conn2, "SELECT * FROM test");
+          const result = duckdb.query(conn2, "SELECT * FROM test");
           const rows = duckdb.fetchAll(result);
           duckdb.destroyResult(result);
           assertEquals(rows.length, 1);

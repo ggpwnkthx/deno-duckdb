@@ -6,10 +6,6 @@ import { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
 import type { DuckDBLibrary } from "./lib.ts";
 import { getLibraryFast } from "./lib.ts";
 import type {
-  ArrowArrayHandle,
-  ArrowHandle,
-  ArrowSchemaHandle,
-  ArrowStreamHandle,
   ConnectionHandle,
   DatabaseHandle,
   PreparedStatementHandle,
@@ -219,42 +215,6 @@ export function validatePreparedHandle(
   handle: unknown,
 ): asserts handle is PreparedStatementHandle {
   validateHandle(handle, POINTER_SIZE, "PreparedStatementHandle");
-}
-
-/**
- * Validate an Arrow handle
- */
-export function validateArrowHandle(
-  handle: unknown,
-): asserts handle is ArrowHandle {
-  validateHandle(handle, POINTER_SIZE, "ArrowHandle");
-}
-
-/**
- * Validate an Arrow schema handle
- */
-export function validateArrowSchemaHandle(
-  handle: unknown,
-): asserts handle is ArrowSchemaHandle {
-  validateHandle(handle, POINTER_SIZE, "ArrowSchemaHandle");
-}
-
-/**
- * Validate an Arrow array handle
- */
-export function validateArrowArrayHandle(
-  handle: unknown,
-): asserts handle is ArrowArrayHandle {
-  validateHandle(handle, POINTER_SIZE, "ArrowArrayHandle");
-}
-
-/**
- * Validate an Arrow stream handle
- */
-export function validateArrowStreamHandle(
-  handle: unknown,
-): asserts handle is ArrowStreamHandle {
-  validateHandle(handle, POINTER_SIZE, "ArrowStreamHandle");
 }
 
 /**

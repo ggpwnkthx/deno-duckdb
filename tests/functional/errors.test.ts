@@ -21,7 +21,7 @@ Deno.test({
         await withConn((conn) => {
           const invalidQuery = "SELECT * FROM nonexistent_table_xyz";
           try {
-            duckdb.execute(conn, invalidQuery);
+            duckdb.query(conn, invalidQuery);
             throw new Error("Should have thrown");
           } catch (e) {
             const err = e as QueryError;
@@ -42,7 +42,7 @@ Deno.test({
         await withConn((conn) => {
           const sql = "SELCT 1";
           try {
-            duckdb.execute(conn, sql);
+            duckdb.query(conn, sql);
             throw new Error("Should have thrown");
           } catch (e) {
             const err = e as QueryError;
@@ -62,7 +62,7 @@ Deno.test({
         await withConn((conn) => {
           const sql = "SELECT * FROM nonexistent";
           try {
-            duckdb.execute(conn, sql);
+            duckdb.query(conn, sql);
             throw new Error("Should have thrown");
           } catch (e) {
             const err = e as QueryError;
@@ -82,7 +82,7 @@ Deno.test({
         await withConn((conn) => {
           // First, cause an error
           try {
-            duckdb.execute(conn, "SELECT * FROM nonexistent_table");
+            duckdb.query(conn, "SELECT * FROM nonexistent_table");
           } catch (e) {
             // Verify it's a QueryError
             assertEquals(e instanceof QueryError, true);
@@ -108,7 +108,7 @@ Deno.test({
         await withConn((conn) => {
           const sql = "";
           try {
-            duckdb.execute(conn, sql);
+            duckdb.query(conn, sql);
             throw new Error("Should have thrown");
           } catch (e) {
             const err = e as QueryError;
@@ -129,7 +129,7 @@ Deno.test({
         await withConn((conn) => {
           const sql = "   ";
           try {
-            duckdb.execute(conn, sql);
+            duckdb.query(conn, sql);
             throw new Error("Should have thrown");
           } catch (e) {
             const err = e as QueryError;

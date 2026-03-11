@@ -137,7 +137,7 @@ Deno.test({
         for (const { value, desc } of invalidTypes) {
           assertThrows(
             () =>
-              duckdb.execute(value as unknown as ConnectionHandle, "SELECT 1"),
+              duckdb.query(value as unknown as ConnectionHandle, "SELECT 1"),
             Error,
             "ConnectionHandle must be a Uint8Array",
             `Should reject ${desc} as connection`,
@@ -153,7 +153,7 @@ Deno.test({
         for (const { len, desc } of wrongLengthBuffers) {
           assertThrows(
             () =>
-              duckdb.execute(createBuffer(len) as ConnectionHandle, "SELECT 1"),
+              duckdb.query(createBuffer(len) as ConnectionHandle, "SELECT 1"),
             Error,
             "ConnectionHandle must be 8 bytes",
             `Should reject ${desc} as connection`,
@@ -303,7 +303,7 @@ Deno.test({
           "ConnectionHandle must be 8 bytes",
         );
         assertThrows(
-          () => duckdb.execute(resultHandle as ConnectionHandle, "SELECT 1"),
+          () => duckdb.query(resultHandle as ConnectionHandle, "SELECT 1"),
           Error,
           "ConnectionHandle must be 8 bytes",
         );

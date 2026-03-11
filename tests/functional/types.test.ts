@@ -22,7 +22,7 @@ Deno.test({
       name: "DATE column type is correctly identified",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT '2024-01-15'::DATE");
+          const handle = duckdb.query(conn, "SELECT '2024-01-15'::DATE");
           const typeEnum = duckdb.columnType(handle, 0);
           // DATE should be type 13 (DUCKDB_TYPE_DATE)
           assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_DATE);
@@ -38,7 +38,7 @@ Deno.test({
           exec(conn, "CREATE TABLE date_test(d DATE)");
           exec(conn, "INSERT INTO date_test VALUES (NULL)");
 
-          const handle = duckdb.execute(conn, "SELECT d FROM date_test");
+          const handle = duckdb.query(conn, "SELECT d FROM date_test");
           const typeEnum = duckdb.columnType(handle, 0);
           const val = duckdb.getValueByType(handle, 0, 0, typeEnum);
 
@@ -61,7 +61,7 @@ Deno.test({
       name: "TIME column type is correctly identified",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT '14:30:00'::TIME");
+          const handle = duckdb.query(conn, "SELECT '14:30:00'::TIME");
           const typeEnum = duckdb.columnType(handle, 0);
           // TIME should be type 16 (DUCKDB_TYPE_TIME)
           assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_TIME);
@@ -77,7 +77,7 @@ Deno.test({
           exec(conn, "CREATE TABLE time_test(t TIME)");
           exec(conn, "INSERT INTO time_test VALUES (NULL)");
 
-          const handle = duckdb.execute(conn, "SELECT t FROM time_test");
+          const handle = duckdb.query(conn, "SELECT t FROM time_test");
           const typeEnum = duckdb.columnType(handle, 0);
           const val = duckdb.getValueByType(handle, 0, 0, typeEnum);
 
@@ -100,7 +100,7 @@ Deno.test({
       name: "TIMESTAMP column type is correctly identified",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT '2024-01-15 14:30:00'::TIMESTAMP",
           );
@@ -119,7 +119,7 @@ Deno.test({
           exec(conn, "CREATE TABLE ts_test(ts TIMESTAMP)");
           exec(conn, "INSERT INTO ts_test VALUES (NULL)");
 
-          const handle = duckdb.execute(conn, "SELECT ts FROM ts_test");
+          const handle = duckdb.query(conn, "SELECT ts FROM ts_test");
           const typeEnum = duckdb.columnType(handle, 0);
           const val = duckdb.getValueByType(handle, 0, 0, typeEnum);
 
@@ -142,7 +142,7 @@ Deno.test({
       name: "DECIMAL column type is correctly identified",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT '123.45'::DECIMAL(5,2)");
+          const handle = duckdb.query(conn, "SELECT '123.45'::DECIMAL(5,2)");
           const typeEnum = duckdb.columnType(handle, 0);
           // DECIMAL should be type 20 (DUCKDB_TYPE_DECIMAL)
           assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_DECIMAL);
@@ -158,7 +158,7 @@ Deno.test({
           exec(conn, "CREATE TABLE decimal_test(d DECIMAL(5,2))");
           exec(conn, "INSERT INTO decimal_test VALUES (NULL)");
 
-          const handle = duckdb.execute(conn, "SELECT d FROM decimal_test");
+          const handle = duckdb.query(conn, "SELECT d FROM decimal_test");
           const typeEnum = duckdb.columnType(handle, 0);
           const val = duckdb.getValueByType(handle, 0, 0, typeEnum);
 
@@ -181,7 +181,7 @@ Deno.test({
       name: "BLOB column type is correctly identified",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 'hello'::BLOB");
+          const handle = duckdb.query(conn, "SELECT 'hello'::BLOB");
           const typeEnum = duckdb.columnType(handle, 0);
           // BLOB should be type 19 (DUCKDB_TYPE_BLOB)
           assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_BLOB);
@@ -197,7 +197,7 @@ Deno.test({
           exec(conn, "CREATE TABLE blob_test(b BLOB)");
           exec(conn, "INSERT INTO blob_test VALUES (NULL)");
 
-          const handle = duckdb.execute(conn, "SELECT b FROM blob_test");
+          const handle = duckdb.query(conn, "SELECT b FROM blob_test");
           const typeEnum = duckdb.columnType(handle, 0);
           const val = duckdb.getValueByType(handle, 0, 0, typeEnum);
 
@@ -220,7 +220,7 @@ Deno.test({
       name: "UTINYINT type detection",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1::UTINYINT");
+          const handle = duckdb.query(conn, "SELECT 1::UTINYINT");
           const typeEnum = duckdb.columnType(handle, 0);
           // If successful, should be UTINYINT
           assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_UTINYINT);
@@ -233,7 +233,7 @@ Deno.test({
       name: "UINTEGER type detection",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1::UINTEGER");
+          const handle = duckdb.query(conn, "SELECT 1::UINTEGER");
           const typeEnum = duckdb.columnType(handle, 0);
           assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_UINTEGER);
           duckdb.destroyResult(handle);
@@ -245,7 +245,7 @@ Deno.test({
       name: "UBIGINT type detection",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1::UBIGINT");
+          const handle = duckdb.query(conn, "SELECT 1::UBIGINT");
           const typeEnum = duckdb.columnType(handle, 0);
           assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_UBIGINT);
           duckdb.destroyResult(handle);
@@ -267,7 +267,7 @@ Deno.test({
           exec(conn, "CREATE TABLE date_val_test(d DATE)");
           exec(conn, "INSERT INTO date_val_test VALUES ('2024-01-15')");
 
-          const handle = duckdb.execute(conn, "SELECT d FROM date_val_test");
+          const handle = duckdb.query(conn, "SELECT d FROM date_val_test");
           const typeEnum = duckdb.columnType(handle, 0);
 
           // Test fetchAll
@@ -301,7 +301,7 @@ Deno.test({
           exec(conn, "CREATE TABLE time_val_test(t TIME)");
           exec(conn, "INSERT INTO time_val_test VALUES ('14:30:00')");
 
-          const handle = duckdb.execute(conn, "SELECT t FROM time_val_test");
+          const handle = duckdb.query(conn, "SELECT t FROM time_val_test");
           const typeEnum = duckdb.columnType(handle, 0);
 
           // Test fetchAll
@@ -338,7 +338,7 @@ Deno.test({
             "INSERT INTO ts_val_test VALUES ('2024-01-15 14:30:00')",
           );
 
-          const handle = duckdb.execute(conn, "SELECT ts FROM ts_val_test");
+          const handle = duckdb.query(conn, "SELECT ts FROM ts_val_test");
           const typeEnum = duckdb.columnType(handle, 0);
 
           // Test fetchAll
@@ -377,7 +377,7 @@ Deno.test({
             "INSERT INTO ts_us_test VALUES ('2024-01-15 14:30:30.123456')",
           );
 
-          const handle = duckdb.execute(conn, "SELECT ts FROM ts_us_test");
+          const handle = duckdb.query(conn, "SELECT ts FROM ts_us_test");
           const typeEnum = duckdb.columnType(handle, 0);
 
           // Test fetchAll
@@ -415,7 +415,7 @@ Deno.test({
             "INSERT INTO pre_epoch_test VALUES ('1960-01-01 00:00:00')",
           );
 
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT ts FROM pre_epoch_test",
           );
@@ -449,7 +449,7 @@ Deno.test({
             "INSERT INTO early_date_test VALUES ('1900-01-01 00:00:00')",
           );
 
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT ts FROM early_date_test",
           );
@@ -486,7 +486,7 @@ Deno.test({
           exec(conn, "CREATE TABLE decimal_val_test(d DECIMAL(5,2))");
           exec(conn, "INSERT INTO decimal_val_test VALUES (123.45)");
 
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT d FROM decimal_val_test",
           );
@@ -524,7 +524,7 @@ Deno.test({
             "INSERT INTO decimal_consistency_test VALUES (1234567.89)",
           );
 
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT d FROM decimal_consistency_test",
           );
@@ -560,7 +560,7 @@ Deno.test({
           exec(conn, "CREATE TABLE utinyint_test(v UTINYINT)");
           exec(conn, "INSERT INTO utinyint_test VALUES (200)");
 
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT v FROM utinyint_test",
           );
@@ -590,7 +590,7 @@ Deno.test({
           exec(conn, "CREATE TABLE usmallint_test(v USMALLINT)");
           exec(conn, "INSERT INTO usmallint_test VALUES (40000)");
 
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT v FROM usmallint_test",
           );
@@ -620,7 +620,7 @@ Deno.test({
           exec(conn, "CREATE TABLE uinteger_test(v UINTEGER)");
           exec(conn, "INSERT INTO uinteger_test VALUES (3000000000)");
 
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT v FROM uinteger_test",
           );
@@ -653,7 +653,7 @@ Deno.test({
             "INSERT INTO ubigint_test VALUES (18446744073709551615)",
           );
 
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT v FROM ubigint_test",
           );
@@ -689,7 +689,7 @@ Deno.test({
             "INSERT INTO unsigned_consistency_test VALUES (1234567890)",
           );
 
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT u FROM unsigned_consistency_test",
           );
@@ -722,7 +722,7 @@ Deno.test({
       name: "INTERVAL column type is correctly identified",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT INTERVAL '1 year 2 months 3 days'",
           );
@@ -744,7 +744,7 @@ Deno.test({
             "INSERT INTO interval_test VALUES ('1 year 2 months 3 days')",
           );
 
-          const handle = duckdb.execute(conn, "SELECT i FROM interval_test");
+          const handle = duckdb.query(conn, "SELECT i FROM interval_test");
           const typeEnum = duckdb.columnType(handle, 0);
 
           // Test fetchAll
@@ -778,7 +778,7 @@ Deno.test({
           exec(conn, "CREATE TABLE interval_null_test(i INTERVAL)");
           exec(conn, "INSERT INTO interval_null_test VALUES (NULL)");
 
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT i FROM interval_null_test",
           );
@@ -804,7 +804,7 @@ Deno.test({
       name: "UHUGEINT column type is correctly identified",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1::UHUGEINT");
+          const handle = duckdb.query(conn, "SELECT 1::UHUGEINT");
           const typeEnum = duckdb.columnType(handle, 0);
           // UHUGEINT should be type 17 (DUCKDB_TYPE_UHUGEINT)
           assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_UHUGEINT);
@@ -823,7 +823,7 @@ Deno.test({
             "INSERT INTO uhugeint_test VALUES (340282366920938463463374607431768211455)",
           ); // 2^128 - 1
 
-          const handle = duckdb.execute(conn, "SELECT v FROM uhugeint_test");
+          const handle = duckdb.query(conn, "SELECT v FROM uhugeint_test");
           const typeEnum = duckdb.columnType(handle, 0);
 
           // Test fetchAll
@@ -850,7 +850,7 @@ Deno.test({
           exec(conn, "CREATE TABLE uhugeint_null_test(v UHUGEINT)");
           exec(conn, "INSERT INTO uhugeint_null_test VALUES (NULL)");
 
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT v FROM uhugeint_null_test",
           );
@@ -876,7 +876,7 @@ Deno.test({
       name: "UUID column type is correctly identified",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'::UUID",
           );
@@ -899,7 +899,7 @@ Deno.test({
       name: "TIMESTAMP_S column type is correctly identified",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT '2024-01-15 14:30:00'::TIMESTAMP_S",
           );
@@ -915,7 +915,7 @@ Deno.test({
       name: "TIMESTAMP_MS column type is correctly identified",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT '2024-01-15 14:30:00'::TIMESTAMP_MS",
           );
@@ -931,7 +931,7 @@ Deno.test({
       name: "TIMESTAMP_NS column type is correctly identified",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT '2024-01-15 14:30:00'::TIMESTAMP_NS",
           );
@@ -954,7 +954,7 @@ Deno.test({
       name: "LIST column type is correctly identified",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT [1, 2, 3]::INTEGER[]");
+          const handle = duckdb.query(conn, "SELECT [1, 2, 3]::INTEGER[]");
           const typeEnum = duckdb.columnType(handle, 0);
           // LIST should be type 24 (DUCKDB_TYPE_LIST)
           assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_LIST);
@@ -974,7 +974,7 @@ Deno.test({
       name: "STRUCT column type is correctly identified",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT {'a': 1, 'b': 2}");
+          const handle = duckdb.query(conn, "SELECT {'a': 1, 'b': 2}");
           const typeEnum = duckdb.columnType(handle, 0);
           // STRUCT should be type 25 (DUCKDB_TYPE_STRUCT)
           assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_STRUCT);
@@ -997,7 +997,7 @@ Deno.test({
           exec(conn, "CREATE TABLE map_test(v MAP(VARCHAR, INTEGER))");
           exec(conn, "INSERT INTO map_test VALUES ({'a': 1, 'b': 2})");
 
-          const handle = duckdb.execute(conn, "SELECT v FROM map_test");
+          const handle = duckdb.query(conn, "SELECT v FROM map_test");
 
           // Test fetchAll
           const rows = duckdb.fetchAll(handle);
@@ -1022,7 +1022,7 @@ Deno.test({
       name: "BIT column type is correctly identified",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT '101'::BIT");
+          const handle = duckdb.query(conn, "SELECT '101'::BIT");
           const typeEnum = duckdb.columnType(handle, 0);
           // BIT should be type 29 (DUCKDB_TYPE_BIT)
           assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_BIT);
@@ -1043,7 +1043,7 @@ Deno.test({
       async fn() {
         await withConn((conn) => {
           exec(conn, "CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy')");
-          const handle = duckdb.execute(conn, "SELECT 'happy'::mood");
+          const handle = duckdb.query(conn, "SELECT 'happy'::mood");
           const typeEnum = duckdb.columnType(handle, 0);
           // ENUM should be type 23 (DUCKDB_TYPE_ENUM)
           assertEquals(typeEnum, DUCKDB_TYPE.DUCKDB_TYPE_ENUM);

@@ -9,7 +9,7 @@ import {
   closeDatabase,
   create,
   destroyResult,
-  execute,
+  query,
   fetchAll,
   open,
 } from "@ggpwnkthx/duckdb/functional";
@@ -35,17 +35,17 @@ const db1 = await open();
 const conn1 = await create(db1);
 
 // Create tables and insert data
-execute(conn1, CREATE_PRODUCTS);
-execute(conn1, CREATE_CUSTOMERS);
-execute(conn1, CREATE_ORDERS);
-execute(conn1, INSERT_PRODUCTS);
-execute(conn1, INSERT_CUSTOMERS);
-execute(conn1, INSERT_ORDERS);
+query(conn1, CREATE_PRODUCTS);
+query(conn1, CREATE_CUSTOMERS);
+query(conn1, CREATE_ORDERS);
+query(conn1, INSERT_PRODUCTS);
+query(conn1, INSERT_CUSTOMERS);
+query(conn1, INSERT_ORDERS);
 
 console.log("Tables created and data inserted\n");
 
 // Query: Products by price
-let result = execute(conn1, PRODUCTS_BY_PRICE);
+let result = query(conn1, PRODUCTS_BY_PRICE);
 let rows = fetchAll(result);
 destroyResult(result);
 
@@ -55,7 +55,7 @@ for (const row of rows) {
 }
 
 // Query: Order details with joins
-result = execute(conn1, ORDER_DETAILS);
+result = query(conn1, ORDER_DETAILS);
 rows = fetchAll(result);
 destroyResult(result);
 
@@ -69,7 +69,7 @@ for (const row of rows) {
 }
 
 // Query: Customer totals
-result = execute(conn1, CUSTOMER_TOTALS);
+result = query(conn1, CUSTOMER_TOTALS);
 rows = fetchAll(result);
 destroyResult(result);
 
@@ -145,7 +145,7 @@ const conn3 = await db3.connect();
 conn3.query(CREATE_PRODUCTS);
 conn3.query(INSERT_PRODUCTS);
 
-// Prepare and execute with parameters
+// Prepare and query with parameters
 const stmt = conn3.prepare(
   "SELECT name, price FROM products WHERE category = ?",
 );

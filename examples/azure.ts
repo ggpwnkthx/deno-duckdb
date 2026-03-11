@@ -13,7 +13,7 @@ import {
   closeDatabase,
   create,
   destroyResult,
-  execute,
+  query,
   fetchAll,
   open,
 } from "@ggpwnkthx/duckdb/functional";
@@ -36,29 +36,29 @@ console.log("Connection created");
 
 // Install and load the Azure extension
 console.log("Installing Azure extension...");
-execute(conn, "INSTALL azure");
+query(conn, "INSTALL azure");
 console.log("Azure extension installed");
 
 console.log("Loading Azure extension...");
-execute(conn, "LOAD azure");
+query(conn, "LOAD azure");
 console.log("Azure extension loaded");
 
 // Configure for anonymous access to public blobs
 console.log("Configuring Azure for anonymous access...");
-execute(
+query(
   conn,
   "SET azure_storage_connection_string = ''",
 );
-execute(conn, "SET azure_transport_option_type = 'curl'");
+query(conn, "SET azure_transport_option_type = 'curl'");
 console.log("Azure configured for anonymous access");
 
 // Query NYC Yellow Taxi data from Azure
 console.log(`Querying: ${AZURE_BLOB_URL}`);
-const resultHandle = execute(
+const resultHandle = query(
   conn,
   `SELECT * FROM read_parquet('${AZURE_BLOB_URL}') LIMIT 10`,
 );
-console.log("Query executed");
+console.log("Query queryd");
 
 const rows = fetchAll(resultHandle);
 console.log(`Result: ${rows.length} rows`);
@@ -109,7 +109,7 @@ console.log(`Querying: ${AZURE_BLOB_URL}`);
 const result2 = conn2.query(
   `SELECT * FROM read_parquet('${AZURE_BLOB_URL}') LIMIT 10`,
 );
-console.log("Query executed");
+console.log("Query queryd");
 
 const rows2 = result2.fetchAll();
 console.log(`Result: ${rows2.length} rows`);

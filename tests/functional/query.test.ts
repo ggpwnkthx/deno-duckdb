@@ -14,8 +14,7 @@ Deno.test({
     await withConn((conn) => {
       // Try to execute an invalid SQL query
       assertThrows(
-        () =>
-          duckdb.executeAndFetchAll(conn, "SELECT * FROM nonexistent_table"),
+        () => duckdb.fetchAll(duckdb.query(conn, "SELECT * FROM nonexistent_table")),
         QueryError,
       );
     });
@@ -36,20 +35,20 @@ Deno.test({
           exec(conn, "INSERT INTO leak_test VALUES (1), (2), (3)");
 
           for (let i = 0; i < 10; i++) {
-            const rows = duckdb.executeAndFetchAll(
+            const rows = duckdb.fetchAll(duckdb.query(
               conn,
               "SELECT * FROM leak_test",
-            );
+            ));
             assertEquals(rows.length, 3);
           }
 
-          const rows1 = duckdb.executeAndFetchAll(conn, "SELECT 1 as num");
+          const rows1 = duckdb.fetchAll(duckdb.query(conn, "SELECT 1 as num"));
           assertEquals(rows1[0][0], 1);
 
-          const rows2 = duckdb.executeAndFetchAll(
+          const rows2 = duckdb.fetchAll(duckdb.query(
             conn,
             "SELECT 'hello' as greeting",
-          );
+          ));
           assertEquals(rows2[0][0], "hello");
         });
       },

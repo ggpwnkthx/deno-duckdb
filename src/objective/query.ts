@@ -4,12 +4,10 @@
 
 import type { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
 import type { ColumnInfo, ResultHandle, RowData } from "../types.ts";
-import * as query from "../functional/query.ts";
-import * as value from "../functional/value.ts";
+import * as functional from "@ggpwnkthx/duckdb/functional";
 import { getLibraryFast } from "../lib.ts";
 import { InvalidResourceError } from "../errors.ts";
-import type { Connection } from "./connection.ts";
-import { createPointerView } from "../helpers.ts";
+import { createPointerView, validateResultHandle } from "../helpers.ts";
 
 /** Cached column data for getRow optimization */
 interface ColumnCache {
@@ -26,7 +24,6 @@ const MAX_CACHED_ROWS = 10000;
  */
 export class QueryResult {
   private handle: ResultHandle | null = null;
-  private connection: Connection;
   private columnCache: ColumnCache | null = null;
   private cachedRowCount = 0n;
   private cachedColCount = 0n;
@@ -38,10 +35,8 @@ export class QueryResult {
    */
   constructor(
     handle: ResultHandle,
-    connection: Connection,
   ) {
     this.handle = handle;
-    this.connection = connection;
   }
 
   /**
@@ -58,21 +53,21 @@ export class QueryResult {
       return this.cachedRows;
     }
 
-    // Fetch rows (now synchronous)
-    const rows = value.fetchAll(handle);
+    // Fetch rows
+    const rows = functional.fetchAll(handle);
 
     // Only cache if below size limit
     if (rows.length <= MAX_CACHED_ROWS) {
       this.cachedRows = rows;
-      // Cache row/col counts from actual query result, not derived from row data
-      this.cachedRowCount = query.rowCount(handle);
-      this.cachedColCount = query.columnCount(handle);
+      // Cache row/col counts from actual query result
+      this.cachedRowCount = functional.rowCount(handle);
+      this.cachedColCount = functional.columnCount(handle);
       return this.cachedRows;
     }
 
     // For large results, don't cache - compute counts from actual result
-    this.cachedRowCount = query.rowCount(handle);
-    this.cachedColCount = query.columnCount(handle);
+    this.cachedRowCount = functional.rowCount(handle);
+    this.cachedColCount = functional.columnCount(handle);
 
     return rows;
   }
@@ -96,17 +91,17 @@ export class QueryResult {
       return this.cachedRows[index];
     }
 
-    // Cache row/col count on first call (now synchronous)
+    // Cache row/col count on first call
     if (this.cachedRowCount === 0n) {
-      this.cachedRowCount = query.rowCount(handle);
-      this.cachedColCount = query.columnCount(handle);
+      this.cachedRowCount = functional.rowCount(handle);
+      this.cachedColCount = functional.columnCount(handle);
     }
 
     if (index < 0 || index >= Number(this.cachedRowCount)) {
       throw new InvalidResourceError("Row index out of bounds");
     }
 
-    // Build column cache on first call (now synchronous)
+    // Build column cache on first call
     if (!this.columnCache) {
       this.columnCache = this.buildColumnCache();
     }
@@ -118,7 +113,7 @@ export class QueryResult {
       const type = this.columnCache!.types[c];
       const dataView = this.columnCache!.dataViews[c];
       const nullMaskView = this.columnCache!.nullMaskViews[c];
-      const val = value.getValueByTypeOptimized(
+      const val = functional.getValueByTypeOptimized(
         index,
         type,
         dataView,
@@ -139,7 +134,7 @@ export class QueryResult {
     const nullMaskViews: (Deno.UnsafePointerView | null)[] = [];
 
     for (let c = 0; c < colCount; c++) {
-      types[c] = query.columnType(handle, c);
+      types[c] = functional.columnType(handle, c);
 
       const dataPtr = lib.symbols.duckdb_column_data(handle, BigInt(c));
       dataViews[c] = dataPtr ? createPointerView(dataPtr) : null;
@@ -167,18 +162,41 @@ export class QueryResult {
       return obj;
     });
   }
+  /**
+   * Get column information
+   */
+  getColumnInfos(): ColumnInfo[] {
+    this.checkNotFreed();
+    // Use cached column infos if available
+    if (this.cachedColumnInfos) {
+      return this.cachedColumnInfos;
+    }
+
+    validateResultHandle(this.handle);
+    const count = Number(functional.columnCount(this.handle));
+    const infos: ColumnInfo[] = [];
+  
+    for (let i = 0; i < count; i++) {
+      infos.push({
+        name: functional.columnName(this.handle, i),
+        type: functional.columnType(this.handle, i),
+      });
+    }
+    this.cachedColumnInfos = infos;
+    return this.cachedColumnInfos;
+  }
 
   /**
    * Get number of rows
    */
-  rowCount(): number {
+  rowCount(): bigint {
     this.checkNotFreed();
     // Use cached count if available
     if (this.cachedRowCount !== 0n) {
-      return Number(this.cachedRowCount);
+      return this.cachedRowCount;
     }
-    this.cachedRowCount = query.rowCount(this.handle!);
-    return Number(this.cachedRowCount);
+    this.cachedRowCount = functional.rowCount(this.handle!);
+    return this.cachedRowCount;
   }
 
   /**
@@ -190,21 +208,8 @@ export class QueryResult {
     if (this.cachedColCount !== 0n) {
       return this.cachedColCount;
     }
-    this.cachedColCount = query.columnCount(this.handle!);
+    this.cachedColCount = functional.columnCount(this.handle!);
     return this.cachedColCount;
-  }
-
-  /**
-   * Get column information
-   */
-  getColumnInfos(): ColumnInfo[] {
-    this.checkNotFreed();
-    // Use cached column infos if available
-    if (this.cachedColumnInfos) {
-      return this.cachedColumnInfos;
-    }
-    this.cachedColumnInfos = query.columnInfos(this.handle!);
-    return this.cachedColumnInfos;
   }
 
   /**
@@ -226,7 +231,7 @@ export class QueryResult {
    */
   close(): void {
     if (this.handle) {
-      query.destroyResultSync(this.handle);
+      functional.destroyResult(this.handle);
       this.handle = null;
     }
   }

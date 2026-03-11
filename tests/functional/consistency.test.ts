@@ -28,7 +28,7 @@ Deno.test({
             conn,
             "INSERT INTO type_getter_test VALUES (42, 9223372036854775807, 3.14159, 'hello world', true)",
           );
-          const handle = duckdb.execute(conn, "SELECT * FROM type_getter_test");
+          const handle = duckdb.query(conn, "SELECT * FROM type_getter_test");
 
           // Get via typed getters
           const typedId = duckdb.getInt32(handle, 0, 0);
@@ -81,7 +81,7 @@ Deno.test({
       async fn() {
         await withConn((conn) => {
           // Using SELECT with UNION to get true/false values
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT true as v UNION ALL SELECT false",
           );
@@ -124,13 +124,13 @@ Deno.test({
           exec(conn, "DELETE FROM empty_test");
 
           // fetchAll should return empty array
-          const handle1 = duckdb.execute(conn, "SELECT * FROM empty_test");
+          const handle1 = duckdb.query(conn, "SELECT * FROM empty_test");
           const fetchRows = duckdb.fetchAll(handle1);
           duckdb.destroyResult(handle1);
           assertEquals(fetchRows, []);
 
           // getValueByType should handle gracefully (out of bounds)
-          const handle2 = duckdb.execute(conn, "SELECT * FROM empty_test");
+          const handle2 = duckdb.query(conn, "SELECT * FROM empty_test");
           assertThrows(
             () => {
               duckdb.getValueByType(
@@ -152,7 +152,7 @@ Deno.test({
       async fn() {
         await withConn((conn) => {
           exec(conn, "CREATE TABLE empty_count(id INTEGER)");
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT COUNT(*) FROM empty_count",
           );
@@ -189,7 +189,7 @@ Deno.test({
           );
 
           // fetchAll with ORDER BY
-          const handle1 = duckdb.execute(
+          const handle1 = duckdb.query(
             conn,
             "SELECT * FROM multi_row_test ORDER BY id",
           );
@@ -221,7 +221,7 @@ Deno.test({
             conn,
             "INSERT INTO multi_type_test VALUES (1, 'one'), (2, 'two'), (3, 'three')",
           );
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT * FROM multi_type_test ORDER BY id",
           );
@@ -263,7 +263,7 @@ Deno.test({
             conn,
             "INSERT INTO hugeint_test VALUES (170141183460469231731687303715884105727)",
           );
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT * FROM hugeint_test",
           );
@@ -310,7 +310,7 @@ Deno.test({
       async fn() {
         await withConn((conn) => {
           // Use 'NaN'::DOUBLE syntax as shown in types.test.ts
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT 'NaN'::DOUBLE as nan_val, 'Infinity'::DOUBLE as inf_val, '-Infinity'::DOUBLE as neginf_val",
           );
@@ -366,11 +366,11 @@ Deno.test({
           );
 
           // Execute same query twice - different result handles
-          const handle1 = duckdb.execute(
+          const handle1 = duckdb.query(
             conn,
             "SELECT * FROM repeat_test ORDER BY id",
           );
-          const handle2 = duckdb.execute(
+          const handle2 = duckdb.query(
             conn,
             "SELECT * FROM repeat_test ORDER BY id",
           );
@@ -412,7 +412,7 @@ Deno.test({
             conn,
             "INSERT INTO value_type_test VALUES (1, 'test', 1.5)",
           );
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT * FROM value_type_test",
           );
@@ -456,7 +456,7 @@ Deno.test({
           );
 
           // fetchAll
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT * FROM null_consistency ORDER BY id",
           );
@@ -491,7 +491,7 @@ Deno.test({
             conn,
             "INSERT INTO is_null_test VALUES (1, NULL), (2, 'test')",
           );
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT * FROM is_null_test ORDER BY id",
           );

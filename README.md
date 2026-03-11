@@ -158,7 +158,6 @@ automatic resource management. Supports `Symbol.dispose` for automatic cleanup.
 
 **Types:**
 
-- `Disposable` - Interface for explicit resource cleanup
 - `RowStream` - Type for lazy iteration row results
 
 **Error classes:**

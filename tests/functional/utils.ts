@@ -51,7 +51,7 @@ export function withConn<T>(
  * Execute SQL (including DDL/INSERT) and automatically destroy the ResultHandle
  */
 export function exec(conn: ConnectionHandle, sql: string): void {
-  const handle = duckdb.execute(conn, sql);
+  const handle = duckdb.query(conn, sql);
   duckdb.destroyResult(handle);
 }
 
@@ -62,7 +62,7 @@ export function query(
   conn: ConnectionHandle,
   sql: string,
 ): RowData[] {
-  const handle = duckdb.execute(conn, sql);
+  const handle = duckdb.query(conn, sql);
   try {
     return duckdb.fetchAll(handle);
   } finally {

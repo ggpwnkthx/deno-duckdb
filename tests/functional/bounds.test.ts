@@ -32,7 +32,7 @@ Deno.test({
       name: "columnName with valid indices 0, 1, 2",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT a, b, c FROM (VALUES (1, 2, 3)) AS t(a, b, c)",
           );
@@ -49,7 +49,7 @@ Deno.test({
       name: "columnName with invalid index throws RangeError",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1, 2, 3");
+          const handle = duckdb.query(conn, "SELECT 1, 2, 3");
           // Valid indices are 0, 1, 2
           assertThrows(
             () => duckdb.columnName(handle, 999),
@@ -66,7 +66,7 @@ Deno.test({
       name: "columnName with negative index throws RangeError",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1");
+          const handle = duckdb.query(conn, "SELECT 1");
           assertThrows(
             () => duckdb.columnName(handle, -1),
             RangeError,
@@ -82,7 +82,7 @@ Deno.test({
       name: "columnName with NaN throws RangeError",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1, 2, 3");
+          const handle = duckdb.query(conn, "SELECT 1, 2, 3");
           assertThrows(
             () => duckdb.columnName(handle, NaN),
             RangeError,
@@ -98,7 +98,7 @@ Deno.test({
       name: "columnName with 1.5 throws RangeError",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1, 2, 3");
+          const handle = duckdb.query(conn, "SELECT 1, 2, 3");
           assertThrows(
             () => duckdb.columnName(handle, 1.5),
             RangeError,
@@ -114,7 +114,7 @@ Deno.test({
       name: "columnName with Infinity throws RangeError",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1, 2, 3");
+          const handle = duckdb.query(conn, "SELECT 1, 2, 3");
           assertThrows(
             () => duckdb.columnName(handle, Infinity),
             RangeError,
@@ -139,7 +139,7 @@ Deno.test({
         await withConn((conn) => {
           exec(conn, "CREATE TABLE bounds_null_test(id INTEGER, val TEXT)");
           exec(conn, "INSERT INTO bounds_null_test VALUES (1, 'test')");
-          const handle = duckdb.execute(conn, "SELECT * FROM bounds_null_test");
+          const handle = duckdb.query(conn, "SELECT * FROM bounds_null_test");
           const result = duckdb.isNull(handle, 0, 0);
           assertEquals(result, false);
           duckdb.destroyResult(handle);
@@ -154,7 +154,7 @@ Deno.test({
         await withConn((conn) => {
           exec(conn, "CREATE TABLE bounds_null_test(id INTEGER, val TEXT)");
           exec(conn, "INSERT INTO bounds_null_test VALUES (1, 'test')");
-          const handle = duckdb.execute(conn, "SELECT * FROM bounds_null_test");
+          const handle = duckdb.query(conn, "SELECT * FROM bounds_null_test");
           // Row 0 exists, row 999 does not - should throw
           assertThrows(
             () => duckdb.isNull(handle, 999, 0),
@@ -170,7 +170,7 @@ Deno.test({
       name: "isNull with out-of-bounds column throws RangeError",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1, 2");
+          const handle = duckdb.query(conn, "SELECT 1, 2");
           // Column 0 and 1 exist, column 999 does not - should throw
           assertThrows(
             () => duckdb.isNull(handle, 0, 999),
@@ -188,7 +188,7 @@ Deno.test({
         await withConn((conn) => {
           exec(conn, "CREATE TABLE bounds_null_test(id INTEGER, val TEXT)");
           exec(conn, "INSERT INTO bounds_null_test VALUES (1, 'test')");
-          const handle = duckdb.execute(conn, "SELECT * FROM bounds_null_test");
+          const handle = duckdb.query(conn, "SELECT * FROM bounds_null_test");
           // Negative row index - should throw
           assertThrows(
             () => duckdb.isNull(handle, -1, 0),
@@ -204,7 +204,7 @@ Deno.test({
       name: "isNull with negative column throws RangeError",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1, 2");
+          const handle = duckdb.query(conn, "SELECT 1, 2");
           // Negative column index - should throw
           assertThrows(
             () => duckdb.isNull(handle, 0, -1),
@@ -220,7 +220,7 @@ Deno.test({
       name: "isNull with Infinity row throws RangeError",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1");
+          const handle = duckdb.query(conn, "SELECT 1");
           assertThrows(
             () => duckdb.isNull(handle, Infinity, 0),
             RangeError,
@@ -236,7 +236,7 @@ Deno.test({
       name: "isNull with NaN column throws RangeError",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1");
+          const handle = duckdb.query(conn, "SELECT 1");
           assertThrows(
             () => duckdb.isNull(handle, 0, NaN),
             RangeError,
@@ -259,7 +259,7 @@ Deno.test({
       name: "columnType on empty result",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1::INTEGER WHERE 1=0");
+          const handle = duckdb.query(conn, "SELECT 1::INTEGER WHERE 1=0");
           const type = duckdb.columnType(handle, 0);
           // Returns the actual column type even for empty results
           assertEquals(type, DUCKDB_TYPE.DUCKDB_TYPE_INTEGER);
@@ -273,7 +273,7 @@ Deno.test({
       name: "columnName on empty result",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT 1::INTEGER AS my_col WHERE 1=0",
           );
@@ -290,7 +290,7 @@ Deno.test({
       name: "getInt32 on empty result throws RangeError",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1::INTEGER WHERE 1=0");
+          const handle = duckdb.query(conn, "SELECT 1::INTEGER WHERE 1=0");
           assertThrows(
             () => duckdb.getInt32(handle, 0, 0),
             RangeError,
@@ -312,7 +312,7 @@ Deno.test({
       name: "getString with fractional row throws RangeError",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 'test'");
+          const handle = duckdb.query(conn, "SELECT 'test'");
           assertThrows(
             () => duckdb.getString(handle, 0.5, 0),
             RangeError,
@@ -335,7 +335,7 @@ Deno.test({
       name: "columnInfos on empty result returns column metadata",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT id::INTEGER, name::TEXT, value::DOUBLE FROM (SELECT 1 AS id, 'x' AS name, 1.5 AS value) t WHERE 1=0",
           );
@@ -355,7 +355,7 @@ Deno.test({
       name: "columnInfos returns correct metadata",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(
+          const handle = duckdb.query(
             conn,
             "SELECT a, b, c FROM (VALUES (1, 'x', 1.5)) AS t(a, b, c)",
           );
@@ -375,7 +375,7 @@ Deno.test({
       async fn() {
         await withConn((conn) => {
           // Some queries can return 0 columns (e.g., pure expressions without alias)
-          const handle = duckdb.execute(conn, "SELECT 1+1");
+          const handle = duckdb.query(conn, "SELECT 1+1");
           const infos = duckdb.columnInfos(handle);
           // Should return at least 1 column
           assertEquals(infos.length >= 1, true);

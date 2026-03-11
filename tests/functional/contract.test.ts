@@ -140,7 +140,7 @@ Deno.test({
       duckdb.destroyPrepared(prepHandle3);
 
       // Execute another query to confirm connection is fully functional
-      const resultHandle4 = duckdb.execute(conn, "SELECT 3 as num");
+      const resultHandle4 = duckdb.query(conn, "SELECT 3 as num");
       const rows4 = duckdb.fetchAll(resultHandle4);
       assertEquals(rows4.length, 1);
       assertEquals(rows4[0][0], 3);
@@ -157,7 +157,7 @@ Deno.test({
   async fn() {
     await withConn((conn) => {
       // Execute first query and verify it has data
-      const resultHandle1 = duckdb.execute(conn, "SELECT 1, 2, 3");
+      const resultHandle1 = duckdb.query(conn, "SELECT 1, 2, 3");
       assertEquals(duckdb.rowCount(resultHandle1), 1n);
       assertEquals(duckdb.columnCount(resultHandle1), 3n);
       const rows1 = duckdb.fetchAll(resultHandle1);
@@ -168,7 +168,7 @@ Deno.test({
       duckdb.destroyResultSync(resultHandle1);
 
       // Execute another query - connection should still work if resources were freed
-      const resultHandle2 = duckdb.execute(
+      const resultHandle2 = duckdb.query(
         conn,
         "SELECT 'test' as msg, 42 as num",
       );
@@ -180,7 +180,7 @@ Deno.test({
       duckdb.destroyResult(resultHandle2);
 
       // Execute a third query to confirm connection is fully functional
-      const resultHandle3 = duckdb.execute(conn, "SELECT 100 as value");
+      const resultHandle3 = duckdb.query(conn, "SELECT 100 as value");
       const rows3 = duckdb.fetchAll(resultHandle3);
       assertEquals(rows3.length, 1);
       assertEquals(rows3[0][0], 100);

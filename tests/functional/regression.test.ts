@@ -39,7 +39,7 @@ Deno.test({
         // QueryError correctness - empty SQL
         await withConn((conn) => {
           assertThrows(
-            () => duckdb.execute(conn, ""),
+            () => duckdb.query(conn, ""),
             QueryError,
           );
         });
@@ -47,7 +47,7 @@ Deno.test({
         // QueryError correctness - invalid SQL
         await withConn((conn) => {
           try {
-            duckdb.execute(conn, "SELCT 1");
+            duckdb.query(conn, "SELCT 1");
             throw new Error("Should have thrown");
           } catch (e) {
             assertEquals(e instanceof QueryError, true, "Should be QueryError");

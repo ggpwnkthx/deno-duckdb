@@ -8,6 +8,7 @@ import type {
   ResultHandle,
 } from "../types.ts";
 import {
+  createPointerBuffer,
   createPointerView,
   createPreparedBuffer,
   createResultBuffer,
@@ -17,7 +18,7 @@ import {
   validateConnectionHandle,
   validatePreparedHandle,
 } from "../helpers.ts";
-import { DatabaseError } from "../errors.ts";
+import { DatabaseError, QueryError } from "../errors.ts";
 import { getLibraryFast, getLibrarySync } from "../lib.ts";
 
 /** Value types that can be bound to prepared statements */
@@ -56,7 +57,7 @@ export function prepare(
 }
 
 /**
- * Execute a prepared statement
+ * Execute a prepared statement (legacy version)
  *
  * @param stmtHandle - Prepared statement handle
  * @returns ResultHandle

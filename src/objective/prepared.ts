@@ -6,7 +6,6 @@ import type { PreparedStatementHandle } from "../types.ts";
 import type { BindValue } from "../functional/prepared.ts";
 import { DatabaseError } from "../errors.ts";
 import * as prep from "../functional/prepared.ts";
-import type { Connection } from "./connection.ts";
 import { QueryResult } from "./query.ts";
 
 /**
@@ -14,17 +13,14 @@ import { QueryResult } from "./query.ts";
  */
 export class PreparedStatement {
   private handle: PreparedStatementHandle | null = null;
-  private connection: Connection;
 
   /**
    * Create a new PreparedStatement instance (internal use)
    */
   constructor(
     handle: PreparedStatementHandle,
-    connection: Connection,
   ) {
     this.handle = handle;
-    this.connection = connection;
   }
 
   /**
@@ -46,7 +42,7 @@ export class PreparedStatement {
   execute(): QueryResult {
     const handle = this.getHandle();
     const resultHandle = prep.executePrepared(handle);
-    return new QueryResult(resultHandle, this.connection);
+    return new QueryResult(resultHandle);
   }
 
   /**

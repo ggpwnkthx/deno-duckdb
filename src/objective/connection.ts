@@ -6,12 +6,9 @@ import type { ConnectionHandle, RowData } from "../types.ts";
 import type { DuckDBLibrary } from "../lib.ts";
 import { DatabaseError } from "../errors.ts";
 import { isValidHandle } from "../helpers.ts";
-import * as query from "../functional/query.ts";
-import * as prep from "../functional/prepared.ts";
-import * as value from "../functional/value.ts";
-import * as arrow from "../functional/arrow.ts";
+import * as functional from "@ggpwnkthx/duckdb/functional";
 import type { Database } from "./database.ts";
-import { QueryResult as QueryResultClass } from "./query.ts";
+import { QueryResult } from "./query.ts";
 import { PreparedStatement } from "./prepared.ts";
 
 /**
@@ -46,38 +43,13 @@ export class Connection {
    * @param sql - SQL query string
    * @returns QueryResult instance
    */
-  query(sql: string): QueryResultClass {
+  query(sql: string): QueryResult {
     this.checkNotClosed();
     if (!sql || !sql.trim()) {
       throw new DatabaseError("SQL query cannot be empty");
     }
-    // Note: query.execute is synchronous
-    const handle = query.execute(this.handle!, sql);
-    return new QueryResultClass(handle, this);
-  }
-
-  /**
-   * Execute a query using Arrow API and return results
-   *
-   * This method uses DuckDB's Arrow API for query execution,
-   * which can be more memory-efficient for large result sets.
-   *
-   * @param sql - SQL query string
-   * @returns QueryResult instance
-   */
-  queryArrow(sql: string): QueryResultClass {
-    this.checkNotClosed();
-    if (!sql || !sql.trim()) {
-      throw new DatabaseError("SQL query cannot be empty");
-    }
-    // Use Arrow API for query execution
-    const arrowHandle = arrow.queryArrow(this.handle!, sql);
-    // Note: QueryResult currently uses standard result handle for data extraction
-    // The Arrow handle is used for execution but we need standard result for data
-    // For now, we fall back to standard query for actual data extraction
-    const handle = query.execute(this.handle!, sql);
-    arrow.destroyArrow(arrowHandle);
-    return new QueryResultClass(handle, this);
+    const handle = functional.query(this.handle!, sql);
+    return new QueryResult(handle);
   }
 
   /**
@@ -89,24 +61,6 @@ export class Connection {
    * @param sql - SQL query string
    * @param mapper - Optional function to transform each row (defaults to mapping column names)
    * @returns Array of typed objects
-   *
-   * @example
-   * ```typescript
-   * // Basic usage - returns array of objects with column names
-   * const rows = conn.queryTyped<{ id: number; name: string }>(
-   *   "SELECT id, name FROM users"
-   * );
-   *
-   * // With custom mapper
-   * const rows = conn.queryTyped(
-   *   "SELECT id, name, created_at FROM users",
-   *   (row, cols) => ({
-   *     userId: row[cols.indexOf("id")],
-   *     displayName: row[cols.indexOf("name")],
-   *     createdAt: new Date(row[cols.indexOf("created_at")]),
-   *   })
-   * );
-   * ```
    */
   queryTyped<T>(
     sql: string,
@@ -116,14 +70,11 @@ export class Connection {
     if (!sql || !sql.trim()) {
       throw new DatabaseError("SQL query cannot be empty");
     }
-    // Note: query.execute is synchronous
-    const handle = query.execute(this.handle!, sql);
+    const handle = functional.query(this.handle!, sql);
 
     try {
-      const rows = value.fetchAll(handle);
-      const columns = query.columnInfos(handle).map(
-        (c) => c.name,
-      );
+      const rows = functional.fetchAll(handle);
+      const columns = functional.columnInfos(handle).map((c) => c.name);
 
       if (mapper) {
         return rows.map((row) => mapper(row, columns));
@@ -138,7 +89,7 @@ export class Connection {
         return obj as T;
       });
     } finally {
-      query.destroyResult(handle);
+      functional.destroyResult(handle);
     }
   }
 
@@ -164,8 +115,8 @@ export class Connection {
     if (!sql || !sql.trim()) {
       throw new DatabaseError("SQL statement cannot be empty");
     }
-    const handle = prep.prepare(this.handle!, sql);
-    return new PreparedStatement(handle, this);
+    const handle = functional.prepare(this.handle!, sql);
+    return new PreparedStatement(handle);
   }
 
   /**

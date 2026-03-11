@@ -3,15 +3,17 @@
  */
 
 import { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
-import type { ResultHandle, RowData, ValueType } from "../types.ts";
+import type {
+  ResultHandle,
+  RowData,
+  ValueType,
+} from "../types.ts";
 import {
   BYTE_SIZE_32,
   BYTE_SIZE_64,
   createPointerView,
   isNullFromMask,
-  validateResultHandle,
 } from "../helpers.ts";
-import * as query from "./query.ts";
 import { getLibraryFast } from "../lib.ts";
 import { decodeValueByType } from "./types.ts";
 
@@ -22,7 +24,11 @@ import { decodeValueByType } from "./types.ts";
  * @param row - Row index
  * @param col - Column index
  */
-function validateIndices(handle: ResultHandle, row: number, col: number): void {
+function validateIndices(
+  handle: ResultHandle,
+  row: number,
+  col: number,
+): void {
   // Check for non-integer values first (NaN, Infinity, fractional)
   if (!Number.isInteger(row)) {
     throw new RangeError(
@@ -37,18 +43,22 @@ function validateIndices(handle: ResultHandle, row: number, col: number): void {
   }
 
   const lib = getLibraryFast();
-  const rowCount = Number(lib.symbols.duckdb_row_count(handle));
-  const colCount = Number(lib.symbols.duckdb_column_count(handle));
+  const rowCount = lib.symbols.duckdb_row_count(handle);
+  const colCount = lib.symbols.duckdb_column_count(handle);;
 
   if (row < 0 || row >= rowCount) {
     throw new RangeError(
-      `Row index ${row} is out of bounds (valid range: 0-${rowCount - 1})`,
+      `Row index ${row} is out of bounds (valid range: 0-${
+        Number(rowCount) - 1
+      })`,
     );
   }
 
   if (col < 0 || col >= colCount) {
     throw new RangeError(
-      `Column index ${col} is out of bounds (valid range: 0-${colCount - 1})`,
+      `Column index ${col} is out of bounds (valid range: 0-${
+        Number(colCount) - 1
+      })`,
     );
   }
 }
@@ -67,7 +77,6 @@ export function isNull(
   row: number,
   col: number,
 ): boolean {
-  validateResultHandle(handle);
   validateIndices(handle, row, col);
 
   const lib = getLibraryFast();
@@ -99,7 +108,6 @@ export function getInt32(
   row: number,
   col: number,
 ): number | null {
-  validateResultHandle(handle);
   validateIndices(handle, row, col);
   // Check null first
   if (isNull(handle, row, col)) {
@@ -136,7 +144,6 @@ export function getInt64(
   row: number,
   col: number,
 ): bigint | null {
-  validateResultHandle(handle);
   validateIndices(handle, row, col);
   // Check null first
   if (isNull(handle, row, col)) {
@@ -173,7 +180,6 @@ export function getDouble(
   row: number,
   col: number,
 ): number | null {
-  validateResultHandle(handle);
   validateIndices(handle, row, col);
   // Check null first
   if (isNull(handle, row, col)) {
@@ -211,7 +217,6 @@ export function getString(
   row: number,
   col: number,
 ): string | null {
-  validateResultHandle(handle);
   validateIndices(handle, row, col);
   const lib = getLibraryFast();
   // Check if NULL first
@@ -246,6 +251,21 @@ export function getString(
 }
 
 /**
+ * Get column type for a result handle
+ *
+ * @param handle - Result handle
+ * @param index - Column index (0-based)
+ * @returns Column type
+ */
+export function getColumnType(
+  handle: ResultHandle,
+  index: number,
+): DUCKDB_TYPE {
+  const lib = getLibraryFast();
+  return lib.symbols.duckdb_column_type(handle, BigInt(index)) as DUCKDB_TYPE;
+}
+
+/**
  * Fetch all rows from a result
  * Optimized version with cached column metadata
  *
@@ -255,15 +275,14 @@ export function getString(
 export function fetchAll(
   handle: ResultHandle,
 ): RowData[] {
-  validateResultHandle(handle);
-  const rowCount = Number(query.rowCount(handle));
-  const colCount = Number(query.columnCount(handle));
+  const lib = getLibraryFast();
 
-  if (rowCount === 0 || colCount === 0) {
+  const rowCount = lib.symbols.duckdb_row_count(handle);
+  const colCount = lib.symbols.duckdb_column_count(handle);
+
+  if (rowCount === 0n || colCount === 0n) {
     return [];
   }
-
-  const lib = getLibraryFast();
 
   // Pre-fetch column metadata (cached per column, not per cell)
   const columnTypes: DUCKDB_TYPE[] = [];
@@ -271,7 +290,7 @@ export function fetchAll(
   const nullMaskViews: (Deno.UnsafePointerView | null)[] = [];
 
   for (let c = 0; c < colCount; c++) {
-    columnTypes[c] = query.columnType(handle, c);
+    columnTypes[c] = getColumnType(handle, c);
 
     // Pre-fetch column data pointer and create view
     const dataPtr = lib.symbols.duckdb_column_data(handle, BigInt(c));
@@ -291,11 +310,11 @@ export function fetchAll(
   }
 
   // Pre-allocate rows array
-  const rows: RowData[] = new Array(rowCount);
+  const rows: RowData[] = new Array(Number(rowCount));
 
   for (let r = 0; r < rowCount; r++) {
     // Pre-allocate row array
-    const row: RowData = new Array(colCount);
+    const row: RowData = new Array(Number(colCount));
     for (let c = 0; c < colCount; c++) {
       // Use unified decoder
       row[c] = decodeValueByType(
@@ -352,7 +371,6 @@ export function getValueByType(
   type: DUCKDB_TYPE,
   checkNull = true,
 ): ValueType {
-  validateResultHandle(handle);
   validateIndices(handle, row, col);
   const lib = getLibraryFast();
 

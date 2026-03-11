@@ -45,7 +45,7 @@ Deno.test({
       name: "double destroy result is safe",
       async fn() {
         await withConn((conn) => {
-          const handle = duckdb.execute(conn, "SELECT 1");
+          const handle = duckdb.query(conn, "SELECT 1");
           duckdb.destroyResult(handle);
           // Second destroy should not throw
           duckdb.destroyResult(handle);

@@ -116,7 +116,7 @@ Deno.test({
     const conn = await duckdb.create(db);
     assertExists(conn);
 
-    const result = duckdb.execute(conn, "SELECT 1 as num");
+    const result = duckdb.query(conn, "SELECT 1 as num");
     assertExists(result);
 
     const rows = duckdb.fetchAll(result);

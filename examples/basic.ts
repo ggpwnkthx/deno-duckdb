@@ -10,7 +10,7 @@ import {
   closeDatabase,
   create,
   destroyResult,
-  execute,
+  query,
   fetchAll,
   open,
 } from "@ggpwnkthx/duckdb/functional";
@@ -27,7 +27,7 @@ console.log("Database opened");
 const conn = await create(db);
 console.log("Connection created");
 
-const resultHandle = execute(
+const resultHandle = query(
   conn,
   "SELECT i, i * 2 as doubled FROM range(5) t(i)",
 );

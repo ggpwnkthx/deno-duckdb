@@ -38,9 +38,9 @@ Deno.test({
           assertEquals(duckdb.isValidConnection(conn3), true);
 
           // All can execute queries independently
-          const result1 = duckdb.execute(conn1, "SELECT 1");
-          const result2 = duckdb.execute(conn2, "SELECT 2");
-          const result3 = duckdb.execute(conn3, "SELECT 3");
+          const result1 = duckdb.query(conn1, "SELECT 1");
+          const result2 = duckdb.query(conn2, "SELECT 2");
+          const result3 = duckdb.query(conn3, "SELECT 3");
 
           assertEquals(duckdb.fetchAll(result1)[0][0], 1);
           assertEquals(duckdb.fetchAll(result2)[0][0], 2);

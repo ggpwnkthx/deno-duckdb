@@ -303,3 +303,44 @@ export function isNullFromMask(
   const nullMask = nullMaskView.getBigUint64(wordIndex * 8);
   return (nullMask & (1n << BigInt(bitIndex))) !== 0n;
 }
+
+/**
+ * Type utility: Cast an empty array to LazyRowData
+ * Provides a documented intent for the type assertion
+ * This replaces `[] as unknown as LazyRowData` with a named helper
+ * @returns Empty array cast to the target type
+ */
+export function emptyLazyRowData<T>(): T {
+  return [] as T;
+}
+
+/**
+ * Type utility: Cast a LazyRow to a typed object for name-based column access
+ * The underlying Proxy already supports name-based access, this just makes it type-safe
+ *
+ * @param row - LazyRow from query results
+ * @returns Row cast to the specified type
+ */
+export function asRow<T extends Record<string, unknown>>(
+  row: Array<unknown>,
+): T {
+  return row as unknown as T;
+}
+
+/**
+ * Safely get length from potentially proxied array-like objects
+ * Used when accessing length on LazyRow Proxy objects
+ */
+export function getArrayLikeLength(obj: unknown): number {
+  if (obj === null || obj === undefined) return 0;
+  if (typeof obj !== "object") return 0;
+  return (obj as { length?: number }).length ?? 0;
+}
+
+/**
+ * Type-safe FFI pointer conversion
+ * Converts a bigint (from getPointer) to Deno.PointerValue for FFI calls
+ */
+export function asPointer(value: bigint): Deno.PointerValue<unknown> {
+  return value as unknown as Deno.PointerValue<unknown>;
+}

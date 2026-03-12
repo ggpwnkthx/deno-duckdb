@@ -1,7 +1,8 @@
 /**
  * Example: Data Analysis
  *
- * Demonstrates common data analysis workflows with both APIs.
+ * Demonstrates common data analysis workflows with the functional API.
+ * Uses name-based column access for cleaner, more readable code.
  */
 
 import {
@@ -13,8 +14,7 @@ import {
   open,
   query,
 } from "@ggpwnkthx/duckdb/functional";
-
-import { Database } from "@ggpwnkthx/duckdb/objective";
+import { asRow } from "@ggpwnkthx/duckdb";
 
 import {
   CREATE_CUSTOMERS,
@@ -50,7 +50,8 @@ let rows = fetchAll(result);
 
 console.log("Products by price (functional):");
 for (const row of rows) {
-  console.log(`  ${row[0]}: $${row[1]} (${row[2]})`);
+  const r = asRow<{ name: string; price: number; category: string }>(row);
+  console.log(`  ${r.name}: $${r.price} (${r.category})`);
 }
 destroyResult(result);
 
@@ -60,10 +61,16 @@ rows = fetchAll(result);
 
 console.log("\nOrder details (functional):");
 for (const row of rows) {
+  const r = asRow<{
+    order_id: number;
+    customer_name: string;
+    product_name: string;
+    quantity: number;
+    order_date: Date;
+    total: number;
+  }>(row);
   console.log(
-    `  Order ${row[0]}: ${row[1]} bought ${row[2]} x${row[3]} on ${row[4]} ($${
-      row[5]
-    })`,
+    `  Order ${r.order_id}: ${r.customer_name} bought ${r.product_name} x${r.quantity} on ${r.order_date} ($${r.total})`,
   );
 }
 destroyResult(result);
@@ -74,93 +81,20 @@ rows = fetchAll(result);
 
 console.log("\nCustomer totals (functional):");
 for (const row of rows) {
-  console.log(`  ${row[0]}: $${row[1] ?? 0} (${row[2] ?? 0} orders)`);
+  const r = asRow<{
+    customer_name: string;
+    total_spent: number;
+    order_count: number;
+  }>(row);
+  console.log(
+    `  ${r.customer_name}: $${r.total_spent ?? 0} (${
+      r.order_count ?? 0
+    } orders)`,
+  );
 }
 destroyResult(result);
 
 closeConnection(conn1);
 closeDatabase(db1);
-
-console.log("\n=== Objective API ===\n");
-
-// Objective API
-const db2 = new Database();
-await db2.open();
-const conn2 = await db2.connect();
-
-// Create tables and insert data
-conn2.query(CREATE_PRODUCTS);
-conn2.query(CREATE_CUSTOMERS);
-conn2.query(CREATE_ORDERS);
-conn2.query(INSERT_PRODUCTS);
-conn2.query(INSERT_CUSTOMERS);
-conn2.query(INSERT_ORDERS);
-
-console.log("Tables created and data inserted\n");
-
-// Query: Products by price
-let result2 = conn2.query(PRODUCTS_BY_PRICE);
-let rows2 = result2.fetchAll();
-result2.close();
-
-console.log("Products by price (objective):");
-for (const row of rows2) {
-  console.log(`  ${row[0]}: $${row[1]} (${row[2]})`);
-}
-
-// Query: Order details with joins
-result2 = conn2.query(ORDER_DETAILS);
-rows2 = result2.fetchAll();
-result2.close();
-
-console.log("\nOrder details (objective):");
-for (const row of rows2) {
-  console.log(
-    `  Order ${row[0]}: ${row[1]} bought ${row[2]} x${row[3]} on ${row[4]} ($${
-      row[5]
-    })`,
-  );
-}
-
-// Query: Customer totals
-result2 = conn2.query(CUSTOMER_TOTALS);
-rows2 = result2.fetchAll();
-result2.close();
-
-console.log("\nCustomer totals (objective):");
-for (const row of rows2) {
-  console.log(`  ${row[0]}: $${row[1] ?? 0} (${row[2] ?? 0} orders)`);
-}
-
-conn2.close();
-db2.close();
-
-console.log("\n=== Using Prepared Statements ===\n");
-
-// Prepared statements example (Objective API)
-const db3 = new Database();
-await db3.open();
-const conn3 = await db3.connect();
-
-conn3.query(CREATE_PRODUCTS);
-conn3.query(INSERT_PRODUCTS);
-
-// Prepare and query with parameters
-const stmt = conn3.prepare(
-  "SELECT name, price FROM products WHERE category = ?",
-);
-stmt.bind(["Electronics"]);
-
-console.log("Electronics products (prepared statement):");
-const stmtResult = stmt.execute();
-const stmtRows = stmtResult.fetchAll();
-for (const row of stmtRows) {
-  console.log(`  ${row[0]}: $${row[1]}`);
-}
-stmtResult.close();
-stmt.close();
-
-conn3.close();
-db3.close();
 
 console.log("\nAll done!");

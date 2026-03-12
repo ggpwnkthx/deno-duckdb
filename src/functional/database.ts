@@ -4,6 +4,7 @@
 
 import type { DatabaseConfig, DatabaseHandle } from "../types.ts";
 import {
+  asPointer,
   createPointerBuffer,
   createPointerView,
   getPointer,
@@ -101,9 +102,7 @@ export async function open(
       const errorPtr = getPointer(errorBuffer);
       let errorMsg = "Failed to open database";
       if (errorPtr !== 0n) {
-        const errorView = createPointerView(
-          errorPtr as unknown as Deno.PointerValue<unknown>,
-        );
+        const errorView = createPointerView(asPointer(errorPtr));
         if (errorView) {
           try {
             errorMsg = errorView.getCString();
@@ -113,9 +112,7 @@ export async function open(
         }
         // Free the error message allocated by DuckDB if pointer is valid
         try {
-          lib.symbols.duckdb_free(
-            errorPtr as unknown as Deno.PointerValue<unknown>,
-          );
+          lib.symbols.duckdb_free(asPointer(errorPtr));
         } catch {
           // Ignore free errors for invalid pointers
         }

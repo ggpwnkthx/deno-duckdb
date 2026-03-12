@@ -8,10 +8,12 @@ import {
   BYTE_SIZE_32,
   BYTE_SIZE_64,
   createPointerView,
+  emptyLazyRowData,
   isNullFromMask,
 } from "../helpers.ts";
 import { getLibraryFast } from "../lib.ts";
 import { decodeValueByType } from "./types.ts";
+import { columnName } from "./query.ts";
 
 /**
  * LazyRowData - a lazy array that materializes values on demand
@@ -26,12 +28,18 @@ export interface LazyRowData extends Array<LazyRow> {
   _handle: ResultHandle;
   /** Column types */
   _types: DUCKDB_TYPE[];
+  /** Column names */
+  _names: string[];
   /** Pre-fetched data pointer views */
   _dataViews: (Deno.UnsafePointerView | null)[];
   /** Pre-fetched null mask pointer views */
   _nullMaskViews: (Deno.UnsafePointerView | null)[];
   /** Cached materialized rows */
   _cachedRows?: RowData[];
+  /** Explicit length property for TypeScript */
+  length: number;
+  /** Index signature for numeric access */
+  [index: number]: LazyRow;
 }
 
 /**
@@ -53,6 +61,7 @@ function createLazyRow(
   rowIndex: number,
   colCount: number,
   types: DUCKDB_TYPE[],
+  names: string[],
   dataViews: (Deno.UnsafePointerView | null)[],
   nullMaskViews: (Deno.UnsafePointerView | null)[],
 ): LazyRow {
@@ -99,6 +108,19 @@ function createLazyRow(
         );
       }
 
+      // Handle string property access (column name lookup)
+      if (typeof prop === "string" && !Number.isInteger(Number(prop))) {
+        const colIndex = names.indexOf(prop);
+        if (colIndex >= 0) {
+          return decodeValueByType(
+            rowIndex,
+            types[colIndex],
+            dataViews[colIndex],
+            nullMaskViews[colIndex],
+          );
+        }
+      }
+
       return target[prop as keyof typeof target];
     },
   });
@@ -112,6 +134,7 @@ function createLazyArray(
   rowCount: bigint,
   colCount: bigint,
   types: DUCKDB_TYPE[],
+  names: string[],
   dataViews: (Deno.UnsafePointerView | null)[],
   nullMaskViews: (Deno.UnsafePointerView | null)[],
 ): LazyRowData {
@@ -122,6 +145,7 @@ function createLazyArray(
   const arr: LazyRowData = new Array(numRows) as LazyRowData;
   arr._handle = handle;
   arr._types = types;
+  arr._names = names;
   arr._dataViews = dataViews;
   arr._nullMaskViews = nullMaskViews;
 
@@ -146,6 +170,7 @@ function createLazyArray(
                 r,
                 numCols,
                 types,
+                names,
                 dataViews,
                 nullMaskViews,
               );
@@ -164,6 +189,7 @@ function createLazyArray(
           index,
           numCols,
           types,
+          names,
           dataViews,
           nullMaskViews,
         );
@@ -179,6 +205,7 @@ function createLazyArray(
               r,
               numCols,
               types,
+              names,
               dataViews,
               nullMaskViews,
             );
@@ -196,6 +223,7 @@ function createLazyArray(
               r,
               numCols,
               types,
+              names,
               dataViews,
               nullMaskViews,
             );
@@ -213,6 +241,7 @@ function createLazyArray(
               r,
               numCols,
               types,
+              names,
               dataViews,
               nullMaskViews,
             );
@@ -236,6 +265,7 @@ function createLazyArray(
                 r,
                 numCols,
                 types,
+                names,
                 dataViews,
                 nullMaskViews,
               ),
@@ -254,6 +284,7 @@ function createLazyArray(
             idx,
             numCols,
             types,
+            names,
             dataViews,
             nullMaskViews,
           );
@@ -268,6 +299,7 @@ function createLazyArray(
               r,
               numCols,
               types,
+              names,
               dataViews,
               nullMaskViews,
             );
@@ -287,6 +319,7 @@ function createLazyArray(
               r,
               numCols,
               types,
+              names,
               dataViews,
               nullMaskViews,
             );
@@ -306,6 +339,7 @@ function createLazyArray(
               r,
               numCols,
               types,
+              names,
               dataViews,
               nullMaskViews,
             );
@@ -325,6 +359,7 @@ function createLazyArray(
               r,
               numCols,
               types,
+              names,
               dataViews,
               nullMaskViews,
             );
@@ -348,6 +383,7 @@ function createLazyArray(
               r,
               numCols,
               types,
+              names,
               dataViews,
               nullMaskViews,
             );
@@ -627,16 +663,18 @@ export function fetchAll(
 
   // Return empty array for empty results
   if (rowCount === 0n || colCount === 0n) {
-    return [] as unknown as LazyRowData;
+    return emptyLazyRowData<LazyRowData>();
   }
 
   // Pre-fetch column metadata (cached per column, not per cell)
   const columnTypes: DUCKDB_TYPE[] = [];
+  const columnNames: string[] = [];
   const dataViews: (Deno.UnsafePointerView | null)[] = [];
   const nullMaskViews: (Deno.UnsafePointerView | null)[] = [];
 
   for (let c = 0; c < colCount; c++) {
     columnTypes[c] = getColumnType(handle, c);
+    columnNames[c] = columnName(handle, c);
 
     // Pre-fetch column data pointer and create view
     const dataPtr = lib.symbols.duckdb_column_data(handle, BigInt(c));
@@ -661,6 +699,7 @@ export function fetchAll(
     rowCount,
     colCount,
     columnTypes,
+    columnNames,
     dataViews,
     nullMaskViews,
   );

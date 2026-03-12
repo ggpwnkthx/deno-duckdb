@@ -8,7 +8,11 @@ import type { LazyRowData } from "../functional/value.ts";
 import * as functional from "@ggpwnkthx/duckdb/functional";
 import { getLibraryFast } from "../lib.ts";
 import { InvalidResourceError } from "../errors.ts";
-import { createPointerView, validateResultHandle } from "../helpers.ts";
+import {
+  createPointerView,
+  getArrayLikeLength,
+  validateResultHandle,
+} from "../helpers.ts";
 
 /** Cached column data for getRow optimization */
 interface ColumnCache {
@@ -65,11 +69,8 @@ export class QueryResult {
       for (let i = 0; i < rows.length; i++) {
         const row: RowData = [];
         // Access values to materialize them
-        for (
-          let c = 0;
-          c < (rows[i] as unknown as { length: number }).length;
-          c++
-        ) {
+        const rowLength = getArrayLikeLength(rows[i]);
+        for (let c = 0; c < rowLength; c++) {
           row.push(rows[i][c]);
         }
         materialized.push(row);

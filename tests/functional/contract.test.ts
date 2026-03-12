@@ -162,7 +162,9 @@ Deno.test({
       assertEquals(duckdb.columnCount(resultHandle1), 3n);
       const rows1 = duckdb.fetchAll(resultHandle1);
       assertEquals(rows1.length, 1);
-      assertEquals(rows1[0], [1, 2, 3]);
+      assertEquals(rows1[0][0], 1);
+      assertEquals(rows1[0][1], 2);
+      assertEquals(rows1[0][2], 3);
 
       // Sync destroy should work without throwing
       duckdb.destroyResultSync(resultHandle1);

@@ -50,10 +50,10 @@ Deno.test({
           const conn2 = await duckdb.create(db2);
           const result = duckdb.query(conn2, "SELECT * FROM test");
           const rows = duckdb.fetchAll(result);
-          duckdb.destroyResult(result);
           assertEquals(rows.length, 1);
           assertEquals(rows[0][0], 1); // id
           assertEquals(rows[0][1], "hello"); // name
+          duckdb.destroyResult(result);
           duckdb.closeConnection(conn2);
           duckdb.closeDatabase(db2);
         } finally {

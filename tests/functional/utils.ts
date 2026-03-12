@@ -64,7 +64,9 @@ export function query(
 ): RowData[] {
   const handle = duckdb.query(conn, sql);
   try {
-    return duckdb.fetchAll(handle);
+    const lazyRows = duckdb.fetchAll(handle);
+    // Materialize lazy rows before destroying the result handle
+    return lazyRows.map((row) => [...row]) as RowData[];
   } finally {
     duckdb.destroyResult(handle);
   }

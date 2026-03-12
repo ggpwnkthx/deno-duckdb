@@ -126,8 +126,8 @@ Deno.test({
           // fetchAll should return empty array
           const handle1 = duckdb.query(conn, "SELECT * FROM empty_test");
           const fetchRows = duckdb.fetchAll(handle1);
+          assertEquals(fetchRows.length, 0);
           duckdb.destroyResult(handle1);
-          assertEquals(fetchRows, []);
 
           // getValueByType should handle gracefully (out of bounds)
           const handle2 = duckdb.query(conn, "SELECT * FROM empty_test");
@@ -194,7 +194,6 @@ Deno.test({
             "SELECT * FROM multi_row_test ORDER BY id",
           );
           const fetchRows = duckdb.fetchAll(handle1);
-          duckdb.destroyResult(handle1);
 
           // Should have 5 rows
           assertEquals(fetchRows.length, 5);
@@ -205,6 +204,8 @@ Deno.test({
           assertEquals(fetchRows[2][0], 3); // charlie
           assertEquals(fetchRows[3][0], 4); // delta
           assertEquals(fetchRows[4][0], 5); // echo
+
+          duckdb.destroyResult(handle1);
         });
       },
     });

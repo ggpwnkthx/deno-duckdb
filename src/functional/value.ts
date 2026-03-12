@@ -135,6 +135,26 @@ function createLazyArray(
       if (prop === "_nullMaskViews") return nullMaskViews;
       if (prop === "length") return numRows;
 
+      // Handle Symbol properties BEFORE numeric conversion (for...of iteration)
+      if (typeof prop === "symbol") {
+        // Handle iteration
+        if (prop === Symbol.iterator) {
+          return function* () {
+            for (let r = 0; r < numRows; r++) {
+              yield createLazyRow(
+                handle,
+                r,
+                numCols,
+                types,
+                dataViews,
+                nullMaskViews,
+              );
+            }
+          };
+        }
+        return target[prop as keyof typeof target];
+      }
+
       // Handle numeric index access - lazy materialization
       const index = Number(prop);
       if (Number.isInteger(index) && index >= 0 && index < numRows) {
@@ -147,22 +167,6 @@ function createLazyArray(
           dataViews,
           nullMaskViews,
         );
-      }
-
-      // Handle iteration
-      if (prop === Symbol.iterator) {
-        return function* () {
-          for (let r = 0; r < numRows; r++) {
-            yield createLazyRow(
-              handle,
-              r,
-              numCols,
-              types,
-              dataViews,
-              nullMaskViews,
-            );
-          }
-        };
       }
 
       // For array methods, we need to materialize or provide lazy versions

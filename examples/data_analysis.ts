@@ -9,9 +9,9 @@ import {
   closeDatabase,
   create,
   destroyResult,
-  query,
   fetchAll,
   open,
+  query,
 } from "@ggpwnkthx/duckdb/functional";
 
 import { Database } from "@ggpwnkthx/duckdb/objective";
@@ -47,17 +47,16 @@ console.log("Tables created and data inserted\n");
 // Query: Products by price
 let result = query(conn1, PRODUCTS_BY_PRICE);
 let rows = fetchAll(result);
-destroyResult(result);
 
 console.log("Products by price (functional):");
 for (const row of rows) {
   console.log(`  ${row[0]}: $${row[1]} (${row[2]})`);
 }
+destroyResult(result);
 
 // Query: Order details with joins
 result = query(conn1, ORDER_DETAILS);
 rows = fetchAll(result);
-destroyResult(result);
 
 console.log("\nOrder details (functional):");
 for (const row of rows) {
@@ -67,16 +66,17 @@ for (const row of rows) {
     })`,
   );
 }
+destroyResult(result);
 
 // Query: Customer totals
 result = query(conn1, CUSTOMER_TOTALS);
 rows = fetchAll(result);
-destroyResult(result);
 
 console.log("\nCustomer totals (functional):");
 for (const row of rows) {
   console.log(`  ${row[0]}: $${row[1] ?? 0} (${row[2] ?? 0} orders)`);
 }
+destroyResult(result);
 
 closeConnection(conn1);
 closeDatabase(db1);

@@ -4,6 +4,7 @@
 
 import type { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
 import type { ColumnInfo, ResultHandle, RowData } from "../types.ts";
+import type { LazyRowData } from "../functional/value.ts";
 import * as functional from "@ggpwnkthx/duckdb/functional";
 import { getLibraryFast } from "../lib.ts";
 import { InvalidResourceError } from "../errors.ts";
@@ -41,11 +42,12 @@ export class QueryResult {
 
   /**
    * Fetch all rows from the result
-   * Results are cached for subsequent calls (if below size limit)
+   * For small results (below size limit), results are cached.
+   * For large results, returns lazy array that materializes on access.
    *
-   * @returns Array of rows
+   * @returns Array of rows (or lazy array for large results)
    */
-  fetchAll(): RowData[] {
+  fetchAll(): RowData[] | LazyRowData {
     const handle = this.checkNotFreed();
 
     // Return cached rows if available
@@ -53,12 +55,26 @@ export class QueryResult {
       return this.cachedRows;
     }
 
-    // Fetch rows
-    const rows = functional.fetchAll(handle);
+    // Fetch rows (lazy array)
+    const rows: LazyRowData = functional.fetchAll(handle);
 
-    // Only cache if below size limit
+    // Only cache if below size limit - for large results, keep lazy
     if (rows.length <= MAX_CACHED_ROWS) {
-      this.cachedRows = rows;
+      // Materialize small results for caching
+      const materialized: RowData[] = [];
+      for (let i = 0; i < rows.length; i++) {
+        const row: RowData = [];
+        // Access values to materialize them
+        for (
+          let c = 0;
+          c < (rows[i] as unknown as { length: number }).length;
+          c++
+        ) {
+          row.push(rows[i][c]);
+        }
+        materialized.push(row);
+      }
+      this.cachedRows = materialized;
       // Cache row/col counts from actual query result
       this.cachedRowCount = functional.rowCount(handle);
       this.cachedColCount = functional.columnCount(handle);
@@ -69,6 +85,7 @@ export class QueryResult {
     this.cachedRowCount = functional.rowCount(handle);
     this.cachedColCount = functional.columnCount(handle);
 
+    // Return lazy array for large results
     return rows;
   }
 
@@ -175,7 +192,7 @@ export class QueryResult {
     validateResultHandle(this.handle);
     const count = Number(functional.columnCount(this.handle));
     const infos: ColumnInfo[] = [];
-  
+
     for (let i = 0; i < count; i++) {
       infos.push({
         name: functional.columnName(this.handle, i),

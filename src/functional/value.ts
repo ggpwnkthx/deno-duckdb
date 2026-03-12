@@ -3,11 +3,7 @@
  */
 
 import { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
-import type {
-  ResultHandle,
-  RowData,
-  ValueType,
-} from "../types.ts";
+import type { ResultHandle, RowData, ValueType } from "../types.ts";
 import {
   BYTE_SIZE_32,
   BYTE_SIZE_64,
@@ -16,6 +12,351 @@ import {
 } from "../helpers.ts";
 import { getLibraryFast } from "../lib.ts";
 import { decodeValueByType } from "./types.ts";
+
+/**
+ * LazyRowData - a lazy array that materializes values on demand
+ *
+ * This is an array-like object where:
+ * - length is available immediately (cheap)
+ * - indexed access materializes values only when accessed
+ * - supports iteration (for...of, spread, Array.from())
+ */
+export interface LazyRowData extends Array<LazyRow> {
+  /** The result handle (for materialization) */
+  _handle: ResultHandle;
+  /** Column types */
+  _types: DUCKDB_TYPE[];
+  /** Pre-fetched data pointer views */
+  _dataViews: (Deno.UnsafePointerView | null)[];
+  /** Pre-fetched null mask pointer views */
+  _nullMaskViews: (Deno.UnsafePointerView | null)[];
+  /** Cached materialized rows */
+  _cachedRows?: RowData[];
+}
+
+/**
+ * LazyRow - a lazy row that materializes values on demand
+ */
+export interface LazyRow extends Array<ValueType> {
+  /** Row index in the result set (optional for type compatibility) */
+  _rowIndex?: number;
+}
+
+/**
+ * Create a lazy row proxy that materializes values on access
+ */
+/**
+ * Create a lazy row proxy that materializes values on access
+ */
+function createLazyRow(
+  _handle: ResultHandle,
+  rowIndex: number,
+  colCount: number,
+  types: DUCKDB_TYPE[],
+  dataViews: (Deno.UnsafePointerView | null)[],
+  nullMaskViews: (Deno.UnsafePointerView | null)[],
+): LazyRow {
+  // Create an object that acts like an array
+  const row = {
+    length: colCount,
+    _rowIndex: rowIndex,
+  } as LazyRow;
+
+  // Create a proxy to materialize values on access
+  return new Proxy(row, {
+    get(target, prop) {
+      // Handle special properties
+      if (prop === "_rowIndex") {
+        return rowIndex;
+      }
+      if (prop === "length") {
+        return colCount;
+      }
+      if (prop === Symbol.iterator) {
+        // Materialize entire row when iterated
+        return function* () {
+          for (let c = 0; c < colCount; c++) {
+            yield decodeValueByType(
+              rowIndex,
+              types[c],
+              dataViews[c],
+              nullMaskViews[c],
+            );
+          }
+        };
+      }
+
+      // Handle numeric index access - convert to string key
+      const propStr = String(prop);
+      const index = Number(propStr);
+      if (Number.isInteger(index) && index >= 0 && index < colCount) {
+        // Materialize the value
+        return decodeValueByType(
+          rowIndex,
+          types[index],
+          dataViews[index],
+          nullMaskViews[index],
+        );
+      }
+
+      return target[prop as keyof typeof target];
+    },
+  });
+}
+
+/**
+ * Create a lazy array that materializes values on demand
+ */
+function createLazyArray(
+  handle: ResultHandle,
+  rowCount: bigint,
+  colCount: bigint,
+  types: DUCKDB_TYPE[],
+  dataViews: (Deno.UnsafePointerView | null)[],
+  nullMaskViews: (Deno.UnsafePointerView | null)[],
+): LazyRowData {
+  const numRows = Number(rowCount);
+  const numCols = Number(colCount);
+
+  // Pre-allocate array with length
+  const arr: LazyRowData = new Array(numRows) as LazyRowData;
+  arr._handle = handle;
+  arr._types = types;
+  arr._dataViews = dataViews;
+  arr._nullMaskViews = nullMaskViews;
+
+  // Create proxy for lazy access
+  return new Proxy(arr, {
+    get(target, prop) {
+      // Handle special properties
+      if (prop === "_handle") return handle;
+      if (prop === "_types") return types;
+      if (prop === "_dataViews") return dataViews;
+      if (prop === "_nullMaskViews") return nullMaskViews;
+      if (prop === "length") return numRows;
+
+      // Handle numeric index access - lazy materialization
+      const index = Number(prop);
+      if (Number.isInteger(index) && index >= 0 && index < numRows) {
+        // Materialize the row on access
+        return createLazyRow(
+          handle,
+          index,
+          numCols,
+          types,
+          dataViews,
+          nullMaskViews,
+        );
+      }
+
+      // Handle iteration
+      if (prop === Symbol.iterator) {
+        return function* () {
+          for (let r = 0; r < numRows; r++) {
+            yield createLazyRow(
+              handle,
+              r,
+              numCols,
+              types,
+              dataViews,
+              nullMaskViews,
+            );
+          }
+        };
+      }
+
+      // For array methods, we need to materialize or provide lazy versions
+      if (prop === "map") {
+        return function (callback: (row: LazyRow, index: number) => unknown) {
+          const result: unknown[] = [];
+          for (let r = 0; r < numRows; r++) {
+            const row = createLazyRow(
+              handle,
+              r,
+              numCols,
+              types,
+              dataViews,
+              nullMaskViews,
+            );
+            result.push(callback(row, r));
+          }
+          return result;
+        };
+      }
+
+      if (prop === "forEach") {
+        return function (callback: (row: LazyRow, index: number) => void) {
+          for (let r = 0; r < numRows; r++) {
+            const row = createLazyRow(
+              handle,
+              r,
+              numCols,
+              types,
+              dataViews,
+              nullMaskViews,
+            );
+            callback(row, r);
+          }
+        };
+      }
+
+      if (prop === "filter") {
+        return function (predicate: (row: LazyRow, index: number) => boolean) {
+          const result: LazyRow[] = [];
+          for (let r = 0; r < numRows; r++) {
+            const row = createLazyRow(
+              handle,
+              r,
+              numCols,
+              types,
+              dataViews,
+              nullMaskViews,
+            );
+            if (predicate(row, r)) {
+              result.push(row);
+            }
+          }
+          return result;
+        };
+      }
+
+      if (prop === "slice") {
+        return function (start?: number, end?: number) {
+          const s = start ?? 0;
+          const e = end ?? numRows;
+          const result: LazyRow[] = [];
+          for (let r = s; r < e && r < numRows; r++) {
+            result.push(
+              createLazyRow(
+                handle,
+                r,
+                numCols,
+                types,
+                dataViews,
+                nullMaskViews,
+              ),
+            );
+          }
+          return result;
+        };
+      }
+
+      if (prop === "at") {
+        return function (index: number) {
+          const idx = index < 0 ? numRows + index : index;
+          if (idx < 0 || idx >= numRows) return undefined;
+          return createLazyRow(
+            handle,
+            idx,
+            numCols,
+            types,
+            dataViews,
+            nullMaskViews,
+          );
+        };
+      }
+
+      if (prop === "find") {
+        return function (predicate: (row: LazyRow, index: number) => boolean) {
+          for (let r = 0; r < numRows; r++) {
+            const row = createLazyRow(
+              handle,
+              r,
+              numCols,
+              types,
+              dataViews,
+              nullMaskViews,
+            );
+            if (predicate(row, r)) {
+              return row;
+            }
+          }
+          return undefined;
+        };
+      }
+
+      if (prop === "findIndex") {
+        return function (predicate: (row: LazyRow, index: number) => boolean) {
+          for (let r = 0; r < numRows; r++) {
+            const row = createLazyRow(
+              handle,
+              r,
+              numCols,
+              types,
+              dataViews,
+              nullMaskViews,
+            );
+            if (predicate(row, r)) {
+              return r;
+            }
+          }
+          return -1;
+        };
+      }
+
+      if (prop === "every") {
+        return function (predicate: (row: LazyRow, index: number) => boolean) {
+          for (let r = 0; r < numRows; r++) {
+            const row = createLazyRow(
+              handle,
+              r,
+              numCols,
+              types,
+              dataViews,
+              nullMaskViews,
+            );
+            if (!predicate(row, r)) {
+              return false;
+            }
+          }
+          return true;
+        };
+      }
+
+      if (prop === "some") {
+        return function (predicate: (row: LazyRow, index: number) => boolean) {
+          for (let r = 0; r < numRows; r++) {
+            const row = createLazyRow(
+              handle,
+              r,
+              numCols,
+              types,
+              dataViews,
+              nullMaskViews,
+            );
+            if (predicate(row, r)) {
+              return true;
+            }
+          }
+          return false;
+        };
+      }
+
+      if (prop === "reduce") {
+        return function (
+          callback: (acc: unknown, row: LazyRow, index: number) => unknown,
+          initial?: unknown,
+        ) {
+          let acc = initial;
+          for (let r = 0; r < numRows; r++) {
+            const row = createLazyRow(
+              handle,
+              r,
+              numCols,
+              types,
+              dataViews,
+              nullMaskViews,
+            );
+            acc = callback(acc, row, r);
+          }
+          return acc;
+        };
+      }
+
+      return target[prop as keyof typeof target];
+    },
+  });
+}
 
 /**
  * Validate row and column indices are within bounds
@@ -44,7 +385,7 @@ function validateIndices(
 
   const lib = getLibraryFast();
   const rowCount = lib.symbols.duckdb_row_count(handle);
-  const colCount = lib.symbols.duckdb_column_count(handle);;
+  const colCount = lib.symbols.duckdb_column_count(handle);
 
   if (row < 0 || row >= rowCount) {
     throw new RangeError(
@@ -267,21 +608,22 @@ export function getColumnType(
 
 /**
  * Fetch all rows from a result
- * Optimized version with cached column metadata
+ * Returns a lazy array that materializes values on demand
  *
  * @param handle - Result handle
- * @returns Array of rows
+ * @returns Lazy array of rows
  */
 export function fetchAll(
   handle: ResultHandle,
-): RowData[] {
+): LazyRowData {
   const lib = getLibraryFast();
 
   const rowCount = lib.symbols.duckdb_row_count(handle);
   const colCount = lib.symbols.duckdb_column_count(handle);
 
+  // Return empty array for empty results
   if (rowCount === 0n || colCount === 0n) {
-    return [];
+    return [] as unknown as LazyRowData;
   }
 
   // Pre-fetch column metadata (cached per column, not per cell)
@@ -309,25 +651,15 @@ export function fetchAll(
     }
   }
 
-  // Pre-allocate rows array
-  const rows: RowData[] = new Array(Number(rowCount));
-
-  for (let r = 0; r < rowCount; r++) {
-    // Pre-allocate row array
-    const row: RowData = new Array(Number(colCount));
-    for (let c = 0; c < colCount; c++) {
-      // Use unified decoder
-      row[c] = decodeValueByType(
-        r,
-        columnTypes[c],
-        dataViews[c],
-        nullMaskViews[c],
-      );
-    }
-    rows[r] = row;
-  }
-
-  return rows;
+  // Return lazy array - values materialize on access
+  return createLazyArray(
+    handle,
+    rowCount,
+    colCount,
+    columnTypes,
+    dataViews,
+    nullMaskViews,
+  );
 }
 
 /**

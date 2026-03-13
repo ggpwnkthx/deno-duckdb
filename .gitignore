@@ -2,4 +2,4 @@
 /gen*
 .env
 CLAUDE.md
-core
+/core

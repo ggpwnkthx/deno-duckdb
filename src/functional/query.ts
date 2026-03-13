@@ -1,181 +1,51 @@
 /**
- * Functional query operations (internal use)
+ * Functional query/result metadata operations.
  */
-import type { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
-import type {
-  ColumnInfo,
-  ConnectionHandle,
-  ResultHandle,
-} from "../types.ts";
-import {
-  createPointerView,
-  createResultBuffer,
-  getPointer,
-  isValidHandle,
-  stringToPointer,
-  validateColumnIndex,
-  validateConnectionHandle,
-  validateResultHandle,
-} from "../helpers.ts";
-import { QueryError } from "../errors.ts";
-import { getLibraryFast, getLibrarySync } from "../lib.ts";
 
-/**
- * Execute a SQL query (internal use)
- *
- * @param connHandle - Connection handle
- * @param sql - SQL query string
- * @returns ResultHandle
- * @throws QueryError if query fails or handle is invalid
- */
+import type { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
+import type { ColumnInfo, ConnectionHandle, ResultHandle } from "../types.ts";
+import {
+  destroyResult as destroyResultInternal,
+  destroyResultSync as destroyResultSyncInternal,
+  executeQuery,
+  getResultColumnCount,
+  getResultColumnInfos,
+  getResultColumnName,
+  getResultColumnType,
+  getResultRowCount,
+} from "../core/native.ts";
+
 export function query(
-  connHandle: ConnectionHandle,
+  connectionHandle: ConnectionHandle,
   sql: string,
 ): ResultHandle {
-  validateConnectionHandle(connHandle);
-  if (!sql || !sql.trim()) {
-    throw new QueryError("SQL query cannot be empty", sql);
-  }
-
-  const lib = getLibraryFast();
-  const handle = createResultBuffer();
-  const connPtr = getPointer(connHandle);
-  const sqlPtr = stringToPointer(sql);
-
-  const result = lib.symbols.duckdb_query(connPtr, sqlPtr, handle);
-
-  if (result !== 0) {
-    const errorPtr = lib.symbols.duckdb_result_error(handle);
-    const view = createPointerView(errorPtr);
-    const errorMsg = view ? view.getCString() : "Query failed";
-    lib.symbols.duckdb_destroy_result(handle);
-    throw new QueryError(errorMsg, sql);
-  }
-
-  return handle;
+  return executeQuery(connectionHandle, sql);
 }
 
-/**
- * Get the number of rows in a result (internal use)
- *
- * @param handle - Result handle
- * @returns Number of rows
- */
-export function rowCount(
-  handle: ResultHandle,
-): bigint {
-  validateResultHandle(handle);
-  const lib = getLibraryFast();
-  return lib.symbols.duckdb_row_count(handle);
+export function rowCount(handle: ResultHandle): bigint {
+  return getResultRowCount(handle);
 }
 
-/**
- * Get the number of columns in a result (internal use)
- *
- * @param handle - Result handle
- * @returns Number of columns
- */
-export function columnCount(
-  handle: ResultHandle,
-): bigint {
-  validateResultHandle(handle);
-  const lib = getLibraryFast();
-  return lib.symbols.duckdb_column_count(handle);
+export function columnCount(handle: ResultHandle): bigint {
+  return getResultColumnCount(handle);
 }
 
-/**
- * Get the name of a column (internal use)
- *
- * @param handle - Result handle
- * @param index - Column index (0-based)
- * @returns Column name
- * @throws RangeError if index is not a valid integer or is out of bounds
- */
-export function columnName(
-  handle: ResultHandle,
-  index: number,
-): string {
-  validateResultHandle(handle);
-  validateColumnIndex(handle, index);
-  const lib = getLibraryFast();
-  const ptr = lib.symbols.duckdb_column_name(handle, BigInt(index));
-  if (!ptr) return "";
-
-  const view = createPointerView(ptr);
-  if (!view) return "";
-
-  return view.getCString();
+export function columnName(handle: ResultHandle, index: number): string {
+  return getResultColumnName(handle, index);
 }
 
-/**
- * Get the type of a column (internal use)
- *
- * @param handle - Result handle
- * @param index - Column index (0-based)
- * @returns Column type enum value
- * @throws RangeError if index is not a valid integer or is out of bounds
- */
-export function columnType(
-  handle: ResultHandle,
-  index: number,
-): DUCKDB_TYPE {
-  validateResultHandle(handle);
-  validateColumnIndex(handle, index);
-  const lib = getLibraryFast();
-  return lib.symbols.duckdb_column_type(
-    handle,
-    BigInt(index),
-  ) as DUCKDB_TYPE;
+export function columnType(handle: ResultHandle, index: number): DUCKDB_TYPE {
+  return getResultColumnType(handle, index);
 }
 
-/**
- * Get all column information (internal use)
- *
- * @param handle - Result handle
- * @returns Array of ColumnInfo
- */
-export function columnInfos(
-  handle: ResultHandle,
-): ColumnInfo[] {
-  validateResultHandle(handle);
-  const count = Number(columnCount(handle));
-  const infos: ColumnInfo[] = [];
-
-  for (let i = 0; i < count; i++) {
-    infos.push({
-      name: columnName(handle, i),
-      type: columnType(handle, i),
-    });
-  }
-
-  return infos;
+export function columnInfos(handle: ResultHandle): ColumnInfo[] {
+  return getResultColumnInfos(handle);
 }
 
-/**
- * Destroy a query result (internal use)
- *
- * @param handle - Result handle to destroy
- * @throws Error if handle is invalid
- */
-export function destroyResult(
-  handle: ResultHandle,
-): void {
-  validateResultHandle(handle);
-  const lib = getLibraryFast();
-  if (isValidHandle(handle)) {
-    lib.symbols.duckdb_destroy_result(handle);
-  }
+export function destroyResult(handle: ResultHandle): void {
+  destroyResultInternal(handle);
 }
 
-/**
- * Destroy a query result (synchronous version)
- */
-export function destroyResultSync(
-  handle: ResultHandle,
-): void {
-  validateResultHandle(handle);
-  const lib = getLibrarySync();
-  if (lib && isValidHandle(handle)) {
-    lib.symbols.duckdb_destroy_result(handle);
-  }
+export function destroyResultSync(handle: ResultHandle): void {
+  destroyResultSyncInternal(handle);
 }

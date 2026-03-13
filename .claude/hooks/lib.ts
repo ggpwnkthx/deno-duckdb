@@ -138,9 +138,8 @@ export function makeFailurePayload(params: {
     ? `\n\n--- stderr ---\n${params.stderr.trimEnd()}`
     : "";
 
-  const body = `${
-    headerParts.join("\n")
-  }${stdoutBlock}${stderrBlock}${truncNote}`.trimEnd();
+  const body = `${headerParts.join("\n")}${stdoutBlock}${stderrBlock}${truncNote}`
+    .trimEnd();
 
   return {
     decision: "block",

@@ -1,70 +1,30 @@
 /**
- * Functional connection operations
+ * Functional connection lifecycle operations.
  */
 
 import type { ConnectionHandle, DatabaseHandle } from "../types.ts";
 import {
-  createConnectionBuffer,
-  getPointer,
-  isValidHandle,
-  validateConnectionHandle,
-  validateDatabaseHandle,
-} from "../helpers.ts";
-import { DatabaseError } from "../errors.ts";
-import { getLibrary, getLibraryFast } from "../lib.ts";
+  closeConnection as closeConnectionInternal,
+  connectToDatabase,
+  isValidConnectionHandle,
+} from "../core/native.ts";
+import { getPointerValue, validateConnectionHandle } from "../core/handles.ts";
 
-/**
- * Create a connection to a database
- *
- * @param dbHandle - Database handle
- * @returns ConnectionHandle
- * @throws DatabaseError if connection fails
- */
 export async function create(
-  dbHandle: DatabaseHandle,
+  databaseHandle: DatabaseHandle,
 ): Promise<ConnectionHandle> {
-  validateDatabaseHandle(dbHandle);
-  const lib = await getLibrary();
-  const handle = createConnectionBuffer();
-  const dbPtr = getPointer(dbHandle);
-
-  const result = lib.symbols.duckdb_connect(dbPtr, handle);
-
-  if (result !== 0) {
-    throw new DatabaseError("Failed to connect to database");
-  }
-
-  return handle;
+  return await connectToDatabase(databaseHandle);
 }
 
-/**
- * Close a connection
- *
- * @param handle - Connection handle to close
- * @throws Error if handle is invalid
- */
-export function closeConnection(
-  handle: ConnectionHandle,
-): void {
-  validateConnectionHandle(handle);
-  const lib = getLibraryFast();
-  if (isValidHandle(handle)) {
-    lib.symbols.duckdb_disconnect(handle);
-  }
+export function closeConnection(handle: ConnectionHandle): void {
+  closeConnectionInternal(handle);
 }
 
-/**
- * Check if a connection handle is valid
- */
 export function isValidConnection(handle: ConnectionHandle): boolean {
-  validateConnectionHandle(handle);
-  return isValidHandle(handle);
+  return isValidConnectionHandle(handle);
 }
 
-/**
- * Get the connection pointer value
- */
 export function getPointerValueConnection(handle: ConnectionHandle): bigint {
   validateConnectionHandle(handle);
-  return getPointer(handle);
+  return getPointerValue(handle);
 }

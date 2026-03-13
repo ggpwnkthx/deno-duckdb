@@ -1,131 +1,119 @@
 /**
- * Example: Azure Blob Storage
+ * Example: Azure Blob Storage with the production-ready APIs.
  *
- * This example demonstrates accessing data from Azure Blob Storage
- * using DuckDB's Azure extension.
- *
- * The example queries NYC Yellow Taxi data from a public Azure blob
- * using anonymous access (no credentials required).
+ * This version uses the actual NYC taxi parquet column names and aliases them
+ * to stable snake_case names for display.
  */
 
-import {
-  closeConnection,
-  closeDatabase,
-  create,
-  destroyResult,
-  query,
-  fetchAll,
-  open,
-} from "@ggpwnkthx/duckdb/functional";
-
+import * as functional from "@ggpwnkthx/duckdb/functional";
 import { Database } from "@ggpwnkthx/duckdb/objective";
+import type { ConnectionHandle, ObjectRow } from "@ggpwnkthx/duckdb";
 
-// Azure blob URL for NYC Yellow Taxi data (public access)
 const AZURE_BLOB_URL =
   "az://azureopendatastorage.blob.core.windows.net/nyctlc/yellow/puYear=*/puMonth=1/*.parquet";
 
+const SAMPLE_QUERY = `
+SELECT
+  vendorID AS vendor_id,
+  tpepPickupDateTime AS pickup_datetime,
+  tpepDropoffDateTime AS dropoff_datetime,
+  passengerCount AS passenger_count,
+  tripDistance AS trip_distance,
+  puLocationId AS pickup_location_id
+FROM read_parquet('${AZURE_BLOB_URL}')
+LIMIT 10
+`;
+
+function execFunctional(connection: ConnectionHandle, sql: string): void {
+  const result = functional.query(connection, sql);
+  functional.destroyResult(result);
+}
+
+function printRows(rows: readonly ObjectRow[]): void {
+  if (rows.length === 0) {
+    console.log("No rows returned");
+    return;
+  }
+
+  console.log("First 10 rows:");
+  for (const row of rows) {
+    console.log(
+      `  vendor=${row.vendor_id} | ${row.pickup_datetime} -> ${row.dropoff_datetime} | passengers=${row.passenger_count} | distance=${row.trip_distance} | pickup_location=${row.pickup_location_id}`,
+    );
+  }
+}
+
 console.log("=== Functional API ===\n");
 
-// Functional API: Pure functions with explicit state management
-console.log("Opening database...");
-const db = await open();
-console.log("Database opened");
+const functionalDb = await functional.open();
+try {
+  const functionalConn = await functional.create(functionalDb);
 
-const conn = await create(db);
-console.log("Connection created");
+  try {
+    console.log("Installing Azure extension...");
+    execFunctional(functionalConn, "INSTALL azure");
 
-// Install and load the Azure extension
-console.log("Installing Azure extension...");
-query(conn, "INSTALL azure");
-console.log("Azure extension installed");
+    console.log("Loading Azure extension...");
+    execFunctional(functionalConn, "LOAD azure");
 
-console.log("Loading Azure extension...");
-query(conn, "LOAD azure");
-console.log("Azure extension loaded");
+    console.log("Configuring Azure for anonymous access...");
+    execFunctional(functionalConn, "SET azure_storage_connection_string = ''");
+    execFunctional(functionalConn, "SET azure_transport_option_type = 'curl'");
 
-// Configure for anonymous access to public blobs
-console.log("Configuring Azure for anonymous access...");
-query(
-  conn,
-  "SET azure_storage_connection_string = ''",
-);
-query(conn, "SET azure_transport_option_type = 'curl'");
-console.log("Azure configured for anonymous access");
+    console.log(`Querying: ${AZURE_BLOB_URL}`);
+    const result = functional.query(functionalConn, SAMPLE_QUERY);
 
-// Query NYC Yellow Taxi data from Azure
-console.log(`Querying: ${AZURE_BLOB_URL}`);
-const resultHandle = query(
-  conn,
-  `SELECT * FROM read_parquet('${AZURE_BLOB_URL}') LIMIT 10`,
-);
-console.log("Query queryd");
-
-const rows = fetchAll(resultHandle);
-console.log(`Result: ${rows.length} rows`);
-
-console.log("\nFirst 10 rows (sample columns):");
-for (const row of rows) {
-  // Parquet columns: vendor_id, pickup_datetime, dropoff_datetime, etc.
-  console.log(
-    `  ${row[0]} | ${row[1]} -> ${row[2]} | passenger_count: ${row[3]}`,
-  );
+    try {
+      const rows = functional.fetchObjects(result);
+      console.log(`Result: ${rows.length} rows\n`);
+      printRows(rows);
+    } finally {
+      functional.destroyResult(result);
+    }
+  } finally {
+    functional.closeConnection(functionalConn);
+  }
+} finally {
+  functional.closeDatabase(functionalDb);
 }
 
-// Clean up - must manually destroy handles
-destroyResult(resultHandle);
-closeConnection(conn);
-closeDatabase(db);
+console.log("\n=== Objective API ===\n");
 
-console.log("All resources cleaned up\n");
+const objectiveDb = new Database();
+try {
+  const objectiveConn = await objectiveDb.connect();
 
-console.log("=== Objective API ===\n");
+  try {
+    console.log("Installing Azure extension...");
+    let result = objectiveConn.query("INSTALL azure");
+    result.close();
 
-// Objective API: Classes with automatic resource management
-console.log("Opening database...");
-const db2 = new Database();
-await db2.open();
-console.log("Database opened");
+    console.log("Loading Azure extension...");
+    result = objectiveConn.query("LOAD azure");
+    result.close();
 
-const conn2 = await db2.connect();
-console.log("Connection created");
+    console.log("Configuring Azure for anonymous access...");
+    result = objectiveConn.query("SET azure_storage_connection_string = ''");
+    result.close();
 
-// Install and load the Azure extension
-console.log("Installing Azure extension...");
-conn2.query("INSTALL azure");
-console.log("Azure extension installed");
+    result = objectiveConn.query("SET azure_transport_option_type = 'curl'");
+    result.close();
 
-console.log("Loading Azure extension...");
-conn2.query("LOAD azure");
-console.log("Azure extension loaded");
+    console.log(`Querying: ${AZURE_BLOB_URL}`);
+    result = objectiveConn.query(SAMPLE_QUERY);
 
-// Configure for anonymous access to public blobs
-console.log("Configuring Azure for anonymous access...");
-conn2.query("SET azure_storage_connection_string = ''");
-conn2.query("SET azure_transport_option_type = 'curl'");
-console.log("Azure configured for anonymous access");
-
-// Query NYC Yellow Taxi data from Azure
-console.log(`Querying: ${AZURE_BLOB_URL}`);
-const result2 = conn2.query(
-  `SELECT * FROM read_parquet('${AZURE_BLOB_URL}') LIMIT 10`,
-);
-console.log("Query queryd");
-
-const rows2 = result2.fetchAll();
-console.log(`Result: ${rows2.length} rows`);
-
-console.log("\nFirst 10 rows (sample columns):");
-for (const row of rows2) {
-  console.log(
-    `  ${row[0]} | ${row[1]} -> ${row[2]} | passenger_count: ${row[3]}`,
-  );
+    try {
+      const rows = result.toArrayOfObjects();
+      console.log(`Result: ${rows.length} rows\n`);
+      printRows(rows);
+    } finally {
+      result.close();
+    }
+  } finally {
+    objectiveConn.close();
+  }
+} finally {
+  objectiveDb.close();
 }
 
-// Clean up - manually close in reverse order
-result2.close();
-conn2.close();
-db2.close();
-
-console.log("All resources cleaned up\n");
-
-console.log("=== Done! ===");
+console.log("\n=== Done! ===");

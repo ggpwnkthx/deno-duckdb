@@ -12,7 +12,8 @@
       "Bash(deno:*)",
       "Bash(sed:*)",
       "Bash(grep:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "mcp__ide__executeCode"
     ]
   },
   "hooks": {

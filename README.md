@@ -1,192 +1,77 @@
-[![JSR](https://jsr.io/badges/@ggpwnkthx/duckdb)](https://jsr.io/@ggpwnkthx/duckdb)
+# @ggpwnkthx/duckdb
 
-Type-safe DuckDB FFI bindings for Deno. Wraps
-[`@ggpwnkthx/libduckdb`](https://jsr.io/@ggpwnkthx/libduckdb) with two distinct
-APIs for working with DuckDB databases.
+Type-safe DuckDB FFI bindings for Deno with both functional and object-oriented APIs.
+
+## What changed in this refactor
+
+This production pass fixes the biggest correctness and API issues in the earlier version:
+
+- exact decimal values are surfaced as strings instead of requiring `CAST(... AS DOUBLE)` in user SQL
+- `BLOB` values are decoded as `Uint8Array`
+- string/blob decoding now respects DuckDB's `duckdb_string_t` layout instead of assuming C strings
+- `queryTyped()` no longer uses an unsafe generic cast
+- integer binding rejects unsafe JavaScript integers instead of silently losing precision
+- library caching is keyed by `libPath` instead of using one global singleton for every path
+- the public package entry point now uses relative exports instead of self-importing through its own JSR name
 
 ## Installation
 
-```bash
-deno add jsr:@ggpwnkthx/duckdb
+```ts
+import * as functional from "jsr:@ggpwnkthx/duckdb@2.0.0/functional";
+import { Database } from "jsr:@ggpwnkthx/duckdb@2.0.0/objective";
 ```
 
-Or import directly in your code:
+## Permissions
 
-```typescript
-import { ... } from "jsr:@ggpwnkthx/duckdb";
-import { ... } from "jsr:@ggpwnkthx/duckdb/functional";
-import { ... } from "jsr:@ggpwnkthx/duckdb/objective";
+Typical dev/test usage requires:
+
+- `--allow-ffi`
+- `--allow-read`
+- `--allow-env`
+
+If the native DuckDB library is not already present, the low-level loader may auto-download it. In that case you may also need:
+
+- `--allow-net`
+- `--allow-write`
+
+## Quick start
+
+```ts
+import * as functional from "jsr:@ggpwnkthx/duckdb@2.0.0/functional";
+
+const db = await functional.open();
+const conn = await functional.create(db);
+
+try {
+  const result = functional.query(conn, "SELECT 42 AS answer");
+  try {
+    console.log(functional.fetchObjects(result));
+  } finally {
+    functional.destroyResult(result);
+  }
+} finally {
+  functional.closeConnection(conn);
+  functional.closeDatabase(db);
+}
 ```
 
-## Requirements
+## Value model
 
-- [![Deno](https://img.shields.io/badge/deno-2.0+-fff?style=flat&logo=deno)](https://deno.land)
-- DuckDB (version determined by `@ggpwnkthx/libduckdb`)
+The wrapper returns the following JavaScript value types:
 
-## Quick Start
+- booleans, numbers, bigints, strings, `null`
+- `Uint8Array` for `BLOB`
+- `{ months, days, micros }` for `INTERVAL`
 
-### Functional API
+Notes:
 
-Pure functional style with explicit state passing:
+- `DECIMAL`, `ENUM`, `UUID`, `BIT`, and other complex/legacy-awkward values are returned as exact text through DuckDB's legacy value conversion helpers.
+- This avoids silent precision loss while keeping the public API simple and serializable.
 
-```typescript
-import {
-  closeConnection,
-  closeDatabase,
-  create,
-  destroyResult,
-  execute,
-  fetchAll,
-  open,
-} from "jsr:@ggpwnkthx/duckdb/functional";
+## Development
 
-// Library loads automatically on first use
-const db = await open();
-const conn = await create(db);
-const resultHandle = execute(conn, "SELECT * FROM t");
-const rows = fetchAll(resultHandle);
-destroyResult(resultHandle);
-closeConnection(conn);
-closeDatabase(db);
+```sh
+deno task check
+deno task test
+deno task ci
 ```
-
-### Objective API
-
-Classes with encapsulated handles and automatic resource management:
-
-```typescript
-import { Database } from "jsr:@ggpwnkthx/duckdb/objective";
-
-// Library loads automatically on first use
-const db = new Database();
-await db.open();
-const conn = await db.connect();
-const result = conn.query("SELECT * FROM t");
-const rows = result.fetchAll();
-result.close();
-conn.close();
-db.close();
-```
-
-Or use `Symbol.dispose` for automatic cleanup:
-
-```typescript
-import { Database } from "jsr:@ggpwnkthx/duckdb/objective";
-
-using db = new Database();
-await db.open();
-using conn = await db.connect();
-const result = conn.query("SELECT * FROM t");
-const rows = result.fetchAll();
-// Auto-cleanup at end of scope
-```
-
-## API Overview
-
-This library provides two parallel APIs that wrap the same underlying DuckDB FFI
-calls:
-
-### Functional API (`jsr:@ggpwnkthx/duckdb/functional`)
-
-Pure functional style with explicit state management. Functions return result
-objects containing handles that must be manually managed and destroyed.
-
-**Entry point:** `src/functional/mod.ts`
-
-**Database functions:**
-
-- `open` - Open a database (auto-loads library)
-- `closeDatabase` - Close a database
-- `isValidDatabase` - Check if database handle is valid
-- `getPointerValue` - Get database pointer value
-
-**Connection functions:**
-
-- `create` - Create a connection
-- `closeConnection` - Close a connection
-- `isValidConnection` - Check if connection handle is valid
-- `getPointerValueConnection` - Get connection pointer value
-
-**Query functions:**
-
-- `execute` - Execute a query
-- `rowCount` - Get number of rows in result
-- `columnCount` - Get number of columns in result
-- `columnName` - Get column name by index
-- `columnType` - Get column type by index
-- `columnInfos` - Get all column information
-- `destroyResult` - Destroy a result handle (async)
-- `destroyResultSync` - Destroy a result handle (sync)
-
-**Prepared statement functions:**
-
-- `prepare` - Prepare a SQL statement
-- `executePrepared` - Execute a prepared statement
-- `preparedColumnCount` - Get column count for prepared statement
-- `preparedParameterCount` - Get parameter count for prepared statement
-- `bind` - Bind parameters to prepared statement
-- `destroyPrepared` - Destroy prepared statement (async)
-- `destroyPreparedSync` - Destroy prepared statement (sync)
-
-**Value extraction functions:**
-
-- `fetchAll` - Fetch all rows from a result
-- `isNull` - Check if value at row/col is NULL
-- `getInt32` - Get INT32 value
-- `getInt64` - Get INT64 value
-- `getDouble` - Get DOUBLE value
-- `getString` - Get VARCHAR value
-- `getValueByType` - Get value by DuckDB type
-
-**Lazy iteration:**
-
-- `stream` - Iterate over rows from query lazily
-
-### Objective API (`jsr:@ggpwnkthx/duckdb/objective`)
-
-Object-oriented API with classes that encapsulate DuckDB handles and provide
-automatic resource management. Supports `Symbol.dispose` for automatic cleanup.
-
-**Entry point:** `src/objective/mod.ts`
-
-**Classes:**
-
-- `Database` - Represents a DuckDB database
-- `Connection` - Represents a database connection
-- `QueryResult` - Represents a query result set
-- `PreparedStatement` - Represents a prepared SQL statement
-
-**Types:**
-
-- `RowStream` - Type for lazy iteration row results
-
-**Error classes:**
-
-- `DuckDBError` - Base error class
-- `DatabaseError` - Database operation errors
-- `QueryError` - Query execution errors
-- `InvalidResourceError` - Invalid handle errors
-
-## Key Features
-
-- **Type-safe** - Full TypeScript type definitions
-- **Two APIs** - Choose between functional or object-oriented style
-- **Auto-loading** - Library loads automatically on first use
-- **Automatic cleanup** - Objective API handles resource management
-- **Symbol.dispose support** - Use `using` keyword for automatic cleanup
-- **Lazy iteration** - Iterate over large query results without loading all into
-  memory
-
-## Testing
-
-```bash
-# Run all tests
-deno test -A
-
-# Run a single test file
-deno test -A path/to/test.ts
-```
-
-## License
-
-MIT

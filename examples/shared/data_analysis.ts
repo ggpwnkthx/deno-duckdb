@@ -1,5 +1,10 @@
 /**
- * Shared SQL for data analysis examples
+ * Shared SQL for data analysis examples.
+ *
+ * Notes:
+ * - Decimal values are returned as exact strings by the wrapper, so we no longer
+ *   need to cast money-like values to DOUBLE in user SQL.
+ * - Prepared statements in this wrapper use positional `?` placeholders.
  */
 
 export const CREATE_PRODUCTS = `
@@ -57,27 +62,32 @@ INSERT INTO orders VALUES
 `;
 
 export const PRODUCTS_BY_PRICE = `
-SELECT name, price, category
+SELECT
+  name,
+  price,
+  category
 FROM products
 ORDER BY price DESC;
 `;
 
 export const ORDER_DETAILS = `
 SELECT
-  o.id as order_id,
-  c.name as customer_name,
-  p.name as product_name,
+  o.id AS order_id,
+  c.name AS customer_name,
+  p.name AS product_name,
   o.quantity,
   o.order_date,
-  p.price * o.quantity as total
+  p.price * o.quantity AS total
 FROM orders o
 JOIN customers c ON o.customer_id = c.id
 JOIN products p ON o.product_id = p.id
-ORDER BY o.order_date;
+ORDER BY o.order_date, o.id;
 `;
 
 export const ELECTRONICS_BY_PRICE = `
-SELECT name, price
+SELECT
+  name,
+  price
 FROM products
 WHERE category = 'Electronics'
 ORDER BY price DESC;
@@ -86,28 +96,33 @@ ORDER BY price DESC;
 export const ORDERS_BY_DATE_RANGE = `
 SELECT *
 FROM orders
-WHERE order_date BETWEEN :start_date AND :end_date;
+WHERE order_date BETWEEN ? AND ?
+ORDER BY order_date, id;
 `;
 
 export const CUSTOMER_TOTALS = `
 SELECT
-  c.name as customer_name,
-  SUM(p.price * o.quantity) as total_spent,
-  COUNT(o.id) as order_count
+  c.name AS customer_name,
+  SUM(p.price * o.quantity) AS total_spent,
+  COUNT(o.id) AS order_count
 FROM customers c
 LEFT JOIN orders o ON c.id = o.customer_id
 LEFT JOIN products p ON o.product_id = p.id
 GROUP BY c.id, c.name
-ORDER BY total_spent DESC;
+ORDER BY total_spent DESC NULLS LAST, c.name;
 `;
 
 export const PRODUCTS_ABOVE_AVERAGE = `
-SELECT name, price
+SELECT
+  name,
+  price
 FROM products
 WHERE price > (SELECT AVG(price) FROM products)
 ORDER BY price;
 `;
 
 export const ALL_ORDERS = `
-SELECT * FROM orders ORDER BY id;
+SELECT *
+FROM orders
+ORDER BY id;
 `;

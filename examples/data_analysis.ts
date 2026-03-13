@@ -1,100 +1,200 @@
 /**
- * Example: Data Analysis
+ * Example: Data analysis with the production-ready APIs.
  *
- * Demonstrates common data analysis workflows with the functional API.
- * Uses name-based column access for cleaner, more readable code.
+ * Demonstrates:
+ * - explicit result management in the functional API
+ * - higher-level row/object helpers in the objective API
+ * - prepared statements with positional parameters
+ * - exact decimal handling without SQL casts
  */
 
-import {
-  closeConnection,
-  closeDatabase,
-  create,
-  destroyResult,
-  fetchAll,
-  open,
-  query,
-} from "@ggpwnkthx/duckdb/functional";
-import { asRow } from "@ggpwnkthx/duckdb";
+import * as functional from "@ggpwnkthx/duckdb/functional";
+import { Database } from "@ggpwnkthx/duckdb/objective";
+import type { ObjectRow } from "@ggpwnkthx/duckdb";
 
 import {
+  ALL_ORDERS,
   CREATE_CUSTOMERS,
   CREATE_ORDERS,
   CREATE_PRODUCTS,
   CUSTOMER_TOTALS,
+  ELECTRONICS_BY_PRICE,
   INSERT_CUSTOMERS,
   INSERT_ORDERS,
   INSERT_PRODUCTS,
   ORDER_DETAILS,
+  ORDERS_BY_DATE_RANGE,
   PRODUCTS_BY_PRICE,
 } from "./shared/data_analysis.ts";
 
-console.log("=== Functional API ===\n");
-
-// Functional API
-const db1 = await open();
-const conn1 = await create(db1);
-
-// Create tables and insert data
-query(conn1, CREATE_PRODUCTS);
-query(conn1, CREATE_CUSTOMERS);
-query(conn1, CREATE_ORDERS);
-query(conn1, INSERT_PRODUCTS);
-query(conn1, INSERT_CUSTOMERS);
-query(conn1, INSERT_ORDERS);
-
-console.log("Tables created and data inserted\n");
-
-// Query: Products by price
-let result = query(conn1, PRODUCTS_BY_PRICE);
-let rows = fetchAll(result);
-
-console.log("Products by price (functional):");
-for (const row of rows) {
-  const r = asRow<{ name: string; price: number; category: string }>(row);
-  console.log(`  ${r.name}: $${r.price} (${r.category})`);
+function printSection(title: string): void {
+  console.log(`\n${title}`);
+  console.log("-".repeat(title.length));
 }
-destroyResult(result);
 
-// Query: Order details with joins
-result = query(conn1, ORDER_DETAILS);
-rows = fetchAll(result);
-
-console.log("\nOrder details (functional):");
-for (const row of rows) {
-  const r = asRow<{
-    order_id: number;
-    customer_name: string;
-    product_name: string;
-    quantity: number;
-    order_date: Date;
-    total: number;
-  }>(row);
-  console.log(
-    `  Order ${r.order_id}: ${r.customer_name} bought ${r.product_name} x${r.quantity} on ${r.order_date} ($${r.total})`,
-  );
+function printProductRows(rows: readonly ObjectRow[]): void {
+  for (const row of rows) {
+    console.log(`  ${row.name}: $${row.price} (${row.category})`);
+  }
 }
-destroyResult(result);
 
-// Query: Customer totals
-result = query(conn1, CUSTOMER_TOTALS);
-rows = fetchAll(result);
-
-console.log("\nCustomer totals (functional):");
-for (const row of rows) {
-  const r = asRow<{
-    customer_name: string;
-    total_spent: number;
-    order_count: number;
-  }>(row);
-  console.log(
-    `  ${r.customer_name}: $${r.total_spent ?? 0} (${
-      r.order_count ?? 0
-    } orders)`,
-  );
+function printOrderRows(rows: readonly ObjectRow[]): void {
+  for (const row of rows) {
+    console.log(
+      `  Order ${row.order_id}: ${row.customer_name} bought ${row.product_name} x${row.quantity} on ${row.order_date} ($${row.total})`,
+    );
+  }
 }
-destroyResult(result);
 
-closeConnection(conn1);
-closeDatabase(db1);
+function printCustomerTotals(rows: readonly ObjectRow[]): void {
+  for (const row of rows) {
+    const total = row.total_spent ?? "0";
+    const count = row.order_count ?? 0;
+    console.log(`  ${row.customer_name}: $${total} (${count} orders)`);
+  }
+}
+
+function execFunctional(
+  connection: Parameters<typeof functional.query>[0],
+  sql: string,
+): void {
+  const result = functional.query(connection, sql);
+  functional.destroyResult(result);
+}
+
+function queryFunctionalObjects(
+  connection: Parameters<typeof functional.query>[0],
+  sql: string,
+): ObjectRow[] {
+  const result = functional.query(connection, sql);
+
+  try {
+    return functional.fetchObjects(result);
+  } finally {
+    functional.destroyResult(result);
+  }
+}
+
+console.log("=== Functional API ===");
+
+const functionalDb = await functional.open();
+try {
+  const functionalConn = await functional.create(functionalDb);
+
+  try {
+    for (const sql of [
+      CREATE_PRODUCTS,
+      CREATE_CUSTOMERS,
+      CREATE_ORDERS,
+      INSERT_PRODUCTS,
+      INSERT_CUSTOMERS,
+      INSERT_ORDERS,
+    ]) {
+      execFunctional(functionalConn, sql);
+    }
+
+    console.log("\nTables created and data inserted");
+
+    printSection("Products by price");
+    printProductRows(queryFunctionalObjects(functionalConn, PRODUCTS_BY_PRICE));
+
+    printSection("Order details");
+    printOrderRows(queryFunctionalObjects(functionalConn, ORDER_DETAILS));
+
+    printSection("Customer totals");
+    printCustomerTotals(queryFunctionalObjects(functionalConn, CUSTOMER_TOTALS));
+
+    printSection("Electronics by price");
+    for (const row of queryFunctionalObjects(functionalConn, ELECTRONICS_BY_PRICE)) {
+      console.log(`  ${row.name}: $${row.price}`);
+    }
+
+    printSection("Orders between 2024-01-01 and 2024-02-29");
+    const rangeStatement = functional.prepare(functionalConn, ORDERS_BY_DATE_RANGE);
+    try {
+      functional.bind(rangeStatement, ["2024-01-01", "2024-02-29"]);
+      const result = functional.executePrepared(rangeStatement);
+
+      try {
+        for (const row of functional.fetchObjects(result)) {
+          console.log(
+            `  Order ${row.id}: customer=${row.customer_id}, product=${row.product_id}, quantity=${row.quantity}, date=${row.order_date}`,
+          );
+        }
+      } finally {
+        functional.destroyResult(result);
+      }
+    } finally {
+      functional.destroyPrepared(rangeStatement);
+    }
+
+    printSection("All orders");
+    for (const row of queryFunctionalObjects(functionalConn, ALL_ORDERS)) {
+      console.log(
+        `  ${row.id}: customer=${row.customer_id}, product=${row.product_id}, quantity=${row.quantity}, date=${row.order_date}`,
+      );
+    }
+  } finally {
+    functional.closeConnection(functionalConn);
+  }
+} finally {
+  functional.closeDatabase(functionalDb);
+}
+
+console.log("\n=== Objective API ===");
+
+const objectiveDb = new Database();
+try {
+  const objectiveConn = await objectiveDb.connect();
+
+  try {
+    for (const sql of [
+      CREATE_PRODUCTS,
+      CREATE_CUSTOMERS,
+      CREATE_ORDERS,
+      INSERT_PRODUCTS,
+      INSERT_CUSTOMERS,
+      INSERT_ORDERS,
+    ]) {
+      const result = objectiveConn.query(sql);
+      result.close();
+    }
+
+    console.log("\nTables created and data inserted");
+
+    printSection("Products by price");
+    printProductRows(objectiveConn.queryObjects(PRODUCTS_BY_PRICE));
+
+    printSection("Order details");
+    printOrderRows(objectiveConn.queryObjects(ORDER_DETAILS));
+
+    printSection("Customer totals");
+    printCustomerTotals(objectiveConn.queryObjects(CUSTOMER_TOTALS));
+
+    printSection("Orders between 2024-01-01 and 2024-02-29");
+    const statement = objectiveConn.prepare(ORDERS_BY_DATE_RANGE);
+    try {
+      const result = statement
+        .bind(["2024-01-01", "2024-02-29"])
+        .execute();
+
+      try {
+        for (const row of result.objects()) {
+          console.log(
+            `  Order ${row.id}: customer=${row.customer_id}, product=${row.product_id}, quantity=${row.quantity}, date=${row.order_date}`,
+          );
+        }
+      } finally {
+        result.close();
+      }
+    } finally {
+      statement.close();
+    }
+  } finally {
+    objectiveConn.close();
+  }
+} finally {
+  objectiveDb.close();
+}
 
 console.log("\nAll done!");

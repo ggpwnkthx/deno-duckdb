@@ -1,167 +1,34 @@
 /**
- * Functional database operations
+ * Functional database lifecycle operations.
  */
 
 import type { DatabaseConfig, DatabaseHandle } from "../types.ts";
 import {
-  asPointer,
-  createPointerBuffer,
-  createPointerView,
-  getPointer,
-  isValidHandle,
-  stringToPointer,
+  closeDatabase as closeDatabaseInternal,
+  isValidDatabaseHandle,
+  openDatabase,
+} from "../core/native.ts";
+import {
+  getPointerValue as getHandlePointerValue,
   validateDatabaseHandle,
-} from "../helpers.ts";
-import { DatabaseError } from "../errors.ts";
-import { getLibrary, getLibraryFast } from "../lib.ts";
+} from "../core/handles.ts";
 
-/**
- * Open a DuckDB database
- *
- * @param config - Database configuration options
- * @returns DatabaseHandle
- * @throws DatabaseError if opening fails
- */
-export async function open(
-  config?: DatabaseConfig,
-): Promise<DatabaseHandle> {
-  const lib = await getLibrary();
-  const handle = createPointerBuffer();
-  const path = config?.path ?? ":memory:";
-  const pathPtr = stringToPointer(path);
-
-  // Determine if we need to use extended open API
-  // Use it properties other than 'path' when config has any
-  const configKeys = config
-    ? Object.keys(config).filter((k) => k !== "path")
-    : [];
-  const useExtendedApi = configKeys.length > 0;
-
-  if (useExtendedApi) {
-    const configPtrPtr = createPointerBuffer();
-    const configResult = lib.symbols.duckdb_create_config(configPtrPtr);
-
-    if (configResult !== 0) {
-      throw new DatabaseError("Failed to create database config");
-    }
-
-    // Get the actual config pointer from the output buffer
-    const configPtr = getPointer(configPtrPtr);
-
-    // Iterate through all config properties except 'path'
-    for (const key of configKeys) {
-      let name = key;
-      let value = config?.[key] ?? "";
-
-      // Handle special accessMode -> access_mode conversion
-      // DuckDB expects uppercase values like "READ_ONLY" or "READ_WRITE"
-      if (key === "accessMode") {
-        name = "access_mode";
-        const normalizedValue = String(value).toLowerCase();
-        // Only accept explicit "read_only" or "read_write"
-        if (normalizedValue === "read_only") {
-          value = "READ_ONLY";
-        } else if (normalizedValue === "read_write") {
-          value = "READ_WRITE";
-        } else {
-          // Invalid value - don't silently coerce, let DuckDB reject it
-          value = String(value).toUpperCase();
-        }
-      }
-
-      // Skip undefined or empty values
-      if (!value) continue;
-
-      const namePtr = stringToPointer(name);
-      const valuePtr = stringToPointer(value);
-
-      // duckdb_set_config(config, name, value)
-      const setConfigResult = lib.symbols.duckdb_set_config(
-        configPtr,
-        namePtr,
-        valuePtr,
-      );
-
-      if (setConfigResult !== 0) {
-        lib.symbols.duckdb_destroy_config(configPtrPtr);
-        throw new DatabaseError(`Failed to set config option: ${key}`);
-      }
-    }
-
-    // duckdb_open_ext(path, out_database, config, error)
-    const errorBuffer = createPointerBuffer();
-    const openResult = lib.symbols.duckdb_open_ext(
-      pathPtr,
-      handle,
-      configPtr,
-      errorBuffer,
-    );
-    lib.symbols.duckdb_destroy_config(configPtrPtr);
-
-    if (openResult !== 0) {
-      const errorPtr = getPointer(errorBuffer);
-      let errorMsg = "Failed to open database";
-      if (errorPtr !== 0n) {
-        const errorView = createPointerView(asPointer(errorPtr));
-        if (errorView) {
-          try {
-            errorMsg = errorView.getCString();
-          } catch {
-            // Error pointer was invalid, use default message
-          }
-        }
-        // Free the error message allocated by DuckDB if pointer is valid
-        try {
-          lib.symbols.duckdb_free(asPointer(errorPtr));
-        } catch {
-          // Ignore free errors for invalid pointers
-        }
-      }
-      throw new DatabaseError(errorMsg);
-    }
-
-    return handle;
-  }
-
-  // Use simple open API when no config options
-  const result = lib.symbols.duckdb_open(pathPtr, handle);
-
-  if (result !== 0) {
-    throw new DatabaseError("Failed to open database");
-  }
-
-  return handle;
+export async function open(config?: DatabaseConfig): Promise<DatabaseHandle> {
+  return await openDatabase(config);
 }
 
-/**
- * Close a DuckDB database
- *
- * @param handle - Database handle to close
- * @throws Error if handle is not a valid buffer (type check failure)
- */
-export function closeDatabase(
-  handle: DatabaseHandle,
-): void {
-  // Validate the handle type and size, but not validity (for backward compatibility)
-  validateDatabaseHandle(handle);
-  const lib = getLibraryFast();
-  if (isValidHandle(handle)) {
-    lib.symbols.duckdb_close(handle);
-  }
+export function closeDatabase(handle: DatabaseHandle): void {
+  closeDatabaseInternal(handle);
 }
 
-/**
- * Check if a database handle is valid
- */
 export function isValidDatabase(handle: DatabaseHandle): boolean {
-  validateDatabaseHandle(handle);
-  return isValidHandle(handle);
+  return isValidDatabaseHandle(handle);
 }
 
-/**
- * Get the database pointer value
- */
-export function getPointerValue(handle: DatabaseHandle): bigint {
+export function getPointerValueDatabase(handle: DatabaseHandle): bigint {
   validateDatabaseHandle(handle);
-  return getPointer(handle);
+  return getHandlePointerValue(handle);
 }
+
+/** Backward-compatible alias. */
+export const getPointerValue = getPointerValueDatabase;

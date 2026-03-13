@@ -1,39 +1,90 @@
 /**
- * Error classes for DuckDB operations
+ * Typed error hierarchy for DuckDB operations.
  */
 
-/** Base error for all DuckDB errors */
+export type DuckDBErrorCode =
+  | "DATABASE_ERROR"
+  | "QUERY_ERROR"
+  | "INVALID_RESOURCE"
+  | "VALIDATION_ERROR"
+  | "LIBRARY_LOAD_FAILED";
+
+export type ErrorContext = Readonly<Record<string, unknown>>;
+
+interface DuckDBErrorInit {
+  code: DuckDBErrorCode;
+  message: string;
+  context?: ErrorContext;
+  cause?: unknown;
+}
+
+/** Base error for all wrapper failures. */
 export class DuckDBError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "DuckDBError";
+  readonly code: DuckDBErrorCode;
+  readonly context?: ErrorContext;
+
+  constructor(init: DuckDBErrorInit) {
+    super(
+      init.message,
+      init.cause instanceof Error ? { cause: init.cause } : undefined,
+    );
+    this.name = new.target.name;
+    this.code = init.code;
+    this.context = init.context;
+
+    if (!(init.cause instanceof Error) && init.cause !== undefined) {
+      (this as Error & { cause?: unknown }).cause = init.cause;
+    }
   }
 }
 
-/** Error during database operation */
+/** Database / connection / prepared-statement lifecycle failure. */
 export class DatabaseError extends DuckDBError {
-  constructor(message: string) {
-    super(message);
-    this.name = "DatabaseError";
+  constructor(message: string, context?: ErrorContext, cause?: unknown) {
+    super({
+      code: "DATABASE_ERROR",
+      message,
+      context,
+      cause,
+    });
   }
 }
 
-/** Error during query execution */
+/** Query text or execution failure. */
 export class QueryError extends DuckDBError {
-  /** The query that caused the error */
-  public readonly query: string;
+  readonly query: string;
 
-  constructor(message: string, query: string) {
-    super(message);
-    this.name = "QueryError";
+  constructor(message: string, query: string, context?: ErrorContext) {
+    super({
+      code: "QUERY_ERROR",
+      message,
+      context: {
+        ...context,
+        query,
+      },
+    });
     this.query = query;
   }
 }
 
-/** Error when accessing invalid resources */
+/** Attempted access to a closed / invalid resource. */
 export class InvalidResourceError extends DuckDBError {
-  constructor(message: string) {
-    super(message);
-    this.name = "InvalidResourceError";
+  constructor(message: string, context?: ErrorContext) {
+    super({
+      code: "INVALID_RESOURCE",
+      message,
+      context,
+    });
+  }
+}
+
+/** Invalid input provided to the wrapper. */
+export class ValidationError extends DuckDBError {
+  constructor(message: string, context?: ErrorContext) {
+    super({
+      code: "VALIDATION_ERROR",
+      message,
+      context,
+    });
   }
 }

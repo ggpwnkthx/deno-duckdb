@@ -1,116 +1,66 @@
 /**
- * Shared types for the DuckDB API
+ * Public shared types for the DuckDB wrapper.
  */
 
 import type { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
 
-/**
- * Helper to create a branded type with exact byte size
- */
-type SizedHandle<T, N extends number> = T & {
-  __byteSize: N;
-  __brand: never;
+type Handle<ByteSize extends number, Brand extends string> = Uint8Array<ArrayBuffer> & {
+  readonly __byteSize: ByteSize;
+  readonly __brand: Brand;
 };
 
-type Handle<N extends number> = SizedHandle<Uint8Array<ArrayBuffer>, N>;
+/** 8-byte pointer buffer for a database handle. */
+export type DatabaseHandle = Handle<8, "DatabaseHandle">;
 
-/** 8-byte pointer buffer for database handle */
-export type DatabaseHandle = Handle<8>;
+/** 8-byte pointer buffer for a connection handle. */
+export type ConnectionHandle = Handle<8, "ConnectionHandle">;
 
-/** 8-byte pointer buffer for connection handle */
-export type ConnectionHandle = Handle<8>;
+/** 48-byte `duckdb_result` struct buffer. */
+export type ResultHandle = Handle<48, "ResultHandle">;
 
-/** 48-byte buffer for query result */
-export type ResultHandle = Handle<48>;
+/** 8-byte pointer buffer for a prepared statement handle. */
+export type PreparedStatementHandle = Handle<8, "PreparedStatementHandle">;
 
-/** 8-byte pointer buffer for prepared statement */
-export type PreparedStatementHandle = Handle<8>;
-
-/** 8-byte pointer buffer for data chunk */
-export type DataChunkHandle = Handle<8>;
-
-/** Database configuration options */
-export interface DatabaseConfig {
-  /** Path to database file, or ":memory:" for in-memory database */
-  path?: string;
-  /** Additional DuckDB config options (e.g., threads, max_memory, access_mode) */
-  [key: string]: string | undefined;
-}
-
-/** Options for query execution */
-export interface QueryOptions {
-  /** Number of rows to return (0 = all) */
-  limit?: number;
-}
-
-/** Column information */
-export interface ColumnInfo {
-  /** Column name */
-  name: string;
-  /** Column type (DuckDB type enum value) */
-  type: DUCKDB_TYPE;
-}
-
-/** Row data as array of values */
-export type RowData = unknown[];
-
-/** Query result wrapper */
-export interface QueryResult<T = RowData[]> {
-  /** Handle to the result (must be destroyed) */
-  handle: ResultHandle;
-  /** Whether the query succeeded */
-  success: boolean;
-  /** Error message if query failed */
-  error?: string;
-  /** Query that was executed */
-  query: string;
-  /** Result data */
-  data?: T;
-}
-
-/** Prepared statement result */
-export interface PreparedResult {
-  /** Handle to the prepared statement (must be destroyed) */
-  handle: PreparedStatementHandle;
-  /** Whether preparation succeeded */
-  success: boolean;
-  /** Error message if preparation failed */
-  error?: string;
-}
-
-/** Interval value type */
-export type IntervalValue = {
+/** DuckDB interval payload. */
+export interface IntervalValue {
   months: number;
   days: number;
   micros: bigint;
-};
+}
 
-/** Value types that can be retrieved from results */
+/** Scalar values surfaced by the wrapper. */
 export type ValueType =
+  | boolean
   | number
   | bigint
   | string
-  | boolean
-  | null
   | Uint8Array
+  | null
   | IntervalValue;
 
-/** Result of opening a database */
-export interface OpenResult {
-  /** Handle to the database */
-  handle: DatabaseHandle;
-  /** Whether opening succeeded */
-  success: boolean;
-  /** Error message if opening failed */
-  error?: string;
+/** A row as an ordered value array. */
+export type RowData = ValueType[];
+
+/** A row as a name-keyed object. */
+export type ObjectRow = Record<string, ValueType>;
+
+/** Metadata for one result column. */
+export interface ColumnInfo {
+  name: string;
+  type: DUCKDB_TYPE;
 }
 
-/** Result of creating a connection */
-export interface ConnectResult {
-  /** Handle to the connection */
-  handle: ConnectionHandle;
-  /** Whether connection succeeded */
-  success: boolean;
-  /** Error message if connection failed */
-  error?: string;
+/**
+ * Database configuration.
+ *
+ * Known ergonomic fields such as `accessMode` are normalized to the names
+ * expected by DuckDB (`access_mode`) before FFI calls.
+ */
+export interface DatabaseConfig {
+  /** Database path, or `:memory:`. */
+  path?: string;
+  /** Ergonomic alias for DuckDB's `access_mode` option. */
+  accessMode?: "read_only" | "read_write" | string;
+  /** Any additional DuckDB config key/value pair. */
+  readonly [key: string]: string | undefined;
 }

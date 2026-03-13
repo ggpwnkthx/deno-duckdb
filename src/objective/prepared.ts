@@ -1,79 +1,52 @@
 /**
- * Object-Oriented PreparedStatement class
+ * Object-oriented prepared statement wrapper.
  */
 
 import type { PreparedStatementHandle } from "../types.ts";
 import type { BindValue } from "../functional/prepared.ts";
-import { DatabaseError } from "../errors.ts";
-import * as prep from "../functional/prepared.ts";
+import {
+  bindPreparedParameters,
+  destroyPreparedStatementSync,
+  executePreparedStatement,
+  preparedColumnCount,
+  resetPreparedStatement,
+} from "../core/native.ts";
+import { DisposableResource } from "./base.ts";
 import { QueryResult } from "./query.ts";
 
-/**
- * PreparedStatement class - represents a prepared SQL statement
- */
-export class PreparedStatement {
-  private handle: PreparedStatementHandle | null = null;
-
-  /**
-   * Create a new PreparedStatement instance (internal use)
-   */
-  constructor(
-    handle: PreparedStatementHandle,
-  ) {
-    this.handle = handle;
+export class PreparedStatement
+  extends DisposableResource<PreparedStatementHandle> {
+  constructor(handle: PreparedStatementHandle) {
+    super(handle);
   }
 
-  /**
-   * Bind parameters to the prepared statement
-   *
-   * @param params - Array of values to bind (in order)
-   * @throws Error if binding fails
-   */
-  bind(params: BindValue[]): void {
-    const handle = this.getHandle();
-    prep.bind(handle, params);
+  bind(params: readonly BindValue[]): this {
+    bindPreparedParameters(this.requireHandle("PreparedStatement"), params);
+    return this;
   }
 
-  /**
-   * Execute the prepared statement
-   *
-   * @returns QueryResult instance
-   */
+  reset(): this {
+    resetPreparedStatement(this.requireHandle("PreparedStatement"));
+    return this;
+  }
+
   execute(): QueryResult {
-    const handle = this.getHandle();
-    const resultHandle = prep.executePrepared(handle);
+    const resultHandle = executePreparedStatement(
+      this.requireHandle("PreparedStatement"),
+    );
     return new QueryResult(resultHandle);
   }
 
-  /**
-   * Get the number of columns in the result
-   */
   columnCount(): bigint {
-    const handle = this.getHandle();
-    return prep.preparedColumnCount(handle);
+    return preparedColumnCount(this.requireHandle("PreparedStatement"));
   }
 
-  /**
-   * Close the prepared statement (synchronous for use with Symbol.dispose)
-   */
   close(): void {
-    if (this.handle) {
-      prep.destroyPreparedSync(this.handle);
-      this.handle = null;
+    const handle = this.releaseHandle();
+    if (!handle) {
+      return;
     }
-  }
 
-  /**
-   * Auto-cleanup using Symbol.dispose
-   */
-  [Symbol.dispose](): void {
-    this.close();
-  }
-
-  private getHandle(): PreparedStatementHandle {
-    if (!this.handle) {
-      throw new DatabaseError("Prepared statement is closed");
-    }
-    return this.handle;
+    destroyPreparedStatementSync(handle);
   }
 }

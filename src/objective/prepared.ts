@@ -14,8 +14,7 @@ import {
 import { DisposableResource } from "./base.ts";
 import { QueryResult } from "./query.ts";
 
-export class PreparedStatement
-  extends DisposableResource<PreparedStatementHandle> {
+export class PreparedStatement extends DisposableResource<PreparedStatementHandle> {
   constructor(handle: PreparedStatementHandle) {
     super(handle);
   }

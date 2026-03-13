@@ -9,7 +9,7 @@ import {
   validatePreparedStatementHandle,
   validateResultHandle,
 } from "../src/core/handles.ts";
-import { QueryError, ValidationError } from "../src/errors.ts";
+import { QueryError, ValidationError } from "@ggpwnkthx/duckdb";
 
 Deno.test("core: normalizeDatabaseConfig trims path and normalizes options", () => {
   const normalized = normalizeDatabaseConfig({

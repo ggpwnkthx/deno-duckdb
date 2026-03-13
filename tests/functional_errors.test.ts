@@ -1,12 +1,16 @@
 import { assertEquals, assertThrows } from "@std/assert";
-import * as functional from "../src/functional/mod.ts";
 import type {
   ConnectionHandle,
   DatabaseHandle,
   PreparedStatementHandle,
   ResultHandle,
-} from "../src/types.ts";
-import { DatabaseError, QueryError, ValidationError } from "../src/errors.ts";
+} from "@ggpwnkthx/duckdb";
+import {
+  DatabaseError,
+  functional,
+  QueryError,
+  ValidationError,
+} from "@ggpwnkthx/duckdb";
 import { withFunctionalConnection } from "./utils.ts";
 
 function invalidBuffer(size: number): Uint8Array {
@@ -14,8 +18,7 @@ function invalidBuffer(size: number): Uint8Array {
 }
 
 Deno.test({
-  name:
-    "functional: invalid SQL surfaces QueryError with the original query text",
+  name: "functional: invalid SQL surfaces QueryError with the original query text",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {

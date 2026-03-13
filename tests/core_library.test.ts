@@ -1,5 +1,5 @@
 import { assertEquals, assertExists } from "@std/assert";
-import * as functional from "../src/functional/mod.ts";
+import * as functional from "@ggpwnkthx/duckdb/functional";
 import {
   getLibrary,
   getLibraryFast,

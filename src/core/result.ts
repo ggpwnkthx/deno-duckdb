@@ -22,6 +22,7 @@ import {
 import {
   getResultColumnData,
   getResultColumnInfos,
+  getResultColumnValidity,
   getResultRowCount,
   isResultValueNull,
   readResultValueAsText,
@@ -32,6 +33,7 @@ interface ColumnVector {
   readonly name: string;
   readonly type: DUCKDB_TYPE;
   readonly dataView: Deno.UnsafePointerView | null;
+  readonly validityView: Deno.UnsafePointerView | null;
 }
 
 interface ResultView {
@@ -59,6 +61,33 @@ function isTextFallbackType(type: DUCKDB_TYPE): boolean {
     (v) => typeof v === "number",
   );
   return !enumValues.includes(type);
+}
+
+/**
+ * Check if a value is null using the cached validity bitmap.
+ * Falls back to FFI call when validityView is null (function unavailable).
+ * In DuckDB's validity mask: 1 = valid (not null), 0 = null.
+ */
+function isNullFromBitmap(
+  validityView: Deno.UnsafePointerView | null,
+  rowIndex: number,
+  handle?: ResultHandle,
+  columnIndex?: number,
+): boolean {
+  if (!validityView) {
+    // Validity function unavailable - fall back to FFI if handle provided
+    if (handle !== undefined && columnIndex !== undefined) {
+      return isResultValueNull(handle, rowIndex, columnIndex);
+    }
+    // No fallback available - assume not null (DuckDB optimization case)
+    return false;
+  }
+
+  const bitmapIndex = Math.floor(rowIndex / 8);
+  const bitIndex = rowIndex % 8;
+  const byte = validityView.getUint8(bitmapIndex);
+  // In DuckDB's validity mask: 1 = valid (not null), 0 = null
+  return (byte & (1 << bitIndex)) === 0;
 }
 
 function readBytes(
@@ -231,6 +260,7 @@ function decodeValueByType(
   columnIndex: number,
   type: DUCKDB_TYPE,
   dataView: Deno.UnsafePointerView | null,
+  validityView: Deno.UnsafePointerView | null,
 ): ValueType {
   if (type === DUCKDB_TYPE.DUCKDB_TYPE_INVALID) {
     return null;
@@ -241,15 +271,15 @@ function decodeValueByType(
   if (isTextFallbackType(type)) {
     // Handle VARCHAR and BLOB with direct reading when possible
     if (type === DUCKDB_TYPE.DUCKDB_TYPE_VARCHAR) {
-      // First check null via FFI
-      if (isResultValueNull(handle, rowIndex, columnIndex)) {
+      // Check null via cached bitmap
+      if (isNullFromBitmap(validityView, rowIndex, handle, columnIndex)) {
         return null;
       }
       return getStringLikeValue(dataView, rowIndex, false, handle, columnIndex);
     }
     if (type === DUCKDB_TYPE.DUCKDB_TYPE_BLOB) {
-      // First check null via FFI
-      if (isResultValueNull(handle, rowIndex, columnIndex)) {
+      // Check null via cached bitmap
+      if (isNullFromBitmap(validityView, rowIndex)) {
         return null;
       }
       // Try direct read first
@@ -293,8 +323,8 @@ function decodeValueByType(
     // duckdb_value_varchar returns null. Users should use CAST to VARCHAR
     // in their queries for reliable results.
     if (type === DUCKDB_TYPE.DUCKDB_TYPE_BIT) {
-      // First check null via FFI
-      if (isResultValueNull(handle, rowIndex, columnIndex)) {
+      // Check null via cached bitmap
+      if (isNullFromBitmap(validityView, rowIndex)) {
         return null;
       }
       // If dataView is null (no direct data pointer), try text fallback
@@ -310,8 +340,8 @@ function decodeValueByType(
     // duckdb_value_varchar returns null. Users should use CAST to VARCHAR
     // in their queries for reliable results.
     if (type === DUCKDB_TYPE.DUCKDB_TYPE_UUID) {
-      // First check null via FFI
-      if (isResultValueNull(handle, rowIndex, columnIndex)) {
+      // Check null via cached bitmap
+      if (isNullFromBitmap(validityView, rowIndex)) {
         return null;
       }
       // If dataView is null, try text fallback
@@ -326,9 +356,8 @@ function decodeValueByType(
     return decodeLegacyTextFallback(handle, rowIndex, columnIndex);
   }
 
-  // Check null via FFI for primitive types to ensure correctness
-  // The isResultValueNull call is optimized to skip redundant validation
-  if (isResultValueNull(handle, rowIndex, columnIndex)) {
+  // Check null via cached bitmap for primitive types
+  if (isNullFromBitmap(validityView, rowIndex, handle, columnIndex)) {
     return null;
   }
 
@@ -419,6 +448,7 @@ function buildResultView(handle: ResultHandle): ResultView {
     name: column.name,
     type: column.type,
     dataView: getResultColumnData(handle, index),
+    validityView: getResultColumnValidity(handle, index),
   }));
 
   return {
@@ -455,7 +485,13 @@ export class ResultReader {
   isNull(rowIndex: number, columnIndex: number): boolean {
     assertIntegerIndex(rowIndex, "Row index", this.#view.rowCount);
     assertIntegerIndex(columnIndex, "Column index", this.#view.columnCount);
-    return isResultValueNull(this.#view.handle, rowIndex, columnIndex);
+    const column = this.#view.columns[columnIndex];
+    return isNullFromBitmap(
+      column.validityView,
+      rowIndex,
+      this.#view.handle,
+      columnIndex,
+    );
   }
 
   getValue(rowIndex: number, columnIndex: number): ValueType {
@@ -469,6 +505,7 @@ export class ResultReader {
       columnIndex,
       column.type,
       column.dataView,
+      column.validityView,
     );
   }
 

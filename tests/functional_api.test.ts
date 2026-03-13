@@ -1,7 +1,6 @@
 import { assertEquals, assertThrows } from "@std/assert";
 import { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
-import * as functional from "../src/functional/mod.ts";
-import { DatabaseError, ValidationError } from "../src/errors.ts";
+import { DatabaseError, functional, ValidationError } from "@ggpwnkthx/duckdb";
 import {
   execFunctional,
   materializeResultObjects,

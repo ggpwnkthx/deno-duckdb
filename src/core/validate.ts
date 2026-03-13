@@ -47,9 +47,7 @@ export function assertIntegerIndex(
 
   if (value < 0 || value >= upperExclusive) {
     throw new ValidationError(
-      `${label} ${value} is out of bounds (valid range: 0-${
-        upperExclusive - 1
-      })`,
+      `${label} ${value} is out of bounds (valid range: 0-${upperExclusive - 1})`,
       {
         label,
         value,

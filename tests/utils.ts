@@ -2,16 +2,16 @@
  * Shared test helpers for the package.
  */
 
-import * as functional from "../src/functional/mod.ts";
-import { type Connection, Database } from "../src/objective/mod.ts";
+import * as functional from "@ggpwnkthx/duckdb/functional";
+import { type Connection, Database } from "@ggpwnkthx/duckdb/objective";
 import type {
   ConnectionHandle,
   ObjectRow,
   ResultHandle,
   RowData,
-} from "../src/types.ts";
+} from "@ggpwnkthx/duckdb";
 
-export type { ObjectRow, RowData } from "../src/types.ts";
+export type { ObjectRow, RowData } from "@ggpwnkthx/duckdb";
 
 export async function withFunctionalConnection<T>(
   fn: (connection: ConnectionHandle) => Promise<T> | T,

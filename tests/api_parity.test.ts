@@ -1,6 +1,6 @@
 import { assertEquals } from "@std/assert";
-import * as functional from "../src/functional/mod.ts";
-import { Database } from "../src/objective/mod.ts";
+import * as functional from "@ggpwnkthx/duckdb/functional";
+import { Database } from "@ggpwnkthx/duckdb/objective";
 import {
   execFunctional,
   materializeResultObjects,
@@ -75,8 +75,7 @@ Deno.test({
 });
 
 Deno.test({
-  name:
-    "parity: functional and objective prepared statements return the same rows",
+  name: "parity: functional and objective prepared statements return the same rows",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {

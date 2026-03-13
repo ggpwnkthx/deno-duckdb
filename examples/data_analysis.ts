@@ -82,14 +82,16 @@ try {
   const functionalConn = await functional.create(functionalDb);
 
   try {
-    for (const sql of [
-      CREATE_PRODUCTS,
-      CREATE_CUSTOMERS,
-      CREATE_ORDERS,
-      INSERT_PRODUCTS,
-      INSERT_CUSTOMERS,
-      INSERT_ORDERS,
-    ]) {
+    for (
+      const sql of [
+        CREATE_PRODUCTS,
+        CREATE_CUSTOMERS,
+        CREATE_ORDERS,
+        INSERT_PRODUCTS,
+        INSERT_CUSTOMERS,
+        INSERT_ORDERS,
+      ]
+    ) {
       execFunctional(functionalConn, sql);
     }
 
@@ -148,14 +150,16 @@ try {
   const objectiveConn = await objectiveDb.connect();
 
   try {
-    for (const sql of [
-      CREATE_PRODUCTS,
-      CREATE_CUSTOMERS,
-      CREATE_ORDERS,
-      INSERT_PRODUCTS,
-      INSERT_CUSTOMERS,
-      INSERT_ORDERS,
-    ]) {
+    for (
+      const sql of [
+        CREATE_PRODUCTS,
+        CREATE_CUSTOMERS,
+        CREATE_ORDERS,
+        INSERT_PRODUCTS,
+        INSERT_CUSTOMERS,
+        INSERT_ORDERS,
+      ]
+    ) {
       const result = objectiveConn.query(sql);
       result.close();
     }

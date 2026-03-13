@@ -3,11 +3,7 @@
  */
 
 import type { ConnectionHandle, ObjectRow, RowData } from "../types.ts";
-import {
-  closeConnection,
-  executeQuery,
-  prepareStatement,
-} from "../core/native.ts";
+import { closeConnection, executeQuery, prepareStatement } from "../core/native.ts";
 import { assertNonEmptyString } from "../core/validate.ts";
 import { DisposableResource } from "./base.ts";
 import { PreparedStatement } from "./prepared.ts";

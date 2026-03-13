@@ -1,11 +1,10 @@
 import { assertEquals, assertThrows } from "@std/assert";
-import { Database } from "../src/objective/mod.ts";
-import { DatabaseError, InvalidResourceError } from "../src/errors.ts";
+import { Database } from "@ggpwnkthx/duckdb/objective";
+import { DatabaseError, InvalidResourceError } from "@ggpwnkthx/duckdb";
 import { withObjectiveConnection } from "./utils.ts";
 
 Deno.test({
-  name:
-    "objective: Database.connect opens lazily and returns working connections",
+  name: "objective: Database.connect opens lazily and returns working connections",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
@@ -29,8 +28,7 @@ Deno.test({
 });
 
 Deno.test({
-  name:
-    "objective: QueryResult exposes metadata, rows, objects, and defensive copies",
+  name: "objective: QueryResult exposes metadata, rows, objects, and defensive copies",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {

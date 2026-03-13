@@ -523,6 +523,34 @@ export function getResultColumnData(
   );
 }
 
+/**
+ * Gets the validity mask (null bitmap) for a column.
+ * Returns null if the column has no null values (DuckDB optimization).
+ * The validity mask uses: 1 = valid (not null), 0 = null.
+ */
+export function getResultColumnValidity(
+  handle: ResultHandle,
+  columnIndex: number,
+): Deno.UnsafePointerView | null {
+  validateResultHandle(handle);
+  const count = Number(getResultColumnCount(handle));
+  assertIntegerIndex(columnIndex, "Column index", count);
+
+  const library = getLibraryFast();
+  // duckdb_column_validity may not be available in older DuckDB versions
+  const validityFn =
+    (library.symbols as Record<string, unknown>)["duckdb_column_validity"] as
+      | ((handle: ResultHandle, col: bigint) => Deno.PointerValue<unknown>)
+      | undefined;
+
+  if (!validityFn) {
+    return null;
+  }
+
+  const pointer = validityFn(handle, BigInt(columnIndex));
+  return createPointerView(pointer);
+}
+
 export function isResultValueNull(
   handle: ResultHandle,
   rowIndex: number,

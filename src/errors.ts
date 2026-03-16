@@ -1,7 +1,12 @@
 /**
  * Typed error hierarchy for DuckDB operations.
+ *
+ * This module provides a structured error hierarchy for different failure modes
+ * when working with DuckDB databases. Each error type includes context information
+ * for debugging and logging.
  */
 
+/** Error code categories for DuckDB operations. */
 export type DuckDBErrorCode =
   | "DATABASE_ERROR"
   | "QUERY_ERROR"
@@ -9,12 +14,18 @@ export type DuckDBErrorCode =
   | "VALIDATION_ERROR"
   | "LIBRARY_LOAD_FAILED";
 
+/** Additional context information attached to errors. */
 export type ErrorContext = Readonly<Record<string, unknown>>;
 
+/** Initialization options for creating a DuckDB error. */
 interface DuckDBErrorInit {
+  /** The error code identifying the type of failure. */
   code: DuckDBErrorCode;
+  /** Human-readable error message. */
   message: string;
+  /** Optional additional context for debugging. */
   context?: ErrorContext;
+  /** Optional underlying cause of the error. */
   cause?: unknown;
 }
 

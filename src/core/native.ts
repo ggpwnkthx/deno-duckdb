@@ -475,9 +475,23 @@ export function getResultColumnName(
   columnIndex: number,
 ): string {
   validateResultHandle(handle);
-  const count = Number(getResultColumnCount(handle));
-  assertIntegerIndex(columnIndex, "Column index", count);
+  const pointer = getLibraryFast().symbols.duckdb_column_name(
+    handle,
+    BigInt(columnIndex),
+  );
 
+  return readCString(pointer) ?? "";
+}
+
+/**
+ * Internal version that skips column count validation.
+ * Use when column count is already known (e.g., from cached ResultView).
+ */
+export function getResultColumnNameInternal(
+  handle: ResultHandle,
+  columnIndex: number,
+): string {
+  validateResultHandle(handle);
   const pointer = getLibraryFast().symbols.duckdb_column_name(
     handle,
     BigInt(columnIndex),
@@ -491,9 +505,21 @@ export function getResultColumnType(
   columnIndex: number,
 ): DUCKDB_TYPE {
   validateResultHandle(handle);
-  const count = Number(getResultColumnCount(handle));
-  assertIntegerIndex(columnIndex, "Column index", count);
+  return getLibraryFast().symbols.duckdb_column_type(
+    handle,
+    BigInt(columnIndex),
+  ) as DUCKDB_TYPE;
+}
 
+/**
+ * Internal version that skips column count validation.
+ * Use when column count is already known (e.g., from cached ResultView).
+ */
+export function getResultColumnTypeInternal(
+  handle: ResultHandle,
+  columnIndex: number,
+): DUCKDB_TYPE {
+  validateResultHandle(handle);
   return getLibraryFast().symbols.duckdb_column_type(
     handle,
     BigInt(columnIndex),
@@ -506,8 +532,8 @@ export function getResultColumnInfos(handle: ResultHandle): ColumnInfo[] {
 
   for (let index = 0; index < count; index += 1) {
     columns.push({
-      name: getResultColumnName(handle, index),
-      type: getResultColumnType(handle, index),
+      name: getResultColumnNameInternal(handle, index),
+      type: getResultColumnTypeInternal(handle, index),
     });
   }
 
@@ -519,9 +545,6 @@ export function getResultColumnData(
   columnIndex: number,
 ): Deno.UnsafePointerView | null {
   validateResultHandle(handle);
-  const count = Number(getResultColumnCount(handle));
-  assertIntegerIndex(columnIndex, "Column index", count);
-
   return createPointerView(
     getLibraryFast().symbols.duckdb_column_data(handle, BigInt(columnIndex)),
   );
@@ -537,8 +560,6 @@ export function getResultColumnValidity(
   columnIndex: number,
 ): Deno.UnsafePointerView | null {
   validateResultHandle(handle);
-  const count = Number(getResultColumnCount(handle));
-  assertIntegerIndex(columnIndex, "Column index", count);
 
   const library = getLibraryFast();
   const validityFn =

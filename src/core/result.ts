@@ -52,15 +52,18 @@ const TEXT_FALLBACK_TYPES = new Set([
   DUCKDB_TYPE.DUCKDB_TYPE_BIT,
 ]);
 
+// Pre-compute all valid DUCKDB_TYPE enum values at module load time
+// This avoids creating a new array and filtering on every call
+const ALL_VALID_TYPES = new Set(
+  Object.values(DUCKDB_TYPE).filter((v) => typeof v === "number"),
+);
+
 function isTextFallbackType(type: DUCKDB_TYPE): boolean {
   if (TEXT_FALLBACK_TYPES.has(type)) {
     return true;
   }
-
-  const enumValues = Object.values(DUCKDB_TYPE).filter(
-    (value) => typeof value === "number",
-  );
-  return !enumValues.includes(type);
+  // Only check if it's NOT a valid enum value (custom/extension type)
+  return !ALL_VALID_TYPES.has(type);
 }
 
 function isNullFromBitmap(
@@ -91,11 +94,20 @@ function readBytes(
     return new Uint8Array();
   }
 
-  const bytes = new Uint8Array(length);
-  for (let index = 0; index < length; index += 1) {
-    bytes[index] = view.getUint8(offset + index);
+  // For small strings, the byte-by-byte loop is fast enough
+  if (length <= 16) {
+    const result = new Uint8Array(length);
+    for (let i = 0; i < length; i++) {
+      result[i] = view.getUint8(offset + i);
+    }
+    return result;
   }
-  return bytes;
+
+  // For larger strings, use bulk copy via typed array
+  // Access underlying ArrayBuffer via type assertion (Deno's types don't expose buffer)
+  const buffer = (view as unknown as { buffer: ArrayBuffer }).buffer;
+  const uint8View = new Uint8Array(buffer, offset, length);
+  return uint8View.slice(0); // Returns a copy
 }
 
 function parseHexToBytes(hex: string): Uint8Array | null {
@@ -206,7 +218,9 @@ function microsecondsToTimeString(value: bigint): string {
   const seconds = totalSeconds % 60n;
   const micros = value % 1_000_000n;
 
-  const prefix = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  const prefix = `${String(hours).padStart(2, "0")}:${
+    String(minutes).padStart(2, "0")
+  }:${String(seconds).padStart(2, "0")}`;
   return micros === 0n ? prefix : `${prefix}.${String(micros).padStart(6, "0")}`;
 }
 
@@ -443,47 +457,100 @@ export class ResultReader {
     );
   }
 
+  /**
+   * Fast path for internal row iteration - skips index validation.
+   */
+  decodeValueFast(
+    rowIndex: number,
+    columnIndex: number,
+    column: ColumnVector,
+  ): ValueType {
+    return decodeValueByType(
+      this.#view.handle,
+      rowIndex,
+      columnIndex,
+      column.type,
+      column.dataView,
+      column.validityView,
+    );
+  }
+
   getRow(rowIndex: number): RowData {
     assertIntegerIndex(rowIndex, "Row index", this.#view.rowCount);
-    const row: RowData = new Array(this.#view.columnCount);
-
-    for (let columnIndex = 0; columnIndex < this.#view.columnCount; columnIndex += 1) {
-      row[columnIndex] = this.getValue(rowIndex, columnIndex);
+    const columnCount = this.#view.columnCount;
+    const columns = this.#view.columns;
+    // Pre-allocate array and fill directly to avoid function mapper overhead
+    const row = new Array(columnCount);
+    for (let i = 0; i < columnCount; i++) {
+      row[i] = this.decodeValueFast(rowIndex, i, columns[i]);
     }
-
     return row;
   }
 
   getObjectRow(rowIndex: number): ObjectRow {
     assertIntegerIndex(rowIndex, "Row index", this.#view.rowCount);
+    const columns = this.#view.columns;
     const row: ObjectRow = {};
-
-    for (let columnIndex = 0; columnIndex < this.#view.columnCount; columnIndex += 1) {
-      const column = this.#view.columns[columnIndex];
-      row[column.name] = this.getValue(rowIndex, columnIndex);
+    for (let i = 0; i < columns.length; i++) {
+      row[columns[i].name] = this.decodeValueFast(rowIndex, i, columns[i]);
     }
-
     return row;
   }
 
   *rows(): IterableIterator<RowData> {
-    for (let index = 0; index < this.#view.rowCount; index += 1) {
-      yield this.getRow(index);
+    const rowCount = this.#view.rowCount;
+    const columnCount = this.#view.columnCount;
+    const columns = this.#view.columns;
+    for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
+      // Pre-allocate array and fill directly to avoid function mapper overhead
+      const row = new Array(columnCount);
+      for (let i = 0; i < columnCount; i++) {
+        row[i] = this.decodeValueFast(rowIndex, i, columns[i]);
+      }
+      yield row;
     }
   }
 
   *objects(): IterableIterator<ObjectRow> {
-    for (let index = 0; index < this.#view.rowCount; index += 1) {
-      yield this.getObjectRow(index);
+    const rowCount = this.#view.rowCount;
+    const columns = this.#view.columns;
+    for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
+      const row: ObjectRow = {};
+      for (let i = 0; i < columns.length; i++) {
+        row[columns[i].name] = this.decodeValueFast(rowIndex, i, columns[i]);
+      }
+      yield row;
     }
   }
 
   toArray(): RowData[] {
-    return Array.from(this.rows());
+    const rowCount = this.#view.rowCount;
+    const columnCount = this.#view.columnCount;
+    const columns = this.#view.columns;
+    const result = new Array(rowCount);
+    for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
+      // Pre-allocate array and fill directly to avoid function mapper overhead
+      const row = new Array(columnCount);
+      for (let i = 0; i < columnCount; i++) {
+        row[i] = this.decodeValueFast(rowIndex, i, columns[i]);
+      }
+      result[rowIndex] = row;
+    }
+    return result;
   }
 
   toObjectArray(): ObjectRow[] {
-    return Array.from(this.objects());
+    const rowCount = this.#view.rowCount;
+    const columns = this.#view.columns;
+    const result = new Array(rowCount);
+    for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
+      const row: ObjectRow = {};
+      for (let i = 0; i < columns.length; i++) {
+        row[columns[i].name] = this.decodeValueFast(rowIndex, i, columns[i]);
+      }
+      result[rowIndex] = row;
+    }
+    return result;
   }
 }
 

@@ -169,16 +169,17 @@ export const rowCount = getResultRowCount;
 export const columnCount = getResultColumnCount;
 
 /**
- * Execute a query and return rows directly.
+ * Execute a query and return an iterable of rows.
  * Returns null if the query fails (except for validation errors which propagate).
+ * Use .toArray() on the result to get an array of rows.
  */
 export function query(
   connectionHandle: ConnectionHandle,
   sql: string,
-): RowData[] | null {
+): IterableIterator<RowData> | null {
   try {
     const result = executeSqlResult(connectionHandle, sql);
-    return result.toArray();
+    return result ? result.rows() : null;
   } catch (e) {
     // Re-throw validation errors - they indicate bad input
     if (e instanceof ValidationError) {
@@ -190,16 +191,17 @@ export function query(
 }
 
 /**
- * Execute a query and return object rows directly.
+ * Execute a query and return an iterable of object rows.
  * Returns null if the query fails (except for validation errors which propagate).
+ * Use .toObjectArray() on the result to get an array of objects.
  */
 export function queryObjects(
   connectionHandle: ConnectionHandle,
   sql: string,
-): ObjectRow[] | null {
+): IterableIterator<ObjectRow> | null {
   try {
     const result = executeSqlResult(connectionHandle, sql);
-    return result.toObjectArray();
+    return result ? result.objects() : null;
   } catch (e) {
     // Re-throw validation errors - they indicate bad input
     if (e instanceof ValidationError) {

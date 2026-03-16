@@ -69,18 +69,18 @@ function queryFunctionalObjects(
   connection: Parameters<typeof functional.query>[0],
   sql: string,
 ): ObjectRow[] {
-  // Use queryObjects for object format - returns cached data directly
+  // Use queryObjects for object format - returns iterator, convert to array
   const result = functional.queryObjects(connection, sql);
   if (result === null) {
     throw new Error(`Query failed: ${sql}`);
   }
-  return result;
+  return [...result];
 }
 
 function queryObjectiveObjects(connection: Connection, sql: string): ObjectRow[] {
   // Use queryResult for QueryResult features
   const result = connection.queryResult(sql);
-  const rows = result.toArrayOfObjects();
+  const rows = [...result.toArrayOfObjects()];
   result.close();
   return rows;
 }

@@ -30,6 +30,8 @@ function execFunctional(connection: ConnectionHandle, sql: string): void {
   if (result === null) {
     throw new Error(`Query failed: ${sql}`);
   }
+  // Consume the iterator to ensure DDL side effects are applied
+  [...result];
 }
 
 function printRows(rows: readonly ObjectRow[]): void {
@@ -64,14 +66,15 @@ try {
     execFunctional(functionalConn, "SET azure_transport_option_type = 'curl'");
 
     console.log(`Querying: ${AZURE_BLOB_URL}`);
-    // Use queryObjects for object format
+    // Use queryObjects for object format - returns iterator, convert to array
     const objects = functional.queryObjects(functionalConn, SAMPLE_QUERY);
 
     if (objects === null) {
       console.log("Query failed");
     } else {
-      console.log(`Result: ${objects.length} rows\n`);
-      printRows(objects);
+      const objectArray = [...objects];
+      console.log(`Result: ${objectArray.length} rows\n`);
+      printRows(objectArray);
     }
   } finally {
     functional.closeConnection(functionalConn);
@@ -103,7 +106,7 @@ try {
     const result = objectiveConn.queryResult(SAMPLE_QUERY);
 
     try {
-      const rows = result.toArrayOfObjects();
+      const rows = [...result.toArrayOfObjects()];
       console.log(`Result: ${rows.length} rows\n`);
       printRows(rows);
     } finally {

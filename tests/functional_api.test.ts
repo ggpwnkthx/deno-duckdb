@@ -47,11 +47,13 @@ Deno.test({
           (2, 20, 'beta',  false, '2024-01-16', 'memo')`,
       );
 
-      // New API: query returns rows directly
-      const rows = functional.query(
-        connection,
-        "SELECT * FROM items ORDER BY id",
-      );
+      // query returns iterator, use spread to convert to array
+      const rows = [
+        ...functional.query(
+          connection,
+          "SELECT * FROM items ORDER BY id",
+        )!,
+      ];
 
       assertEquals(rows, [
         [1, 10n, "alpha", true, "2024-01-15", null],
@@ -59,10 +61,12 @@ Deno.test({
       ]);
 
       // Test queryObjects for object format
-      const objects = functional.queryObjects(
-        connection,
-        "SELECT * FROM items ORDER BY id",
-      );
+      const objects = [
+        ...functional.queryObjects(
+          connection,
+          "SELECT * FROM items ORDER BY id",
+        )!,
+      ];
 
       assertEquals(objects, [
         {
@@ -95,19 +99,23 @@ Deno.test({
     await withFunctionalConnection((connection) => {
       // Note: BIT type requires CAST to VARCHAR for reliable FFI reading
       // due to DuckDB C API limitation (no direct column data for BIT)
-      const rows = functional.query(
-        connection,
-        "SELECT 12.34::DECIMAL(10,2) AS amount, unhex('C0FFEE') AS payload, '10101'::BIT::VARCHAR AS bits",
-      );
+      const rows = [
+        ...functional.query(
+          connection,
+          "SELECT 12.34::DECIMAL(10,2) AS amount, unhex('C0FFEE') AS payload, '10101'::BIT::VARCHAR AS bits",
+        )!,
+      ];
 
       assertEquals(rows, [
         ["12.34", new Uint8Array([0xC0, 0xFF, 0xEE]), "10101"],
       ]);
 
-      const objects = functional.queryObjects(
-        connection,
-        "SELECT 12.34::DECIMAL(10,2) AS amount, unhex('C0FFEE') AS payload, '10101'::BIT::VARCHAR AS bits",
-      );
+      const objects = [
+        ...functional.queryObjects(
+          connection,
+          "SELECT 12.34::DECIMAL(10,2) AS amount, unhex('C0FFEE') AS payload, '10101'::BIT::VARCHAR AS bits",
+        )!,
+      ];
 
       assertEquals(objects, [
         {
@@ -126,10 +134,12 @@ Deno.test({
   sanitizeOps: false,
   async fn() {
     await withFunctionalConnection((connection) => {
-      const rows = functional.query(
-        connection,
-        "SELECT 1::INTEGER AS value WHERE 1 = 0",
-      );
+      const rows = [
+        ...functional.query(
+          connection,
+          "SELECT 1::INTEGER AS value WHERE 1 = 0",
+        )!,
+      ];
 
       assertEquals(rows, []);
     });
@@ -167,7 +177,7 @@ Deno.test({
 
         try {
           const reader = functional.createResultReader(result);
-          assertEquals(functional.fetchAll(reader), [["alpha"]]);
+          assertEquals([...functional.fetchAll(reader)], [["alpha"]]);
         } finally {
           functional.destroyResult(result);
         }
@@ -177,7 +187,7 @@ Deno.test({
 
         try {
           const reader = functional.createResultReader(result);
-          assertEquals(functional.fetchAll(reader), [["beta"]]);
+          assertEquals([...functional.fetchAll(reader)], [["beta"]]);
         } finally {
           functional.destroyResult(result);
         }
@@ -193,7 +203,7 @@ Deno.test({
 
         try {
           const reader = functional.createResultReader(result);
-          assertEquals(functional.fetchAll(reader), [["gamma"]]);
+          assertEquals([...functional.fetchAll(reader)], [["gamma"]]);
         } finally {
           functional.destroyResult(result);
         }
@@ -232,14 +242,14 @@ Deno.test({
   async fn() {
     await withFunctionalConnection((connection) => {
       // Test that cached queries work after sync destroy
-      const rows1 = functional.query(connection, "SELECT 1 AS value");
+      const rows1 = [...functional.query(connection, "SELECT 1 AS value")!];
       assertEquals(rows1, [[1]]);
 
       const statement = functional.prepare(connection, "SELECT 2 AS value");
       functional.destroyPreparedSync(statement);
 
       // Another cached query should work
-      const rows2 = functional.query(connection, "SELECT 3 AS value");
+      const rows2 = [...functional.query(connection, "SELECT 3 AS value")!];
       assertEquals(rows2, [[3]]);
     });
   },

@@ -9,8 +9,6 @@ import { DisposableResource } from "./base.ts";
 
 export class QueryResult extends DisposableResource<ResultHandle> {
   #reader: ResultReader | null = null;
-  #rowsCache: RowData[] | null = null;
-  #objectsCache: ObjectRow[] | null = null;
 
   constructor(handle: ResultHandle) {
     super(handle);
@@ -41,29 +39,12 @@ export class QueryResult extends DisposableResource<ResultHandle> {
     return this.#getReader().getRow(index);
   }
 
-  fetchAll(): RowData[] {
-    if (!this.#rowsCache) {
-      this.#rowsCache = this.#getReader().toArray();
-    }
-
-    return this.#rowsCache.map((row) =>
-      row.map((value) => value instanceof Uint8Array ? value.slice() : value)
-    ) as RowData[];
+  *fetchAll(): IterableIterator<RowData> {
+    yield* this.#getReader().rows();
   }
 
-  toArrayOfObjects(): ObjectRow[] {
-    if (!this.#objectsCache) {
-      this.#objectsCache = this.#getReader().toObjectArray();
-    }
-
-    return this.#objectsCache.map((row) =>
-      Object.fromEntries(
-        Object.entries(row).map(([key, value]) => [
-          key,
-          value instanceof Uint8Array ? value.slice() : value,
-        ]),
-      ) as ObjectRow
-    );
+  *toArrayOfObjects(): IterableIterator<ObjectRow> {
+    yield* this.#getReader().objects();
   }
 
   *rows(): IterableIterator<RowData> {
@@ -81,7 +62,5 @@ export class QueryResult extends DisposableResource<ResultHandle> {
     }
 
     this.#reader = null;
-    this.#rowsCache = null;
-    this.#objectsCache = null;
   }
 }

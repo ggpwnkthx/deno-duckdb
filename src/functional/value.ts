@@ -75,12 +75,14 @@ export function getString(
   return typeof value === "string" ? value : null;
 }
 
-export function fetchAll(result: LazyResult | ResultReader): RowData[] {
-  return Array.from(toReader(result).rows());
+export function fetchAll(result: LazyResult | ResultReader): IterableIterator<RowData> {
+  return toReader(result).rows();
 }
 
-export function fetchObjects(result: LazyResult | ResultReader): ObjectRow[] {
-  return Array.from(toReader(result).objects());
+export function fetchObjects(
+  result: LazyResult | ResultReader,
+): IterableIterator<ObjectRow> {
+  return toReader(result).objects();
 }
 
 export function iterateRows(

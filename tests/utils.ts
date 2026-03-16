@@ -73,7 +73,8 @@ export function queryCachedRows(
   connection: ConnectionHandle,
   sql: string,
 ): RowData[] | null {
-  return functional.query(connection, sql);
+  const result = functional.query(connection, sql);
+  return result ? [...result] : null;
 }
 
 /**
@@ -84,13 +85,14 @@ export function queryCachedObjects(
   connection: ConnectionHandle,
   sql: string,
 ): ObjectRow[] | null {
-  return functional.queryObjects(connection, sql);
+  const result = functional.queryObjects(connection, sql);
+  return result ? [...result] : null;
 }
 
 export function materializeResultRows(
   reader: ResultReader,
 ): RowData[] {
-  return functional.fetchAll(reader).map((row) =>
+  return [...functional.fetchAll(reader)].map((row) =>
     row.map((value) => value instanceof Uint8Array ? value.slice() : value)
   );
 }
@@ -98,7 +100,7 @@ export function materializeResultRows(
 export function materializeResultObjects(
   reader: ResultReader,
 ): ObjectRow[] {
-  return functional.fetchObjects(reader).map((row) =>
+  return [...functional.fetchObjects(reader)].map((row) =>
     Object.fromEntries(
       Object.entries(row).map(([key, value]) => [
         key,

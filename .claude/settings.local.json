@@ -13,6 +13,7 @@
       "Bash(sed:*)",
       "Bash(grep:*)",
       "Bash(ls:*)",
+      "Bash(jq:*)",
       "mcp__ide__executeCode"
     ]
   },

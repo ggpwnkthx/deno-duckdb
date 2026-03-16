@@ -81,6 +81,22 @@ function preparedErrorMessage(
 
 export type BindValue = boolean | number | bigint | string | Uint8Array | null;
 
+/**
+ * Open a DuckDB database file or in-memory database.
+ *
+ * @param config - Optional database configuration including path and access mode
+ * @returns A database handle for use in subsequent operations
+ * @throws {DatabaseError} if the database cannot be opened
+ *
+ * @example
+ * ```ts
+ * // In-memory database
+ * const db = await openDatabase();
+ *
+ * // File-based database
+ * const db = await openDatabase({ path: "my.db" });
+ * ```
+ */
 export async function openDatabase(
   config?: DatabaseConfig,
 ): Promise<DatabaseHandle> {
@@ -158,6 +174,11 @@ export async function openDatabase(
   }
 }
 
+/**
+ * Close a database handle and release associated resources.
+ *
+ * @param handle - A valid database handle
+ */
 export function closeDatabase(handle: DatabaseHandle): void {
   validateDatabaseHandle(handle);
   const library = getLibraryFast();
@@ -166,11 +187,30 @@ export function closeDatabase(handle: DatabaseHandle): void {
   }
 }
 
+/**
+ * Check if a database handle is valid (points to an open database).
+ *
+ * @param handle - A database handle to check
+ * @returns true if valid, false otherwise
+ */
 export function isValidDatabaseHandle(handle: DatabaseHandle): boolean {
   validateDatabaseHandle(handle);
   return isValidHandle(handle);
 }
 
+/**
+ * Create a connection to an open database.
+ *
+ * @param databaseHandle - An open database handle
+ * @returns A connection handle for executing queries
+ * @throws {DatabaseError} if connection fails
+ *
+ * @example
+ * ```ts
+ * const db = await openDatabase();
+ * const conn = await connectToDatabase(db);
+ * ```
+ */
 export async function connectToDatabase(
   databaseHandle: DatabaseHandle,
 ): Promise<ConnectionHandle> {
@@ -190,6 +230,11 @@ export async function connectToDatabase(
   return handle;
 }
 
+/**
+ * Close a connection handle and release associated resources.
+ *
+ * @param handle - A valid connection handle
+ */
 export function closeConnection(handle: ConnectionHandle): void {
   validateConnectionHandle(handle);
   const library = getLibraryFast();
@@ -199,14 +244,24 @@ export function closeConnection(handle: ConnectionHandle): void {
   }
 }
 
+/**
+ * Check if a connection handle is valid (points to an open connection).
+ *
+ * @param handle - A connection handle to check
+ * @returns true if valid, false otherwise
+ */
 export function isValidConnectionHandle(handle: ConnectionHandle): boolean {
   validateConnectionHandle(handle);
   return isValidHandle(handle);
 }
 
 /**
- * Execute a SQL query and return the native result handle.
- * Higher layers wrap this in lazy result objects.
+ * Execute a SQL query and return a result handle.
+ *
+ * @param connectionHandle - An open connection handle
+ * @param sql - SQL query string
+ * @returns A result handle for reading query results
+ * @throws {QueryError} if the query fails
  */
 export function executeQuery(
   connectionHandle: ConnectionHandle,
@@ -234,12 +289,30 @@ export function executeQuery(
   return handle;
 }
 
+/**
+ * Destroy a result handle and free associated memory.
+ *
+ * @param handle - A valid result handle
+ */
 export function destroyResult(handle: ResultHandle): void {
   validateResultHandle(handle);
   const library = getLibraryFast();
   library.symbols.duckdb_destroy_result(handle);
 }
 
+/**
+ * Prepare a SQL statement for execution with bound parameters.
+ *
+ * @param connectionHandle - An open connection handle
+ * @param sql - SQL statement with parameter placeholders (e.g., $1, $2)
+ * @returns A prepared statement handle
+ * @throws {DatabaseError} if the statement cannot be prepared
+ *
+ * @example
+ * ```ts
+ * const stmt = prepareStatement(conn, "SELECT * FROM table WHERE id = $1");
+ * ```
+ */
 export function prepareStatement(
   connectionHandle: ConnectionHandle,
   sql: string,
@@ -266,6 +339,20 @@ export function prepareStatement(
   return handle;
 }
 
+/**
+ * Execute a prepared statement and return a result handle.
+ *
+ * @param handle - A prepared statement handle
+ * @returns A result handle
+ * @throws {DatabaseError} if execution fails
+ *
+ * @example
+ * ```ts
+ * const stmt = prepareStatement(conn, "SELECT * FROM table WHERE id = $1");
+ * bindPreparedParameters(stmt, [42]);
+ * const result = executePreparedStatement(stmt);
+ * ```
+ */
 export function executePreparedStatement(
   handle: PreparedStatementHandle,
 ): ResultHandle {
@@ -288,6 +375,18 @@ export function executePreparedStatement(
   return result;
 }
 
+/**
+ * Get the number of columns in a prepared statement's result set.
+ *
+ * @param handle - A prepared statement handle
+ * @returns Number of columns
+ *
+ * @example
+ * ```ts
+ * const stmt = prepareStatement(conn, "SELECT a, b, c FROM table");
+ * console.log(preparedColumnCount(stmt)); // 3n
+ * ```
+ */
 export function preparedColumnCount(
   handle: PreparedStatementHandle,
 ): bigint {
@@ -299,6 +398,20 @@ export function preparedColumnCount(
   );
 }
 
+/**
+ * Reset a prepared statement, clearing all bound parameters.
+ *
+ * @param handle - A prepared statement handle
+ *
+ * @example
+ * ```ts
+ * const stmt = prepareStatement(conn, "SELECT * FROM table WHERE id = $1");
+ * bindPreparedParameters(stmt, [1]);
+ * // Use statement...
+ * resetPreparedStatement(stmt);
+ * bindPreparedParameters(stmt, [2]);
+ * ```
+ */
 export function resetPreparedStatement(handle: PreparedStatementHandle): void {
   validatePreparedStatementHandle(handle);
   const library = getLibraryFast();
@@ -323,6 +436,20 @@ function bindFailure(
   );
 }
 
+/**
+ * Bind parameters to a prepared statement.
+ *
+ * @param handle - A prepared statement handle
+ * @param params - Array of values to bind
+ * @throws {DatabaseError} if binding fails
+ * @throws {ValidationError} if parameter type is unsupported
+ *
+ * @example
+ * ```ts
+ * const stmt = prepareStatement(conn, "SELECT * FROM table WHERE id = $1");
+ * bindPreparedParameters(stmt, [42]);
+ * ```
+ */
 export function bindPreparedParameters(
   handle: PreparedStatementHandle,
   params: readonly BindValue[],
@@ -417,6 +544,18 @@ export function bindPreparedParameters(
   }
 }
 
+/**
+ * Destroy a prepared statement and free associated resources.
+ *
+ * @param handle - A prepared statement handle
+ *
+ * @example
+ * ```ts
+ * const stmt = prepareStatement(conn, "SELECT * FROM table");
+ * // Use statement...
+ * destroyPreparedStatement(stmt);
+ * ```
+ */
 export function destroyPreparedStatement(
   handle: PreparedStatementHandle,
 ): void {
@@ -428,16 +567,54 @@ export function destroyPreparedStatement(
   }
 }
 
+/**
+ * Get the number of rows in a result.
+ *
+ * @param handle - A valid result handle
+ * @returns Number of rows
+ *
+ * @example
+ * ```ts
+ * const result = executeSqlResult(conn, "SELECT * FROM table");
+ * console.log(getResultRowCount(result));
+ * ```
+ */
 export function getResultRowCount(handle: ResultHandle): bigint {
   validateResultHandle(handle);
   return getLibraryFast().symbols.duckdb_row_count(handle);
 }
 
+/**
+ * Get the number of columns in a result.
+ *
+ * @param handle - A valid result handle
+ * @returns Number of columns
+ *
+ * @example
+ * ```ts
+ * const result = executeSqlResult(conn, "SELECT a, b, c FROM table");
+ * console.log(getResultColumnCount(result)); // 3n
+ * ```
+ */
 export function getResultColumnCount(handle: ResultHandle): bigint {
   validateResultHandle(handle);
   return getLibraryFast().symbols.duckdb_column_count(handle);
 }
 
+/**
+ * Get the name of a column by index.
+ *
+ * @param handle - A valid result handle
+ * @param columnIndex - Column index (0-based)
+ * @returns Column name
+ *
+ * @example
+ * ```ts
+ * const result = executeSqlResult(conn, "SELECT id, name FROM users");
+ * console.log(getResultColumnName(result, 0)); // "id"
+ * console.log(getResultColumnName(result, 1)); // "name"
+ * ```
+ */
 export function getResultColumnName(
   handle: ResultHandle,
   columnIndex: number,
@@ -451,6 +628,19 @@ export function getResultColumnName(
   return readCString(pointer) ?? "";
 }
 
+/**
+ * Get the type of a column by index.
+ *
+ * @param handle - A valid result handle
+ * @param columnIndex - Column index (0-based)
+ * @returns Column type enum value
+ *
+ * @example
+ * ```ts
+ * const result = executeSqlResult(conn, "SELECT id FROM users");
+ * console.log(getResultColumnType(result, 0)); // DUCKDB_TYPE.DUCKDB_TYPE_BIGINT
+ * ```
+ */
 export function getResultColumnType(
   handle: ResultHandle,
   columnIndex: number,
@@ -462,6 +652,19 @@ export function getResultColumnType(
   ) as DUCKDB_TYPE;
 }
 
+/**
+ * Get metadata about all columns in a result.
+ *
+ * @param handle - A valid result handle
+ * @returns Array of column information
+ *
+ * @example
+ * ```ts
+ * const result = executeSqlResult(conn, "SELECT id, name FROM users");
+ * const columns = getResultColumnInfos(result);
+ * console.log(columns[0].name); // "id"
+ * ```
+ */
 export function getResultColumnInfos(handle: ResultHandle): ColumnInfo[] {
   const count = Number(getResultColumnCount(handle));
   const columns: ColumnInfo[] = [];
@@ -476,6 +679,13 @@ export function getResultColumnInfos(handle: ResultHandle): ColumnInfo[] {
   return columns;
 }
 
+/**
+ * Get the data pointer for a column.
+ *
+ * @param handle - A valid result handle
+ * @param columnIndex - Column index (0-based)
+ * @returns Pointer to column data, or null if unavailable
+ */
 export function getResultColumnData(
   handle: ResultHandle,
   columnIndex: number,
@@ -487,9 +697,14 @@ export function getResultColumnData(
 }
 
 /**
- * Gets the validity mask (null bitmap) for a column.
+ * Get the validity mask (null bitmap) for a column.
+ *
  * Returns null if the column has no null values (DuckDB optimization).
  * The validity mask uses: 1 = valid (not null), 0 = null.
+ *
+ * @param handle - A valid result handle
+ * @param columnIndex - Column index (0-based)
+ * @returns Pointer to validity mask, or null if all values are non-null
  */
 export function getResultColumnValidity(
   handle: ResultHandle,
@@ -511,6 +726,14 @@ export function getResultColumnValidity(
   return createPointerView(pointer);
 }
 
+/**
+ * Check if a value in a result is null.
+ *
+ * @param handle - A valid result handle
+ * @param rowIndex - Row index (0-based)
+ * @param columnIndex - Column index (0-based)
+ * @returns true if the value is null
+ */
 export function isResultValueNull(
   handle: ResultHandle,
   rowIndex: number,
@@ -527,6 +750,14 @@ export function isResultValueNull(
   );
 }
 
+/**
+ * Read a value as text using DuckDB's legacy conversion.
+ *
+ * @param handle - A valid result handle
+ * @param rowIndex - Row index (0-based)
+ * @param columnIndex - Column index (0-based)
+ * @returns String value, or null if the value is null
+ */
 export function readResultValueAsText(
   handle: ResultHandle,
   rowIndex: number,

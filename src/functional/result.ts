@@ -415,6 +415,22 @@ function buildResultView(handle: ResultHandle): ResultView {
   };
 }
 
+/**
+ * A class for reading values from a result set.
+ *
+ * Provides methods to access individual values, rows, and iterate
+ * over the result set.
+ *
+ * @example
+ * ```ts
+ * const reader = createResultReader(resultHandle);
+ * const value = reader.getValue(0, 0);
+ * const row = reader.getRow(0);
+ * for (const row of reader.rows()) {
+ *   console.log(row);
+ * }
+ * ```
+ */
 export class ResultReader {
   #view: ResultView;
 
@@ -558,6 +574,18 @@ export class ResultReader {
   }
 }
 
+/**
+ * Create a result reader from a result handle for value extraction.
+ *
+ * @param handle - A valid result handle
+ * @returns A ResultReader instance
+ *
+ * @example
+ * ```ts
+ * const reader = createResultReader(resultHandle);
+ * const value = reader.getValue(0, 0);
+ * ```
+ */
 export function createResultReader(handle: ResultHandle): ResultReader {
   return new ResultReader(handle);
 }

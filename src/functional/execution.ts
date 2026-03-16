@@ -43,6 +43,21 @@ function executeRequest(request: ExecutionRequest): ResultHandle {
   return executePreparedStatement(request.statementHandle);
 }
 
+/**
+ * A lazy result that defers materialization until iteration.
+ *
+ * Provides methods for lazy iteration over query results without loading
+ * all rows into memory at once.
+ *
+ * @example
+ * ```ts
+ * const result = executeSqlResult(conn, "SELECT * FROM users");
+ * for (const row of result.rows()) {
+ *   console.log(row);
+ * }
+ * result.close();
+ * ```
+ */
 export class LazyResult {
   #handle: ResultHandle | null;
   #reader: ResultReader | null = null;
@@ -132,6 +147,23 @@ export class LazyResult {
   }
 }
 
+/**
+ * Execute a SQL query and return a lazy result for iteration.
+ *
+ * @param connectionHandle - An open connection handle
+ * @param sql - SQL query string
+ * @returns A LazyResult for lazy iteration over rows
+ * @throws {QueryError} if the query fails
+ *
+ * @example
+ * ```ts
+ * const result = executeSqlResult(conn, "SELECT * FROM users");
+ * for (const row of result.rows()) {
+ *   console.log(row);
+ * }
+ * result.close();
+ * ```
+ */
 export function executeSqlResult(
   connectionHandle: ConnectionHandle,
   sql: string,
@@ -143,6 +175,13 @@ export function executeSqlResult(
   });
 }
 
+/**
+ * Execute a prepared statement and return a lazy result.
+ *
+ * @param statementHandle - A prepared statement handle
+ * @returns A LazyResult for lazy iteration over rows
+ * @throws {DatabaseError} if execution fails
+ */
 export function executePreparedResult(
   statementHandle: PreparedStatementHandle,
 ): LazyResult {

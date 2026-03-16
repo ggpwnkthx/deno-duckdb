@@ -3,11 +3,6 @@
  */
 
 import type { ConnectionHandle, ObjectRow, RowData } from "../types.ts";
-import {
-  clearResultCache,
-  getResultCacheSize,
-  invalidateCachedQuery,
-} from "../core/result_cache.ts";
 import { closeConnection, executeQuery, prepareStatement } from "../core/native.ts";
 import { assertNonEmptyString } from "../core/validate.ts";
 import { DisposableResource } from "./base.ts";
@@ -97,5 +92,3 @@ export class Connection extends DisposableResource<ConnectionHandle> {
     this.#onClose();
   }
 }
-
-export { clearResultCache, getResultCacheSize, invalidateCachedQuery };

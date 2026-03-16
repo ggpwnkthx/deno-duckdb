@@ -48,11 +48,6 @@ import {
   LazyResult,
 } from "../core/execution.ts";
 import {
-  clearResultCache,
-  getResultCacheSize,
-  invalidateCachedQuery,
-} from "../core/result_cache.ts";
-import {
   createResultReader,
   fetchAll,
   fetchObjects,
@@ -113,9 +108,6 @@ export {
 
 // Execution
 export { executePreparedResult, executeSqlResult, LazyResult };
-
-// Cache
-export { clearResultCache, getResultCacheSize, invalidateCachedQuery };
 
 // Value
 export {

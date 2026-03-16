@@ -48,7 +48,3 @@ export function stringToCStringPointer(
   cache.set(value, { bytes, pointer });
   return pointer;
 }
-
-export function clearStringCache(): void {
-  cache.clear();
-}

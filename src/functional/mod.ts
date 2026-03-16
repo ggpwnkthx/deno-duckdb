@@ -578,7 +578,11 @@ export { iterateRows };
  */
 export { iterateObjects };
 
-// Errors
+/**
+ * Error classes for DuckDB operations.
+ *
+ * Re-exports error types from the shared errors module.
+ */
 export {
   DatabaseError,
   DuckDBError,

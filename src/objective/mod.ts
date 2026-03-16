@@ -49,6 +49,11 @@ export { Connection } from "./connection.ts";
 export { PreparedStatement } from "./prepared.ts";
 export { QueryResult } from "./query.ts";
 
+/**
+ * Error classes for DuckDB operations.
+ *
+ * Re-exports error types from the shared errors module.
+ */
 export {
   DatabaseError,
   DuckDBError,

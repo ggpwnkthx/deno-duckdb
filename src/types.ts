@@ -1,5 +1,8 @@
 /**
- * Public shared types for the DuckDB wrapper.
+ * Shared types for the DuckDB wrapper.
+ *
+ * Defines branded handle types (DatabaseHandle, ConnectionHandle, ResultHandle,
+ * PreparedStatementHandle) and value types (ValueType, RowData, ObjectRow, ColumnInfo).
  */
 
 import type { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";

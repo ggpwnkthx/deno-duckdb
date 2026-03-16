@@ -4,6 +4,14 @@
 
 import { InvalidResourceError } from "../errors.ts";
 
+/**
+ * Abstract base class for DuckDB resources that require lifecycle management.
+ *
+ * Provides common functionality for handle management, disposal tracking,
+ * and implements the `Symbol.dispose` protocol for automatic resource cleanup.
+ *
+ * Subclasses must implement resource-specific destruction logic.
+ */
 export abstract class DisposableResource<THandle extends Uint8Array> {
   protected handle: THandle | null;
 

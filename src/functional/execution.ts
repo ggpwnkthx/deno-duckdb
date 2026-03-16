@@ -19,6 +19,13 @@ import {
 } from "../core/handles.ts";
 import { assertNonEmptyString } from "../core/validate.ts";
 
+/**
+ * Request types for executing queries against DuckDB.
+ *
+ * A discriminated union representing either:
+ * - A raw SQL query execution request
+ * - A prepared statement execution request
+ */
 export type ExecutionRequest =
   | {
     kind: "sql";

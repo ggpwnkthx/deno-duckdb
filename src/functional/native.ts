@@ -79,6 +79,12 @@ function preparedErrorMessage(
     fallback;
 }
 
+/**
+ * Value types that can be bound to prepared statement parameters.
+ *
+ * Supports boolean, number, bigint, string, binary (Uint8Array),
+ * and null values for parameter binding.
+ */
 export type BindValue = boolean | number | bigint | string | Uint8Array | null;
 
 /**

@@ -27,7 +27,7 @@ import {
   validatePreparedStatementHandle,
   validateResultHandle,
 } from "./handles.ts";
-import { getLibrary, getLibraryFast, getLibrarySync } from "./library.ts";
+import { getLibrary, getLibraryFast } from "./library.ts";
 import { stringToCStringPointer } from "./strings.ts";
 import {
   assertFiniteNumber,
@@ -240,15 +240,6 @@ export function destroyResult(handle: ResultHandle): void {
   library.symbols.duckdb_destroy_result(handle);
 }
 
-export function destroyResultSync(handle: ResultHandle): void {
-  validateResultHandle(handle);
-  const library = getLibrarySync();
-
-  if (library) {
-    library.symbols.duckdb_destroy_result(handle);
-  }
-}
-
 export function prepareStatement(
   connectionHandle: ConnectionHandle,
   sql: string,
@@ -314,18 +305,6 @@ export function resetPreparedStatement(handle: PreparedStatementHandle): void {
   library.symbols.duckdb_clear_bindings(
     requireOpaqueHandle(handle, "PreparedStatementHandle"),
   );
-}
-
-export function resetPreparedStatementSync(
-  handle: PreparedStatementHandle,
-): void {
-  validatePreparedStatementHandle(handle);
-  const library = getLibrarySync();
-  if (library) {
-    library.symbols.duckdb_clear_bindings(
-      requireOpaqueHandle(handle, "PreparedStatementHandle"),
-    );
-  }
 }
 
 function bindFailure(
@@ -449,17 +428,6 @@ export function destroyPreparedStatement(
   }
 }
 
-export function destroyPreparedStatementSync(
-  handle: PreparedStatementHandle,
-): void {
-  validatePreparedStatementHandle(handle);
-  const library = getLibrarySync();
-
-  if (library && isValidHandle(handle)) {
-    library.symbols.duckdb_destroy_prepare(handle);
-  }
-}
-
 export function getResultRowCount(handle: ResultHandle): bigint {
   validateResultHandle(handle);
   return getLibraryFast().symbols.duckdb_row_count(handle);
@@ -474,24 +442,6 @@ export function getResultColumnName(
   handle: ResultHandle,
   columnIndex: number,
 ): string {
-  return getResultColumnNameInternal(handle, columnIndex);
-}
-
-export function getResultColumnType(
-  handle: ResultHandle,
-  columnIndex: number,
-): DUCKDB_TYPE {
-  return getResultColumnTypeInternal(handle, columnIndex);
-}
-
-/**
- * Internal version that skips column count validation.
- * Use when column count is already known (e.g., from cached ResultView).
- */
-function getResultColumnNameInternal(
-  handle: ResultHandle,
-  columnIndex: number,
-): string {
   validateResultHandle(handle);
   const pointer = getLibraryFast().symbols.duckdb_column_name(
     handle,
@@ -501,11 +451,7 @@ function getResultColumnNameInternal(
   return readCString(pointer) ?? "";
 }
 
-/**
- * Internal version that skips column count validation.
- * Use when column count is already known (e.g., from cached ResultView).
- */
-function getResultColumnTypeInternal(
+export function getResultColumnType(
   handle: ResultHandle,
   columnIndex: number,
 ): DUCKDB_TYPE {
@@ -522,8 +468,8 @@ export function getResultColumnInfos(handle: ResultHandle): ColumnInfo[] {
 
   for (let index = 0; index < count; index += 1) {
     columns.push({
-      name: getResultColumnNameInternal(handle, index),
-      type: getResultColumnTypeInternal(handle, index),
+      name: getResultColumnName(handle, index),
+      type: getResultColumnType(handle, index),
     });
   }
 

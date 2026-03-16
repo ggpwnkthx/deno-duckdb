@@ -25,26 +25,14 @@ export class Connection extends DisposableResource<ConnectionHandle> {
    */
   query(sql: string): RowData[] | null {
     try {
-      return this.queryAll(sql);
+      const result = this.execute(sql);
+      try {
+        return [...result.rows()];
+      } finally {
+        result.close();
+      }
     } catch {
       return null;
-    }
-  }
-
-  /**
-   * Execute query and return QueryResult for lazy iteration.
-   */
-  queryResult(sql: string): QueryResult {
-    return this.execute(sql);
-  }
-
-  queryAll(sql: string): RowData[] {
-    const result = this.execute(sql);
-
-    try {
-      return [...result.rows()];
-    } finally {
-      result.close();
     }
   }
 
@@ -69,10 +57,6 @@ export class Connection extends DisposableResource<ConnectionHandle> {
   execute(sql: string): QueryResult {
     assertNonEmptyString(sql, "SQL query");
     return new QueryResult(executeQuery(this.requireHandle("Connection"), sql));
-  }
-
-  executeObjects(sql: string): QueryResult {
-    return this.execute(sql);
   }
 
   prepare(sql: string): PreparedStatement {

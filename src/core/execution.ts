@@ -11,11 +11,7 @@ import type {
   RowData,
 } from "../types.ts";
 import { InvalidResourceError } from "../errors.ts";
-import {
-  destroyResult,
-  executePreparedStatement,
-  executeQuery,
-} from "./native.ts";
+import { destroyResult, executePreparedStatement, executeQuery } from "./native.ts";
 import { createResultReader, type ResultReader } from "./result.ts";
 import {
   validateConnectionHandle,

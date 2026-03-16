@@ -14,7 +14,7 @@ Deno.test({
 
     const connection = await database.connect();
     // Use queryResult for tests that need QueryResult features
-    const result = connection.queryResult("SELECT 1 AS value");
+    const result = connection.execute("SELECT 1 AS value");
 
     try {
       assertEquals([...result.rows()], [[1]]);
@@ -41,12 +41,12 @@ Deno.test({
           "INSERT INTO items VALUES (1, 'alpha', 1.5, unhex('CAFE')), (2, 'beta', 2.5, unhex('BEEF'))",
         ]
       ) {
-        const result = connection.queryResult(sql);
+        const result = connection.execute(sql);
         result.close();
       }
 
       // Use queryResult for tests that need QueryResult metadata methods
-      const result = connection.queryResult("SELECT * FROM items ORDER BY id");
+      const result = connection.execute("SELECT * FROM items ORDER BY id");
 
       try {
         assertEquals(result.rowCount(), 2n);
@@ -102,12 +102,12 @@ Deno.test({
           "INSERT INTO typed_items VALUES (1, 'alpha', true), (2, 'beta', false)",
         ]
       ) {
-        const result = connection.queryResult(sql);
+        const result = connection.execute(sql);
         result.close();
       }
 
       // Use queryResult for tests that need QueryResult
-      const result = connection.queryResult("SELECT * FROM typed_items ORDER BY id");
+      const result = connection.execute("SELECT * FROM typed_items ORDER BY id");
 
       assertEquals(
         [...result.rows()],
@@ -119,7 +119,7 @@ Deno.test({
 
       result.close();
 
-      const result2 = connection.queryResult(
+      const result2 = connection.execute(
         "SELECT id, name FROM typed_items ORDER BY id",
       );
 
@@ -149,7 +149,7 @@ Deno.test({
           "INSERT INTO prepared_items VALUES (1, 'alpha'), (2, 'beta')",
         ]
       ) {
-        const result = connection.queryResult(sql);
+        const result = connection.execute(sql);
         result.close();
       }
 
@@ -192,7 +192,7 @@ Deno.test({
     const database = new Database();
     const connection = await database.connect();
     // Use queryResult for tests that need QueryResult
-    const result = connection.queryResult("SELECT 1 AS value");
+    const result = connection.execute("SELECT 1 AS value");
     const statement = connection.prepare("SELECT 1 AS value");
 
     result.close();
@@ -212,7 +212,7 @@ Deno.test({
     );
     // For closed connection, queryResult throws
     assertThrows(
-      () => connection.queryResult("SELECT 1"),
+      () => connection.execute("SELECT 1"),
       InvalidResourceError,
       "Connection is closed",
     );

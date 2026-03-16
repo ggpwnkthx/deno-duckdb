@@ -50,7 +50,7 @@ Deno.test({
       const stmt = functional.prepare(functionalConnection, sql);
       const functionalResult = functional.executePrepared(stmt);
 
-      const objectiveResult = objectiveConnection.queryResult(sql);
+      const objectiveResult = objectiveConnection.execute(sql);
 
       try {
         const functionalReader = functional.createResultReader(functionalResult);
@@ -108,11 +108,11 @@ Deno.test({
 
       // Execute DDL on objective connection
       {
-        const result = objectiveConnection.queryResult(createTable);
+        const result = objectiveConnection.execute(createTable);
         result.close();
       }
       {
-        const result = objectiveConnection.queryResult(insertData);
+        const result = objectiveConnection.execute(insertData);
         result.close();
       }
 

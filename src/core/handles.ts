@@ -13,18 +13,6 @@ import { ValidationError } from "../errors.ts";
 export const POINTER_SIZE = 8;
 export const RESULT_SIZE = 48;
 
-/**
- * Fixed-width byte sizes used by DuckDB's legacy result memory layout.
- *
- * These sizes match the libduckdb C ABI targeted by
- * `@ggpwnkthx/libduckdb@1.0.14` (DuckDB 1.4.4).
- */
-export const BYTE_SIZE_8 = 1;
-export const BYTE_SIZE_16 = 2;
-export const BYTE_SIZE_32 = 4;
-export const BYTE_SIZE_64 = 8;
-export const BYTE_SIZE_128 = 16;
-
 function createHandle<T extends Uint8Array<ArrayBuffer>>(size: number): T {
   return new Uint8Array(new ArrayBuffer(size)) as T;
 }

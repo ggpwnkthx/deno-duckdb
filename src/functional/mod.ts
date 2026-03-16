@@ -14,10 +14,8 @@ import {
   // Connection
   connectToDatabase,
   destroyPreparedStatement,
-  destroyPreparedStatementSync,
   // Result
   destroyResult,
-  destroyResultSync,
   executePreparedStatement,
   getResultColumnCount,
   getResultColumnInfos,
@@ -30,13 +28,11 @@ import {
   preparedColumnCount,
   prepareStatement,
   resetPreparedStatement,
-  resetPreparedStatementSync,
 } from "../core/native.ts";
 
 // Import from handles
 import {
   getPointerValue,
-  getPointerValue as getPointerValueConnection,
   validateConnectionHandle,
   validateDatabaseHandle,
 } from "../core/handles.ts";
@@ -77,25 +73,22 @@ export { getPointerValue, validateDatabaseHandle };
 
 // Connection
 export { closeConnection, connectToDatabase, isValidConnectionHandle };
-export { getPointerValueConnection, validateConnectionHandle };
+export { validateConnectionHandle };
 
 // Prepared
 export {
   bindPreparedParameters,
   destroyPreparedStatement,
-  destroyPreparedStatementSync,
   executePreparedStatement,
   preparedColumnCount,
   prepareStatement,
   resetPreparedStatement,
-  resetPreparedStatementSync,
 };
 export type { BindValue };
 
 // Result
 export {
   destroyResult,
-  destroyResultSync,
   getResultColumnCount,
   getResultColumnInfos,
   getResultColumnName,
@@ -146,9 +139,7 @@ export const bind = bindPreparedParameters;
 export const prepare = prepareStatement;
 export const executePrepared = executePreparedStatement;
 export const resetPrepared = resetPreparedStatement;
-export const resetPreparedSync = resetPreparedStatementSync;
 export const destroyPrepared = destroyPreparedStatement;
-export const destroyPreparedSync = destroyPreparedStatementSync;
 
 // Result aliases - use native functions which handle ResultHandle
 export const rowCount = getResultRowCount;

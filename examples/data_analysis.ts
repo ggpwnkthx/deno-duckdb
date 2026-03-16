@@ -79,7 +79,7 @@ function queryFunctionalObjects(
 
 function queryObjectiveObjects(connection: Connection, sql: string): ObjectRow[] {
   // Use queryResult for QueryResult features
-  const result = connection.queryResult(sql);
+  const result = connection.execute(sql);
   const rows = [...result.objects()];
   result.close();
   return rows;

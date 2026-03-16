@@ -13,7 +13,7 @@ Deno.test({
     assertEquals(functional.isValidDatabase(database), true);
     assertEquals(functional.isValidConnection(connection), true);
     assertEquals(functional.getPointerValue(database) !== 0n, true);
-    assertEquals(functional.getPointerValueConnection(connection) !== 0n, true);
+    assertEquals(functional.getPointerValue(connection) !== 0n, true);
 
     functional.closeConnection(connection);
     functional.closeDatabase(database);
@@ -192,7 +192,7 @@ Deno.test({
           functional.destroyResult(result);
         }
 
-        functional.resetPreparedSync(statement);
+        functional.resetPrepared(statement);
         assertThrows(
           () => functional.executePrepared(statement),
           DatabaseError,
@@ -246,7 +246,7 @@ Deno.test({
       assertEquals(rows1, [[1]]);
 
       const statement = functional.prepare(connection, "SELECT 2 AS value");
-      functional.destroyPreparedSync(statement);
+      functional.destroyPrepared(statement);
 
       // Another cached query should work
       const rows2 = [...functional.query(connection, "SELECT 3 AS value")!];

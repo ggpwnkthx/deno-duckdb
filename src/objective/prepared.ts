@@ -2,11 +2,11 @@
  * Object-oriented prepared statement wrapper.
  */
 
-import type { PreparedStatementHandle, RowData } from "../types.ts";
+import type { PreparedStatementHandle } from "../types.ts";
 import type { BindValue } from "../core/native.ts";
 import {
   bindPreparedParameters,
-  destroyPreparedStatementSync,
+  destroyPreparedStatement,
   executePreparedStatement,
   preparedColumnCount,
   resetPreparedStatement,
@@ -45,15 +45,6 @@ export class PreparedStatement extends DisposableResource<PreparedStatementHandl
       return;
     }
 
-    destroyPreparedStatementSync(handle);
-  }
-
-  executeAndFetch(): RowData[] {
-    const result = this.execute();
-    try {
-      return [...result.rows()];
-    } finally {
-      result.close();
-    }
+    destroyPreparedStatement(handle);
   }
 }

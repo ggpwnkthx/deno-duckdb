@@ -103,7 +103,7 @@ try {
 
     console.log(`Querying: ${AZURE_BLOB_URL}`);
     // Use queryResult for QueryResult features
-    const result = objectiveConn.queryResult(SAMPLE_QUERY);
+    const result = objectiveConn.execute(SAMPLE_QUERY);
 
     try {
       const rows = [...result.objects()];

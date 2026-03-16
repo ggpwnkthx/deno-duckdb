@@ -45,7 +45,7 @@ try {
 
   try {
     // Use queryResult for QueryResult features
-    const result = objectiveConn.queryResult(
+    const result = objectiveConn.execute(
       "SELECT i, i * 2 AS doubled FROM range(5) t(i)",
     );
     const rows = [...result.objects()];

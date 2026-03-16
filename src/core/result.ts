@@ -10,15 +10,19 @@ import type {
   RowData,
   ValueType,
 } from "../types.ts";
-import {
-  BYTE_SIZE_128,
-  BYTE_SIZE_16,
-  BYTE_SIZE_32,
-  BYTE_SIZE_64,
-  BYTE_SIZE_8,
-  createPointerView,
-  validateResultHandle,
-} from "./handles.ts";
+import { createPointerView, validateResultHandle } from "./handles.ts";
+
+/**
+ * Fixed-width byte sizes used by DuckDB's legacy result memory layout.
+ *
+ * These sizes match the libduckdb C ABI targeted by
+ * `@ggpwnkthx/libduckdb@1.0.14` (DuckDB 1.4.4).
+ */
+const BYTE_SIZE_8 = 1;
+const BYTE_SIZE_16 = 2;
+const BYTE_SIZE_32 = 4;
+const BYTE_SIZE_64 = 8;
+const BYTE_SIZE_128 = 16;
 import {
   getResultColumnData,
   getResultColumnInfos,

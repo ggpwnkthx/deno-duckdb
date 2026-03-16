@@ -1,11 +1,6 @@
 import { assertEquals, assertExists } from "@std/assert";
 import * as functional from "@ggpwnkthx/duckdb/functional";
-import {
-  getLibrary,
-  getLibraryFast,
-  getLibrarySync,
-  isLibraryLoaded,
-} from "../src/core/library.ts";
+import { getLibrary, getLibraryFast, getLibrarySync } from "../src/core/library.ts";
 
 Deno.test({
   name: "core: getLibrary caches the loaded dynamic library per path",
@@ -19,7 +14,6 @@ Deno.test({
     assertEquals(library1, library2);
     assertEquals(getLibraryFast(), library1);
     assertEquals(getLibrarySync(), library1);
-    assertEquals(isLibraryLoaded(), true);
   },
 });
 

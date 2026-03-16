@@ -64,27 +64,3 @@ export function getLibraryFast(libPath?: string): DuckDBLibrary {
 
   return library;
 }
-
-export function isLibraryLoaded(libPath?: string): boolean {
-  return loadedLibraries.has(libraryKey(libPath));
-}
-
-export function resetLibrary(libPath?: string): void {
-  if (libPath !== undefined) {
-    const key = libraryKey(libPath);
-    const library = loadedLibraries.get(key);
-    if (library) {
-      library.close();
-      loadedLibraries.delete(key);
-    }
-    loadingLibraries.delete(key);
-    return;
-  }
-
-  for (const library of loadedLibraries.values()) {
-    library.close();
-  }
-
-  loadedLibraries.clear();
-  loadingLibraries.clear();
-}

@@ -39,7 +39,7 @@ Deno.test({
 
     try {
       const reader = functional.createResultReader(result);
-      const rows = [...functional.fetchAll(reader)];
+      const rows = [...functional.iterateRows(reader)];
       assertEquals(rows, [[1]]);
     } finally {
       functional.destroyResult(result);

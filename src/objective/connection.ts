@@ -42,7 +42,7 @@ export class Connection extends DisposableResource<ConnectionHandle> {
     const result = this.execute(sql);
 
     try {
-      return [...result.fetchAll()];
+      return [...result.rows()];
     } finally {
       result.close();
     }
@@ -57,7 +57,7 @@ export class Connection extends DisposableResource<ConnectionHandle> {
       const result = this.execute(sql);
 
       try {
-        return [...result.toArrayOfObjects()];
+        return [...result.objects()];
       } finally {
         result.close();
       }

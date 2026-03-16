@@ -80,7 +80,7 @@ function queryFunctionalObjects(
 function queryObjectiveObjects(connection: Connection, sql: string): ObjectRow[] {
   // Use queryResult for QueryResult features
   const result = connection.queryResult(sql);
-  const rows = [...result.toArrayOfObjects()];
+  const rows = [...result.objects()];
   result.close();
   return rows;
 }
@@ -129,7 +129,7 @@ try {
 
       try {
         const reader = functional.createResultReader(result);
-        for (const row of functional.fetchObjects(reader)) {
+        for (const row of functional.iterateObjects(reader)) {
           console.log(
             `  Order ${row.id}: customer=${row.customer_id}, product=${row.product_id}, quantity=${row.quantity}, date=${row.order_date}`,
           );

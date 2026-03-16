@@ -106,7 +106,7 @@ try {
     const result = objectiveConn.queryResult(SAMPLE_QUERY);
 
     try {
-      const rows = [...result.toArrayOfObjects()];
+      const rows = [...result.objects()];
       console.log(`Result: ${rows.length} rows\n`);
       printRows(rows);
     } finally {

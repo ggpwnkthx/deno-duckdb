@@ -17,7 +17,7 @@ Deno.test({
     const result = connection.queryResult("SELECT 1 AS value");
 
     try {
-      assertEquals([...result.fetchAll()], [[1]]);
+      assertEquals([...result.rows()], [[1]]);
     } finally {
       result.close();
       connection.close();
@@ -65,19 +65,19 @@ Deno.test({
           { id: 2, name: "beta", amount: 2.5, payload: new Uint8Array([0xBE, 0xEF]) },
         ]);
 
-        const rows1 = [...result.fetchAll()];
+        const rows1 = [...result.rows()];
         (rows1[0][3] as Uint8Array)[0] = 0;
 
-        const rows2 = [...result.fetchAll()];
+        const rows2 = [...result.rows()];
         assertEquals(rows2, [
           [1, "alpha", 1.5, new Uint8Array([0xCA, 0xFE])],
           [2, "beta", 2.5, new Uint8Array([0xBE, 0xEF])],
         ]);
 
-        const objects1 = [...result.toArrayOfObjects()];
+        const objects1 = [...result.objects()];
         (objects1[0].payload as Uint8Array)[0] = 0;
 
-        const objects2 = [...result.toArrayOfObjects()];
+        const objects2 = [...result.objects()];
         assertEquals(objects2, [
           { id: 1, name: "alpha", amount: 1.5, payload: new Uint8Array([0xCA, 0xFE]) },
           { id: 2, name: "beta", amount: 2.5, payload: new Uint8Array([0xBE, 0xEF]) },
@@ -90,7 +90,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "objective: QueryResult.fetchAll and toArrayOfObjects return decoded values",
+  name: "objective: QueryResult.rows and objects return decoded values",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
@@ -110,7 +110,7 @@ Deno.test({
       const result = connection.queryResult("SELECT * FROM typed_items ORDER BY id");
 
       assertEquals(
-        [...result.fetchAll()],
+        [...result.rows()],
         [
           [1, "alpha", true],
           [2, "beta", false],
@@ -124,7 +124,7 @@ Deno.test({
       );
 
       assertEquals(
-        [...result2.toArrayOfObjects()],
+        [...result2.objects()],
         [
           { id: 1, name: "alpha" },
           { id: 2, name: "beta" },
@@ -163,7 +163,7 @@ Deno.test({
 
         let result = statement.execute();
         try {
-          assertEquals([...result.fetchAll()], [["alpha"]]);
+          assertEquals([...result.rows()], [["alpha"]]);
         } finally {
           result.close();
         }
@@ -173,7 +173,7 @@ Deno.test({
 
         result = statement.bind([2]).execute();
         try {
-          assertEquals([...result.fetchAll()], [["beta"]]);
+          assertEquals([...result.rows()], [["beta"]]);
         } finally {
           result.close();
         }

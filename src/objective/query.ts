@@ -39,14 +39,6 @@ export class QueryResult extends DisposableResource<ResultHandle> {
     return this.#getReader().getRow(index);
   }
 
-  *fetchAll(): IterableIterator<RowData> {
-    yield* this.#getReader().rows();
-  }
-
-  *toArrayOfObjects(): IterableIterator<ObjectRow> {
-    yield* this.#getReader().objects();
-  }
-
   *rows(): IterableIterator<RowData> {
     yield* this.#getReader().rows();
   }

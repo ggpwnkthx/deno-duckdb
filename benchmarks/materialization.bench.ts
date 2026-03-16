@@ -119,7 +119,7 @@ Deno.bench(
     if (result === null) {
       throw new Error("Query returned null");
     }
-    const rows = [...result.fetchAll()];
+    const rows = [...result.rows()];
     assertMaterializedRows(rows);
     result.close();
   },
@@ -180,7 +180,7 @@ Deno.bench(
     const result = preparedObj.execute();
 
     try {
-      const rows = [...result.fetchAll()];
+      const rows = [...result.rows()];
       assertMaterializedRows(rows);
     } finally {
       result.close();
@@ -263,7 +263,7 @@ Deno.bench(
       const result = stmt.execute();
 
       try {
-        const rows = [...result.fetchAll()];
+        const rows = [...result.rows()];
         assertMaterializedRows(rows);
       } finally {
         result.close();

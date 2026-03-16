@@ -2,7 +2,6 @@
  * Functional result value extraction.
  */
 
-import type { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
 import type { ObjectRow, RowData, ValueType } from "../types.ts";
 import { LazyResult } from "../core/execution.ts";
 import type { ResultReader } from "../core/result.ts";
@@ -26,15 +25,6 @@ export function getValue(
   result: LazyResult | ResultReader,
   rowIndex: number,
   columnIndex: number,
-): ValueType {
-  return toReader(result).getValue(rowIndex, columnIndex);
-}
-
-export function getValueByType(
-  result: LazyResult | ResultReader,
-  rowIndex: number,
-  columnIndex: number,
-  _type: DUCKDB_TYPE,
 ): ValueType {
   return toReader(result).getValue(rowIndex, columnIndex);
 }
@@ -73,16 +63,6 @@ export function getString(
 ): string | null {
   const value = toReader(result).getValue(rowIndex, columnIndex);
   return typeof value === "string" ? value : null;
-}
-
-export function fetchAll(result: LazyResult | ResultReader): IterableIterator<RowData> {
-  return toReader(result).rows();
-}
-
-export function fetchObjects(
-  result: LazyResult | ResultReader,
-): IterableIterator<ObjectRow> {
-  return toReader(result).objects();
 }
 
 export function iterateRows(

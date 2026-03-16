@@ -51,13 +51,9 @@ export class PreparedStatement extends DisposableResource<PreparedStatementHandl
   executeAndFetch(): RowData[] {
     const result = this.execute();
     try {
-      return [...result.fetchAll()];
+      return [...result.rows()];
     } finally {
       result.close();
     }
-  }
-
-  executeAndFetchAll(): RowData[] {
-    return this.executeAndFetch();
   }
 }

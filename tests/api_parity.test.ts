@@ -59,8 +59,8 @@ Deno.test({
           materializeResultObjects(functionalReader),
           expectedObjects,
         );
-        assertEquals([...objectiveResult.fetchAll()], expectedRows);
-        assertEquals([...objectiveResult.toArrayOfObjects()], expectedObjects);
+        assertEquals([...objectiveResult.rows()], expectedRows);
+        assertEquals([...objectiveResult.objects()], expectedObjects);
       } finally {
         functional.destroyResult(functionalResult);
         functional.destroyPrepared(stmt);
@@ -141,7 +141,7 @@ Deno.test({
 
           const functionalReader = functional.createResultReader(functionalResult);
           assertEquals(materializeResultRows(functionalReader), expected);
-          assertEquals([...objectiveResult.fetchAll()], expected);
+          assertEquals([...objectiveResult.rows()], expected);
         } finally {
           functional.destroyResult(functionalResult);
           objectiveResult.close();

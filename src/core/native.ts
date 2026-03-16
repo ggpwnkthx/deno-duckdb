@@ -474,20 +474,21 @@ export function getResultColumnName(
   handle: ResultHandle,
   columnIndex: number,
 ): string {
-  validateResultHandle(handle);
-  const pointer = getLibraryFast().symbols.duckdb_column_name(
-    handle,
-    BigInt(columnIndex),
-  );
+  return getResultColumnNameInternal(handle, columnIndex);
+}
 
-  return readCString(pointer) ?? "";
+export function getResultColumnType(
+  handle: ResultHandle,
+  columnIndex: number,
+): DUCKDB_TYPE {
+  return getResultColumnTypeInternal(handle, columnIndex);
 }
 
 /**
  * Internal version that skips column count validation.
  * Use when column count is already known (e.g., from cached ResultView).
  */
-export function getResultColumnNameInternal(
+function getResultColumnNameInternal(
   handle: ResultHandle,
   columnIndex: number,
 ): string {
@@ -500,22 +501,11 @@ export function getResultColumnNameInternal(
   return readCString(pointer) ?? "";
 }
 
-export function getResultColumnType(
-  handle: ResultHandle,
-  columnIndex: number,
-): DUCKDB_TYPE {
-  validateResultHandle(handle);
-  return getLibraryFast().symbols.duckdb_column_type(
-    handle,
-    BigInt(columnIndex),
-  ) as DUCKDB_TYPE;
-}
-
 /**
  * Internal version that skips column count validation.
  * Use when column count is already known (e.g., from cached ResultView).
  */
-export function getResultColumnTypeInternal(
+function getResultColumnTypeInternal(
   handle: ResultHandle,
   columnIndex: number,
 ): DUCKDB_TYPE {

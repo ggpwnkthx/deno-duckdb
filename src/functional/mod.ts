@@ -49,14 +49,11 @@ import {
 } from "../core/execution.ts";
 import {
   createResultReader,
-  fetchAll,
-  fetchObjects,
   getDouble,
   getInt32,
   getInt64,
   getString,
   getValue,
-  getValueByType,
   isNull,
   iterateObjects,
   iterateRows,
@@ -112,14 +109,11 @@ export { executePreparedResult, executeSqlResult, LazyResult };
 // Value
 export {
   createResultReader,
-  fetchAll,
-  fetchObjects,
   getDouble,
   getInt32,
   getInt64,
   getString,
   getValue,
-  getValueByType,
   isNull,
   iterateObjects,
   iterateRows,
@@ -203,5 +197,3 @@ export function queryObjects(
     return null;
   }
 }
-
-export const executeObjects = queryObjects;

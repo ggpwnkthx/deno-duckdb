@@ -48,7 +48,7 @@ try {
     const result = objectiveConn.queryResult(
       "SELECT i, i * 2 AS doubled FROM range(5) t(i)",
     );
-    const rows = [...result.toArrayOfObjects()];
+    const rows = [...result.objects()];
     result.close();
     printRows("Results:", rows);
   } finally {

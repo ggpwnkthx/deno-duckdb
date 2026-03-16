@@ -7,7 +7,7 @@
  * - DDL/INSERT queries
  */
 
-import { functional } from "@ggpwnkthx/duckdb";
+import * as functional from "@ggpwnkthx/duckdb/functional";
 
 // Database lifecycle - each bench creates its own resources
 Deno.bench("Lifecycle: open in-memory database", async () => {

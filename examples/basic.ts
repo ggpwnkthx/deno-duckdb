@@ -2,7 +2,8 @@
  * Example: Basic usage with the production-ready functional and objective APIs.
  */
 
-import { functional, objective } from "@ggpwnkthx/duckdb";
+import * as functional from "@ggpwnkthx/duckdb/functional";
+import * as objective from "@ggpwnkthx/duckdb/objective";
 import type { ObjectRow } from "@ggpwnkthx/duckdb";
 
 function printRows(title: string, rows: readonly ObjectRow[]): void {

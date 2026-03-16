@@ -5,8 +5,6 @@
  *
  * - {@link types} - Shared types (DatabaseHandle, ConnectionHandle, etc.)
  * - {@link errors} - Error hierarchy (DuckDBError, QueryError, etc.)
- * - {@link functional} - Functional API with explicit state management
- * - {@link objective} - Object-oriented API with automatic resource cleanup
  *
  * Choose the functional API for explicit control or the objective API for convenience.
  *
@@ -15,6 +13,3 @@
 
 export * from "./types.ts";
 export * from "./errors.ts";
-
-export * as functional from "./functional/mod.ts";
-export * as objective from "./objective/mod.ts";

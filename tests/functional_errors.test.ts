@@ -5,7 +5,8 @@ import type {
   PreparedStatementHandle,
   ResultHandle,
 } from "@ggpwnkthx/duckdb";
-import { DatabaseError, functional, ValidationError } from "@ggpwnkthx/duckdb";
+import { DatabaseError, ValidationError } from "@ggpwnkthx/duckdb";
+import * as functional from "@ggpwnkthx/duckdb/functional";
 import { withFunctionalConnection } from "./utils.ts";
 
 function invalidBuffer(size: number): Uint8Array {

@@ -6,7 +6,7 @@
  * - Narrow (1 col) vs wide (100 cols) results
  */
 
-import { functional } from "@ggpwnkthx/duckdb";
+import * as functional from "@ggpwnkthx/duckdb/functional";
 
 const ROW_SIZES = [100, 10_000, 100_000, 1_000_000];
 

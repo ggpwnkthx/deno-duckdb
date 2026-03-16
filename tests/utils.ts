@@ -2,7 +2,8 @@
  * Shared test helpers for the package.
  */
 
-import { functional, objective } from "@ggpwnkthx/duckdb";
+import * as functional from "@ggpwnkthx/duckdb/functional";
+import * as objective from "@ggpwnkthx/duckdb/objective";
 import type { ConnectionHandle, ObjectRow, RowData } from "@ggpwnkthx/duckdb";
 
 export async function withFunctionalConnection<T>(

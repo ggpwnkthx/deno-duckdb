@@ -44,9 +44,21 @@
  * ```
  */
 
+/**
+ * @see {@link ./database.ts}
+ */
 export { Database } from "./database.ts";
+/**
+ * @see {@link ./connection.ts}
+ */
 export { Connection } from "./connection.ts";
+/**
+ * @see {@link ./prepared.ts}
+ */
 export { PreparedStatement } from "./prepared.ts";
+/**
+ * @see {@link ./query.ts}
+ */
 export { QueryResult } from "./query.ts";
 
 /**

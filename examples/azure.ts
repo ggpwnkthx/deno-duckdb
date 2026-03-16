@@ -5,7 +5,8 @@
  * to stable snake_case names for display.
  */
 
-import { functional, objective } from "@ggpwnkthx/duckdb";
+import * as functional from "@ggpwnkthx/duckdb/functional";
+import * as objective from "@ggpwnkthx/duckdb/objective";
 import type { ConnectionHandle, ObjectRow } from "@ggpwnkthx/duckdb";
 
 const AZURE_BLOB_URL =

@@ -1,5 +1,6 @@
 import { assertEquals } from "@std/assert";
-import { functional, objective } from "@ggpwnkthx/duckdb";
+import * as functional from "@ggpwnkthx/duckdb/functional";
+import * as objective from "@ggpwnkthx/duckdb/objective";
 import { materializeResultObjects, materializeResultRows } from "./utils.ts";
 
 Deno.test({

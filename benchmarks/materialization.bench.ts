@@ -6,7 +6,8 @@
  * - execution+materialize: execute, fetch rows, force full decoding via checksum
  */
 
-import { functional, objective } from "@ggpwnkthx/duckdb";
+import * as functional from "@ggpwnkthx/duckdb/functional";
+import * as objective from "@ggpwnkthx/duckdb/objective";
 
 const QUERY = "select i, i as a from generate_series(1, 100000) s(i)";
 const PREP_QUERY = "select i, i as a from generate_series(1, ?) s(i)";

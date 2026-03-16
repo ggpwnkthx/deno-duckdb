@@ -12,7 +12,8 @@
  * - Cohort analysis for customer retention
  */
 
-import { functional, objective } from "@ggpwnkthx/duckdb";
+import * as functional from "@ggpwnkthx/duckdb/functional";
+import * as objective from "@ggpwnkthx/duckdb/objective";
 import type { ObjectRow } from "@ggpwnkthx/duckdb";
 
 import {

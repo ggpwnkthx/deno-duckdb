@@ -10,7 +10,7 @@
  * - Null handling
  */
 
-import { functional } from "@ggpwnkthx/duckdb";
+import * as functional from "@ggpwnkthx/duckdb/functional";
 
 const ROW_COUNT = 100_000;
 

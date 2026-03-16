@@ -1,12 +1,6 @@
 import { assertEquals, assertThrows } from "@std/assert";
-import { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
 import { DatabaseError, functional, ValidationError } from "@ggpwnkthx/duckdb";
-import {
-  execFunctional,
-  materializeResultObjects,
-  materializeResultRows,
-  withFunctionalConnection,
-} from "./utils.ts";
+import { execFunctional, withFunctionalConnection } from "./utils.ts";
 
 Deno.test({
   name: "functional: database and connection lifecycle exposes valid handles",
@@ -30,7 +24,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "functional: query metadata, row decoding, and object decoding stay consistent",
+  name: "functional: query returns cached rows directly",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
@@ -53,72 +47,41 @@ Deno.test({
           (2, 20, 'beta',  false, '2024-01-16', 'memo')`,
       );
 
-      const result = functional.query(
+      // New API: query returns rows directly
+      const rows = functional.query(
         connection,
         "SELECT * FROM items ORDER BY id",
       );
 
-      try {
-        assertEquals(functional.rowCount(result), 2n);
-        assertEquals(functional.columnCount(result), 6n);
-        assertEquals(
-          functional.columnInfos(result).map((column) => column.name),
-          ["id", "total", "name", "active", "created", "note"],
-        );
-        assertEquals(
-          functional.columnType(result, 4),
-          DUCKDB_TYPE.DUCKDB_TYPE_DATE,
-        );
-        assertEquals(functional.columnName(result, 2), "name");
+      assertEquals(rows, [
+        [1, 10n, "alpha", true, "2024-01-15", null],
+        [2, 20n, "beta", false, "2024-01-16", "memo"],
+      ]);
 
-        const rows = materializeResultRows(result);
-        const objects = materializeResultObjects(result);
-        const iteratedRows = [...functional.iterateRows(result)];
-        const iteratedObjects = [...functional.iterateObjects(result)];
+      // Test queryObjects for object format
+      const objects = functional.queryObjects(
+        connection,
+        "SELECT * FROM items ORDER BY id",
+      );
 
-        assertEquals(rows, [
-          [1, 10n, "alpha", true, "2024-01-15", null],
-          [2, 20n, "beta", false, "2024-01-16", "memo"],
-        ]);
-        assertEquals(objects, [
-          {
-            id: 1,
-            total: 10n,
-            name: "alpha",
-            active: true,
-            created: "2024-01-15",
-            note: null,
-          },
-          {
-            id: 2,
-            total: 20n,
-            name: "beta",
-            active: false,
-            created: "2024-01-16",
-            note: "memo",
-          },
-        ]);
-        assertEquals(iteratedRows, rows);
-        assertEquals(iteratedObjects, objects);
-
-        assertEquals(functional.isNull(result, 0, 5), true);
-        assertEquals(functional.isNull(result, 1, 5), false);
-        assertEquals(functional.getInt32(result, 0, 0), 1);
-        assertEquals(functional.getInt64(result, 1, 1), 20n);
-        assertEquals(functional.getString(result, 1, 2), "beta");
-        assertEquals(functional.getValue(result, 0, 3), true);
-        assertEquals(
-          functional.getValueByType(
-            result,
-            1,
-            4,
-            functional.columnType(result, 4),
-          ),
-          "2024-01-16",
-        );
-      } finally {
-        functional.destroyResult(result);
-      }
+      assertEquals(objects, [
+        {
+          id: 1,
+          total: 10n,
+          name: "alpha",
+          active: true,
+          created: "2024-01-15",
+          note: null,
+        },
+        {
+          id: 2,
+          total: 20n,
+          name: "beta",
+          active: false,
+          created: "2024-01-16",
+          note: "memo",
+        },
+      ]);
     });
   },
 });
@@ -132,68 +95,43 @@ Deno.test({
     await withFunctionalConnection((connection) => {
       // Note: BIT type requires CAST to VARCHAR for reliable FFI reading
       // due to DuckDB C API limitation (no direct column data for BIT)
-      const result = functional.query(
+      const rows = functional.query(
         connection,
         "SELECT 12.34::DECIMAL(10,2) AS amount, unhex('C0FFEE') AS payload, '10101'::BIT::VARCHAR AS bits",
       );
 
-      try {
-        assertEquals(functional.fetchAll(result), [
-          ["12.34", new Uint8Array([0xC0, 0xFF, 0xEE]), "10101"],
-        ]);
-        assertEquals(functional.fetchObjects(result), [
-          {
-            amount: "12.34",
-            payload: new Uint8Array([0xC0, 0xFF, 0xEE]),
-            bits: "10101",
-          },
-        ]);
-      } finally {
-        functional.destroyResult(result);
-      }
+      assertEquals(rows, [
+        ["12.34", new Uint8Array([0xC0, 0xFF, 0xEE]), "10101"],
+      ]);
+
+      const objects = functional.queryObjects(
+        connection,
+        "SELECT 12.34::DECIMAL(10,2) AS amount, unhex('C0FFEE') AS payload, '10101'::BIT::VARCHAR AS bits",
+      );
+
+      assertEquals(objects, [
+        {
+          amount: "12.34",
+          payload: new Uint8Array([0xC0, 0xFF, 0xEE]),
+          bits: "10101",
+        },
+      ]);
     });
   },
 });
 
 Deno.test({
-  name: "functional: empty results keep metadata but reject row access out of bounds",
+  name: "functional: empty results return empty array",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
     await withFunctionalConnection((connection) => {
-      const result = functional.query(
+      const rows = functional.query(
         connection,
         "SELECT 1::INTEGER AS value WHERE 1 = 0",
       );
 
-      try {
-        assertEquals(functional.rowCount(result), 0n);
-        assertEquals(functional.columnCount(result), 1n);
-        assertEquals(functional.columnName(result, 0), "value");
-        assertEquals(
-          functional.columnType(result, 0),
-          DUCKDB_TYPE.DUCKDB_TYPE_INTEGER,
-        );
-        assertEquals(functional.fetchAll(result), []);
-
-        assertThrows(
-          () => functional.getInt32(result, 0, 0),
-          ValidationError,
-          "Row index 0 is out of bounds",
-        );
-        assertThrows(
-          () => functional.columnName(result, 1),
-          ValidationError,
-          "Column index 1 is out of bounds",
-        );
-        assertThrows(
-          () => functional.isNull(result, Number.NaN, 0),
-          ValidationError,
-          "Row index must be an integer",
-        );
-      } finally {
-        functional.destroyResult(result);
-      }
+      assertEquals(rows, []);
     });
   },
 });
@@ -228,7 +166,8 @@ Deno.test({
         let result = functional.executePrepared(statement);
 
         try {
-          assertEquals(functional.fetchAll(result), [["alpha"]]);
+          const reader = functional.createResultReader(result);
+          assertEquals(functional.fetchAll(reader), [["alpha"]]);
         } finally {
           functional.destroyResult(result);
         }
@@ -237,7 +176,8 @@ Deno.test({
         result = functional.executePrepared(statement);
 
         try {
-          assertEquals(functional.fetchAll(result), [["beta"]]);
+          const reader = functional.createResultReader(result);
+          assertEquals(functional.fetchAll(reader), [["beta"]]);
         } finally {
           functional.destroyResult(result);
         }
@@ -252,7 +192,8 @@ Deno.test({
         result = functional.executePrepared(statement);
 
         try {
-          assertEquals(functional.fetchAll(result), [["gamma"]]);
+          const reader = functional.createResultReader(result);
+          assertEquals(functional.fetchAll(reader), [["gamma"]]);
         } finally {
           functional.destroyResult(result);
         }
@@ -290,19 +231,16 @@ Deno.test({
   sanitizeOps: false,
   async fn() {
     await withFunctionalConnection((connection) => {
-      const result = functional.query(connection, "SELECT 1 AS value");
-      functional.destroyResultSync(result);
+      // Test that cached queries work after sync destroy
+      const rows1 = functional.query(connection, "SELECT 1 AS value");
+      assertEquals(rows1, [[1]]);
 
       const statement = functional.prepare(connection, "SELECT 2 AS value");
       functional.destroyPreparedSync(statement);
 
-      const followUp = functional.query(connection, "SELECT 3 AS value");
-
-      try {
-        assertEquals(functional.fetchAll(followUp), [[3]]);
-      } finally {
-        functional.destroyResult(followUp);
-      }
+      // Another cached query should work
+      const rows2 = functional.query(connection, "SELECT 3 AS value");
+      assertEquals(rows2, [[3]]);
     });
   },
 });

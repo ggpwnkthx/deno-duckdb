@@ -204,6 +204,10 @@ export function isValidConnectionHandle(handle: ConnectionHandle): boolean {
   return isValidHandle(handle);
 }
 
+/**
+ * Execute a SQL query and return the native result handle.
+ * Higher layers wrap this in lazy result objects.
+ */
 export function executeQuery(
   connectionHandle: ConnectionHandle,
   sql: string,
@@ -537,7 +541,6 @@ export function getResultColumnValidity(
   assertIntegerIndex(columnIndex, "Column index", count);
 
   const library = getLibraryFast();
-  // duckdb_column_validity may not be available in older DuckDB versions
   const validityFn =
     (library.symbols as Record<string, unknown>)["duckdb_column_validity"] as
       | ((handle: ResultHandle, col: bigint) => Deno.PointerValue<unknown>)
@@ -556,8 +559,6 @@ export function isResultValueNull(
   rowIndex: number,
   columnIndex: number,
 ): boolean {
-  // Skip redundant validation - caller (ResultReader or other code) already validates
-  // This avoids 2 extra FFI calls per cell (getResultRowCount + getResultColumnCount)
   validateResultHandle(handle);
 
   return Boolean(

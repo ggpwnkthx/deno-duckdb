@@ -22,6 +22,12 @@ export class Database {
     this.#config = config;
   }
 
+  static async open(config?: DatabaseConfig): Promise<Database> {
+    const database = new Database(config);
+    await database.open();
+    return database;
+  }
+
   async open(): Promise<void> {
     if (this.#closed) {
       throw new DatabaseError("Database is closed");

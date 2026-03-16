@@ -1,11 +1,7 @@
 import { assertEquals } from "@std/assert";
 import * as functional from "@ggpwnkthx/duckdb/functional";
 import { Database } from "@ggpwnkthx/duckdb/objective";
-import {
-  execFunctional,
-  materializeResultObjects,
-  materializeResultRows,
-} from "./utils.ts";
+import { materializeResultObjects, materializeResultRows } from "./utils.ts";
 
 Deno.test({
   name:
@@ -50,19 +46,24 @@ Deno.test({
     const objectiveConnection = await objectiveDatabase.connect();
 
     try {
-      const functionalResult = functional.query(functionalConnection, sql);
-      const objectiveResult = objectiveConnection.query(sql);
+      // Use prepared statements to get ResultHandle for functional API
+      const stmt = functional.prepare(functionalConnection, sql);
+      const functionalResult = functional.executePrepared(stmt);
+
+      const objectiveResult = objectiveConnection.queryResult(sql);
 
       try {
-        assertEquals(materializeResultRows(functionalResult), expectedRows);
+        const functionalReader = functional.createResultReader(functionalResult);
+        assertEquals(materializeResultRows(functionalReader), expectedRows);
         assertEquals(
-          materializeResultObjects(functionalResult),
+          materializeResultObjects(functionalReader),
           expectedObjects,
         );
         assertEquals(objectiveResult.fetchAll(), expectedRows);
         assertEquals(objectiveResult.toArrayOfObjects(), expectedObjects);
       } finally {
         functional.destroyResult(functionalResult);
+        functional.destroyPrepared(stmt);
         objectiveResult.close();
       }
     } finally {
@@ -79,10 +80,10 @@ Deno.test({
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
-    const setup = [
-      "CREATE TABLE parity_items(id INTEGER, name TEXT, active BOOLEAN)",
-      "INSERT INTO parity_items VALUES (1, 'alpha', true), (2, 'beta', false), (3, 'gamma', true)",
-    ];
+    const createTable =
+      "CREATE TABLE parity_items(id INTEGER, name TEXT, active BOOLEAN)";
+    const insertData =
+      "INSERT INTO parity_items VALUES (1, 'alpha', true), (2, 'beta', false), (3, 'gamma', true)";
 
     const functionalDatabase = await functional.open();
     const functionalConnection = await functional.create(functionalDatabase);
@@ -91,12 +92,31 @@ Deno.test({
     const objectiveConnection = await objectiveDatabase.connect();
 
     try {
-      for (const sql of setup) {
-        execFunctional(functionalConnection, sql);
-        const result = objectiveConnection.query(sql);
+      // Execute DDL on functional connection
+      {
+        const stmt = functional.prepare(functionalConnection, createTable);
+        const result = functional.executePrepared(stmt);
+        functional.destroyResult(result);
+        functional.destroyPrepared(stmt);
+      }
+      {
+        const stmt = functional.prepare(functionalConnection, insertData);
+        const result = functional.executePrepared(stmt);
+        functional.destroyResult(result);
+        functional.destroyPrepared(stmt);
+      }
+
+      // Execute DDL on objective connection
+      {
+        const result = objectiveConnection.queryResult(createTable);
+        result.close();
+      }
+      {
+        const result = objectiveConnection.queryResult(insertData);
         result.close();
       }
 
+      // Test SELECT queries
       const functionalStatement = functional.prepare(
         functionalConnection,
         "SELECT id, name FROM parity_items WHERE active = ? ORDER BY id",
@@ -119,7 +139,8 @@ Deno.test({
             [3, "gamma"],
           ];
 
-          assertEquals(materializeResultRows(functionalResult), expected);
+          const functionalReader = functional.createResultReader(functionalResult);
+          assertEquals(materializeResultRows(functionalReader), expected);
           assertEquals(objectiveResult.fetchAll(), expected);
         } finally {
           functional.destroyResult(functionalResult);

@@ -12,8 +12,7 @@ const QUERY = "select i, i as a from generate_series(1, 100000) s(i)";
 const PREP_QUERY = "select i, i as a from generate_series(1, ?) s(i)";
 
 const EXPECTED_ROWS = 100_000;
-const EXPECTED_ROWS_BIGINT = 100_000n;
-const EXPECTED_CHECKSUM = EXPECTED_ROWS_BIGINT * (EXPECTED_ROWS_BIGINT + 1n);
+const EXPECTED_CHECKSUM = 100_000n * (100_000n + 1n);
 
 type CellValue = unknown;
 type RowLike = ArrayLike<CellValue>;
@@ -31,9 +30,9 @@ function asBigIntCell(value: unknown, label: string): bigint {
   throw new TypeError(`${label} must be bigint or a safe integer number`);
 }
 
-function assertRowCount(actual: bigint): void {
-  if (actual !== EXPECTED_ROWS_BIGINT) {
-    throw new Error(`Expected ${EXPECTED_ROWS_BIGINT} rows, got ${actual}`);
+function assertRowCount(actual: number): void {
+  if (actual !== EXPECTED_ROWS) {
+    throw new Error(`Expected ${EXPECTED_ROWS} rows, got ${actual}`);
   }
 }
 
@@ -77,68 +76,68 @@ const connObj = await dbObj.connect();
 const preparedHandleFunc = functional.prepare(connHandleFunc, PREP_QUERY);
 const preparedObj = connObj.prepare(PREP_QUERY);
 
+// Standard Query: Uses functional.executeSqlResult which returns LazyResult
 Deno.bench("Standard Query: Functional API (execution-only)", () => {
-  const resultHandle = functional.query(connHandleFunc, QUERY);
+  const result = functional.executeSqlResult(connHandleFunc, QUERY);
 
-  try {
-    const rowCount = functional.rowCount(resultHandle);
-    assertRowCount(rowCount);
-  } finally {
-    functional.destroyResult(resultHandle);
+  if (result === null) {
+    throw new Error("Query returned null");
   }
+  assertRowCount(result.rowCount);
+  result.close();
 });
 
 Deno.bench(
   "Standard Query: Functional API (execution + materialization)",
   () => {
-    const resultHandle = functional.query(connHandleFunc, QUERY);
+    const result = functional.executeSqlResult(connHandleFunc, QUERY);
 
-    try {
-      const rows = functional.fetchAll(resultHandle);
-      assertMaterializedRows(rows);
-    } finally {
-      functional.destroyResult(resultHandle);
+    if (result === null) {
+      throw new Error("Query returned null");
     }
+    const rows = result.toArray();
+    assertMaterializedRows(rows);
+    result.close();
   },
 );
 
 Deno.bench("Standard Query: Objective API (execution-only)", () => {
-  const result = connObj.query(QUERY);
+  const result = connObj.execute(QUERY);
 
-  try {
-    const rowCount = result.rowCount();
-    assertRowCount(rowCount);
-  } finally {
-    result.close();
+  if (result === null) {
+    throw new Error("Query returned null");
   }
+  assertRowCount(Number(result.rowCount()));
+  result.close();
 });
 
 Deno.bench(
   "Standard Query: Objective API (execution + materialization)",
   () => {
-    const result = connObj.query(QUERY);
+    const result = connObj.execute(QUERY);
 
-    try {
-      const rows = result.fetchAll();
-      assertMaterializedRows(rows);
-    } finally {
-      result.close();
+    if (result === null) {
+      throw new Error("Query returned null");
     }
+    const rows = result.fetchAll();
+    assertMaterializedRows(rows);
+    result.close();
   },
 );
 
+// Prepared Statement: Uses executePrepared which returns LazyResult
 Deno.bench(
   "Prepared Statement: Functional API (prepared once, execution-only)",
   () => {
     functional.bind(preparedHandleFunc, [EXPECTED_ROWS]);
 
-    const resultHandle = functional.executePrepared(preparedHandleFunc);
+    const result = functional.executePreparedResult(preparedHandleFunc);
 
     try {
-      const rowCount = functional.rowCount(resultHandle);
+      const rowCount = result.rowCount;
       assertRowCount(rowCount);
     } finally {
-      functional.destroyResult(resultHandle);
+      result.close();
     }
   },
 );
@@ -148,13 +147,13 @@ Deno.bench(
   () => {
     functional.bind(preparedHandleFunc, [EXPECTED_ROWS]);
 
-    const resultHandle = functional.executePrepared(preparedHandleFunc);
+    const result = functional.executePreparedResult(preparedHandleFunc);
 
     try {
-      const rows = functional.fetchAll(resultHandle);
+      const rows = result.toArray();
       assertMaterializedRows(rows);
     } finally {
-      functional.destroyResult(resultHandle);
+      result.close();
     }
   },
 );
@@ -166,7 +165,7 @@ Deno.bench(
     const result = preparedObj.execute();
 
     try {
-      const rowCount = result.rowCount();
+      const rowCount = Number(result.rowCount());
       assertRowCount(rowCount);
     } finally {
       result.close();
@@ -197,13 +196,13 @@ Deno.bench(
     try {
       functional.bind(stmtHandle, [EXPECTED_ROWS]);
 
-      const resultHandle = functional.executePrepared(stmtHandle);
+      const result = functional.executePreparedResult(stmtHandle);
 
       try {
-        const rowCount = functional.rowCount(resultHandle);
+        const rowCount = result.rowCount;
         assertRowCount(rowCount);
       } finally {
-        functional.destroyResult(resultHandle);
+        result.close();
       }
     } finally {
       functional.destroyPrepared(stmtHandle);
@@ -219,13 +218,13 @@ Deno.bench(
     try {
       functional.bind(stmtHandle, [EXPECTED_ROWS]);
 
-      const resultHandle = functional.executePrepared(stmtHandle);
+      const result = functional.executePreparedResult(stmtHandle);
 
       try {
-        const rows = functional.fetchAll(resultHandle);
+        const rows = result.toArray();
         assertMaterializedRows(rows);
       } finally {
-        functional.destroyResult(resultHandle);
+        result.close();
       }
     } finally {
       functional.destroyPrepared(stmtHandle);
@@ -243,7 +242,7 @@ Deno.bench(
       const result = stmt.execute();
 
       try {
-        const rowCount = result.rowCount();
+        const rowCount = Number(result.rowCount());
         assertRowCount(rowCount);
       } finally {
         result.close();
@@ -297,7 +296,7 @@ addEventListener("unload", () => {
   try {
     dbObj.close();
   } catch {
-    // ignore shutdown cleanup errors
+    // ignore shutdown cleanup cleanup errors
   }
 
   try {

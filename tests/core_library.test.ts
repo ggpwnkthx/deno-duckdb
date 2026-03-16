@@ -32,13 +32,18 @@ Deno.test({
 
     const database = await functional.open();
     const connection = await functional.create(database);
-    const result = functional.query(connection, "SELECT 1 AS value");
+
+    // Use a prepared statement to get a ResultHandle for testing
+    const stmt = functional.prepare(connection, "SELECT 1 AS value");
+    const result = functional.executePrepared(stmt);
 
     try {
-      const rows = functional.fetchAll(result);
+      const reader = functional.createResultReader(result);
+      const rows = functional.fetchAll(reader);
       assertEquals(rows, [[1]]);
     } finally {
       functional.destroyResult(result);
+      functional.destroyPrepared(stmt);
       functional.closeConnection(connection);
       functional.closeDatabase(database);
     }

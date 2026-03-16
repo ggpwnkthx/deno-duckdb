@@ -3,6 +3,11 @@
  */
 
 import type { ConnectionHandle, ObjectRow, RowData } from "../types.ts";
+import {
+  clearResultCache,
+  getResultCacheSize,
+  invalidateCachedQuery,
+} from "../core/result_cache.ts";
 import { closeConnection, executeQuery, prepareStatement } from "../core/native.ts";
 import { assertNonEmptyString } from "../core/validate.ts";
 import { DisposableResource } from "./base.ts";
@@ -19,13 +24,27 @@ export class Connection extends DisposableResource<ConnectionHandle> {
     this.#onClose = onClose;
   }
 
-  query(sql: string): QueryResult {
-    assertNonEmptyString(sql, "SQL query");
-    return new QueryResult(executeQuery(this.requireHandle("Connection"), sql));
+  /**
+   * Execute query and return rows directly.
+   * Returns null if the query fails.
+   */
+  query(sql: string): RowData[] | null {
+    try {
+      return this.queryAll(sql);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Execute query and return QueryResult for lazy iteration.
+   */
+  queryResult(sql: string): QueryResult {
+    return this.execute(sql);
   }
 
   queryAll(sql: string): RowData[] {
-    const result = this.query(sql);
+    const result = this.execute(sql);
 
     try {
       return result.fetchAll();
@@ -34,24 +53,31 @@ export class Connection extends DisposableResource<ConnectionHandle> {
     }
   }
 
-  queryObjects(sql: string): ObjectRow[] {
-    const result = this.query(sql);
-
+  /**
+   * Execute query and return object rows directly.
+   * Returns null if the query fails.
+   */
+  queryObjects(sql: string): ObjectRow[] | null {
     try {
-      return result.toArrayOfObjects();
-    } finally {
-      result.close();
+      const result = this.execute(sql);
+
+      try {
+        return result.toArrayOfObjects();
+      } finally {
+        result.close();
+      }
+    } catch {
+      return null;
     }
   }
 
-  queryTyped(sql: string): ObjectRow[];
-  queryTyped<T>(sql: string, mapper: (row: ObjectRow) => T): T[];
-  queryTyped<T>(
-    sql: string,
-    mapper?: (row: ObjectRow) => T,
-  ): ObjectRow[] | T[] {
-    const rows = this.queryObjects(sql);
-    return mapper ? rows.map(mapper) : rows;
+  execute(sql: string): QueryResult {
+    assertNonEmptyString(sql, "SQL query");
+    return new QueryResult(executeQuery(this.requireHandle("Connection"), sql));
+  }
+
+  executeObjects(sql: string): QueryResult {
+    return this.execute(sql);
   }
 
   prepare(sql: string): PreparedStatement {
@@ -71,3 +97,5 @@ export class Connection extends DisposableResource<ConnectionHandle> {
     this.#onClose();
   }
 }
+
+export { clearResultCache, getResultCacheSize, invalidateCachedQuery };

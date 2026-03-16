@@ -5,8 +5,8 @@ Type-safe DuckDB FFI bindings for Deno with both functional and object-oriented 
 ## Installation
 
 ```ts
-import * as functional from "jsr:@ggpwnkthx/duckdb@2.0.0/functional";
-import { Database } from "jsr:@ggpwnkthx/duckdb@2.0.0/objective";
+import * as functional from "jsr:@ggpwnkthx/duckdb@1.1.1/functional";
+import { Database } from "jsr:@ggpwnkthx/duckdb@1.1.1/objective";
 ```
 
 ## Dual APIs
@@ -19,7 +19,7 @@ Pure functional style with explicit state passing. Handles must be manually mana
 destroyed.
 
 ```ts
-import * as functional from "jsr:@ggpwnkthx/duckdb@2.0.0/functional";
+import * as functional from "jsr:@ggpwnkthx/duckdb@1.1.1/functional";
 
 const db = await functional.open();
 const conn = await functional.create(db);
@@ -47,7 +47,7 @@ import {
   Connection,
   Database,
   QueryResult,
-} from "jsr:@ggpwnkthx/duckdb@2.0.0/objective";
+} from "jsr:@ggpwnkthx/duckdb@1.1.1/objective";
 
 using db = await Database.open();
 using conn = await db.connect();
@@ -158,7 +158,7 @@ The library provides a custom error hierarchy:
 - `ValidationError` - Input validation errors
 
 ```ts
-import { QueryError } from "jsr:@ggpwnkthx/duckdb@2.0.0/functional";
+import { QueryError } from "jsr:@ggpwnkthx/duckdb@1.1.1/functional";
 
 try {
   functional.query(conn, "INVALID SQL");

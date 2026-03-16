@@ -2,8 +2,8 @@
  * Object-oriented prepared statement wrapper.
  */
 
-import type { PreparedStatementHandle } from "../types.ts";
-import type { BindValue } from "../functional/prepared.ts";
+import type { PreparedStatementHandle, RowData } from "../types.ts";
+import type { BindValue } from "../core/native.ts";
 import {
   bindPreparedParameters,
   destroyPreparedStatementSync,
@@ -30,10 +30,9 @@ export class PreparedStatement extends DisposableResource<PreparedStatementHandl
   }
 
   execute(): QueryResult {
-    const resultHandle = executePreparedStatement(
-      this.requireHandle("PreparedStatement"),
+    return new QueryResult(
+      executePreparedStatement(this.requireHandle("PreparedStatement")),
     );
-    return new QueryResult(resultHandle);
   }
 
   columnCount(): bigint {
@@ -47,5 +46,18 @@ export class PreparedStatement extends DisposableResource<PreparedStatementHandl
     }
 
     destroyPreparedStatementSync(handle);
+  }
+
+  executeAndFetch(): RowData[] {
+    const result = this.execute();
+    try {
+      return result.fetchAll();
+    } finally {
+      result.close();
+    }
+  }
+
+  executeAndFetchAll(): RowData[] {
+    return this.executeAndFetch();
   }
 }

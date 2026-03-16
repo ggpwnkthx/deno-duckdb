@@ -4,12 +4,9 @@
 
 import * as functional from "@ggpwnkthx/duckdb/functional";
 import { type Connection, Database } from "@ggpwnkthx/duckdb/objective";
-import type {
-  ConnectionHandle,
-  ObjectRow,
-  ResultHandle,
-  RowData,
-} from "@ggpwnkthx/duckdb";
+import type { ObjectRow, RowData } from "@ggpwnkthx/duckdb";
+import type { ResultReader } from "@ggpwnkthx/duckdb/functional";
+import type { ConnectionHandle } from "@ggpwnkthx/duckdb";
 
 export type { ObjectRow, RowData } from "@ggpwnkthx/duckdb";
 
@@ -49,31 +46,59 @@ export async function withObjectiveConnection<T>(
   }
 }
 
+/**
+ * Execute DDL or mutation query using a prepared statement.
+ * This avoids the cached query's null return for schema-modifying queries.
+ */
 export function execFunctional(
   connection: ConnectionHandle,
   sql: string,
 ): void {
-  const result = functional.query(connection, sql);
+  const stmt = functional.prepare(connection, sql);
+  const result = functional.executePrepared(stmt);
 
   try {
-    // DDL / INSERT side effects happen during execution.
+    // DDL side effects happen during execution
   } finally {
     functional.destroyResult(result);
+    functional.destroyPrepared(stmt);
   }
 }
 
+/**
+ * Execute a cached SELECT query and return the rows.
+ * Returns null if query fails (not for empty results).
+ */
+export function queryCachedRows(
+  connection: ConnectionHandle,
+  sql: string,
+): RowData[] | null {
+  return functional.query(connection, sql);
+}
+
+/**
+ * Execute a cached SELECT query and return object rows.
+ * Returns null if query fails (not for empty results).
+ */
+export function queryCachedObjects(
+  connection: ConnectionHandle,
+  sql: string,
+): ObjectRow[] | null {
+  return functional.queryObjects(connection, sql);
+}
+
 export function materializeResultRows(
-  handle: ResultHandle,
+  reader: ResultReader,
 ): RowData[] {
-  return functional.fetchAll(handle).map((row) =>
+  return functional.fetchAll(reader).map((row) =>
     row.map((value) => value instanceof Uint8Array ? value.slice() : value)
   );
 }
 
 export function materializeResultObjects(
-  handle: ResultHandle,
+  reader: ResultReader,
 ): ObjectRow[] {
-  return functional.fetchObjects(handle).map((row) =>
+  return functional.fetchObjects(reader).map((row) =>
     Object.fromEntries(
       Object.entries(row).map(([key, value]) => [
         key,

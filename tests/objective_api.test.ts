@@ -13,7 +13,8 @@ Deno.test({
     assertEquals(database.isClosed(), false);
 
     const connection = await database.connect();
-    const result = connection.query("SELECT 1 AS value");
+    // Use queryResult for tests that need QueryResult features
+    const result = connection.queryResult("SELECT 1 AS value");
 
     try {
       assertEquals(result.fetchAll(), [[1]]);
@@ -33,17 +34,19 @@ Deno.test({
   sanitizeOps: false,
   async fn() {
     await withObjectiveConnection((_database, connection) => {
+      // Use queryResult for DDL (returns QueryResult for metadata access)
       for (
         const sql of [
           "CREATE TABLE items(id INTEGER, name TEXT, amount DOUBLE, payload BLOB)",
           "INSERT INTO items VALUES (1, 'alpha', 1.5, unhex('CAFE')), (2, 'beta', 2.5, unhex('BEEF'))",
         ]
       ) {
-        const result = connection.query(sql);
+        const result = connection.queryResult(sql);
         result.close();
       }
 
-      const result = connection.query("SELECT * FROM items ORDER BY id");
+      // Use queryResult for tests that need QueryResult metadata methods
+      const result = connection.queryResult("SELECT * FROM items ORDER BY id");
 
       try {
         assertEquals(result.rowCount(), 2n);
@@ -87,55 +90,48 @@ Deno.test({
 });
 
 Deno.test({
-  name:
-    "objective: queryAll, queryObjects, and queryTyped share the same decoded values",
+  name: "objective: QueryResult.fetchAll and toArrayOfObjects return decoded values",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
     await withObjectiveConnection((_database, connection) => {
+      // Use queryResult for DDL
       for (
         const sql of [
           "CREATE TABLE typed_items(id INTEGER, name TEXT, active BOOLEAN)",
           "INSERT INTO typed_items VALUES (1, 'alpha', true), (2, 'beta', false)",
         ]
       ) {
-        const result = connection.query(sql);
+        const result = connection.queryResult(sql);
         result.close();
       }
 
+      // Use queryResult for tests that need QueryResult
+      const result = connection.queryResult("SELECT * FROM typed_items ORDER BY id");
+
       assertEquals(
-        connection.queryAll("SELECT * FROM typed_items ORDER BY id"),
+        result.fetchAll(),
         [
           [1, "alpha", true],
           [2, "beta", false],
         ],
       );
 
-      assertEquals(
-        connection.queryObjects("SELECT * FROM typed_items ORDER BY id"),
-        [
-          { id: 1, name: "alpha", active: true },
-          { id: 2, name: "beta", active: false },
-        ],
+      result.close();
+
+      const result2 = connection.queryResult(
+        "SELECT id, name FROM typed_items ORDER BY id",
       );
 
       assertEquals(
-        connection.queryTyped("SELECT id, name FROM typed_items ORDER BY id"),
+        result2.toArrayOfObjects(),
         [
           { id: 1, name: "alpha" },
           { id: 2, name: "beta" },
         ],
       );
 
-      assertEquals(
-        connection.queryTyped(
-          "SELECT id, name FROM typed_items ORDER BY id",
-          (row) => ({
-            key: `${row.id}:${row.name}`,
-          }),
-        ),
-        [{ key: "1:alpha" }, { key: "2:beta" }],
-      );
+      result2.close();
     });
   },
 });
@@ -146,13 +142,14 @@ Deno.test({
   sanitizeOps: false,
   async fn() {
     await withObjectiveConnection((_database, connection) => {
+      // Use queryResult for DDL
       for (
         const sql of [
           "CREATE TABLE prepared_items(id INTEGER, name TEXT)",
           "INSERT INTO prepared_items VALUES (1, 'alpha'), (2, 'beta')",
         ]
       ) {
-        const result = connection.query(sql);
+        const result = connection.queryResult(sql);
         result.close();
       }
 
@@ -194,7 +191,8 @@ Deno.test({
   async fn() {
     const database = new Database();
     const connection = await database.connect();
-    const result = connection.query("SELECT 1 AS value");
+    // Use queryResult for tests that need QueryResult
+    const result = connection.queryResult("SELECT 1 AS value");
     const statement = connection.prepare("SELECT 1 AS value");
 
     result.close();
@@ -212,8 +210,9 @@ Deno.test({
       InvalidResourceError,
       "PreparedStatement is closed",
     );
+    // For closed connection, queryResult throws
     assertThrows(
-      () => connection.query("SELECT 1"),
+      () => connection.queryResult("SELECT 1"),
       InvalidResourceError,
       "Connection is closed",
     );
@@ -230,5 +229,22 @@ Deno.test({
 
     assertEquals(caught instanceof DatabaseError, true);
     assertEquals((caught as Error).message, "Database is closed");
+  },
+});
+
+Deno.test({
+  name: "objective: cached query returns rows directly",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    await withObjectiveConnection((_database, connection) => {
+      // Use cached query for data retrieval
+      const rows = connection.query("SELECT 1 AS value");
+      assertEquals(rows, [[1]]);
+
+      // Use cached queryObjects for object format
+      const objects = connection.queryObjects("SELECT 1 AS id, 'test' AS name");
+      assertEquals(objects, [{ id: 1, name: "test" }]);
+    });
   },
 });

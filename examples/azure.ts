@@ -25,8 +25,11 @@ LIMIT 10
 `;
 
 function execFunctional(connection: ConnectionHandle, sql: string): void {
+  // Use cached query - returns null on success for DDL, but side effects happen
   const result = functional.query(connection, sql);
-  functional.destroyResult(result);
+  if (result === null) {
+    throw new Error(`Query failed: ${sql}`);
+  }
 }
 
 function printRows(rows: readonly ObjectRow[]): void {
@@ -61,14 +64,14 @@ try {
     execFunctional(functionalConn, "SET azure_transport_option_type = 'curl'");
 
     console.log(`Querying: ${AZURE_BLOB_URL}`);
-    const result = functional.query(functionalConn, SAMPLE_QUERY);
+    // Use queryObjects for object format
+    const objects = functional.queryObjects(functionalConn, SAMPLE_QUERY);
 
-    try {
-      const rows = functional.fetchObjects(result);
-      console.log(`Result: ${rows.length} rows\n`);
-      printRows(rows);
-    } finally {
-      functional.destroyResult(result);
+    if (objects === null) {
+      console.log("Query failed");
+    } else {
+      console.log(`Result: ${objects.length} rows\n`);
+      printRows(objects);
     }
   } finally {
     functional.closeConnection(functionalConn);
@@ -85,22 +88,19 @@ try {
 
   try {
     console.log("Installing Azure extension...");
-    let result = objectiveConn.query("INSTALL azure");
-    result.close();
+    // DDL returns null from cached query - just execute it
+    objectiveConn.query("INSTALL azure");
 
     console.log("Loading Azure extension...");
-    result = objectiveConn.query("LOAD azure");
-    result.close();
+    objectiveConn.query("LOAD azure");
 
     console.log("Configuring Azure for anonymous access...");
-    result = objectiveConn.query("SET azure_storage_connection_string = ''");
-    result.close();
-
-    result = objectiveConn.query("SET azure_transport_option_type = 'curl'");
-    result.close();
+    objectiveConn.query("SET azure_storage_connection_string = ''");
+    objectiveConn.query("SET azure_transport_option_type = 'curl'");
 
     console.log(`Querying: ${AZURE_BLOB_URL}`);
-    result = objectiveConn.query(SAMPLE_QUERY);
+    // Use queryResult for QueryResult features
+    const result = objectiveConn.queryResult(SAMPLE_QUERY);
 
     try {
       const rows = result.toArrayOfObjects();

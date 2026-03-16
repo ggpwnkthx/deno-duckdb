@@ -29,6 +29,8 @@ import {
 } from "./native.ts";
 import { assertIntegerIndex } from "./validate.ts";
 
+const textDecoder = new TextDecoder();
+
 interface ColumnVector {
   readonly name: string;
   readonly type: DUCKDB_TYPE;
@@ -44,7 +46,6 @@ interface ResultView {
   readonly columnInfos: readonly ColumnInfo[];
 }
 
-// Types that need special handling via text fallback
 const TEXT_FALLBACK_TYPES = new Set([
   DUCKDB_TYPE.DUCKDB_TYPE_VARCHAR,
   DUCKDB_TYPE.DUCKDB_TYPE_BLOB,
@@ -52,22 +53,16 @@ const TEXT_FALLBACK_TYPES = new Set([
 ]);
 
 function isTextFallbackType(type: DUCKDB_TYPE): boolean {
-  // Check if it's a known type that uses text fallback
   if (TEXT_FALLBACK_TYPES.has(type)) {
     return true;
   }
-  // Check if it's not in the standard enum values (unknown type)
+
   const enumValues = Object.values(DUCKDB_TYPE).filter(
-    (v) => typeof v === "number",
+    (value) => typeof value === "number",
   );
   return !enumValues.includes(type);
 }
 
-/**
- * Check if a value is null using the cached validity bitmap.
- * Falls back to FFI call when validityView is null (function unavailable).
- * In DuckDB's validity mask: 1 = valid (not null), 0 = null.
- */
 function isNullFromBitmap(
   validityView: Deno.UnsafePointerView | null,
   rowIndex: number,
@@ -75,18 +70,15 @@ function isNullFromBitmap(
   columnIndex?: number,
 ): boolean {
   if (!validityView) {
-    // Validity function unavailable - fall back to FFI if handle provided
     if (handle !== undefined && columnIndex !== undefined) {
       return isResultValueNull(handle, rowIndex, columnIndex);
     }
-    // No fallback available - assume not null (DuckDB optimization case)
     return false;
   }
 
   const bitmapIndex = Math.floor(rowIndex / 8);
   const bitIndex = rowIndex % 8;
   const byte = validityView.getUint8(bitmapIndex);
-  // In DuckDB's validity mask: 1 = valid (not null), 0 = null
   return (byte & (1 << bitIndex)) === 0;
 }
 
@@ -107,15 +99,15 @@ function readBytes(
 }
 
 function parseHexToBytes(hex: string): Uint8Array | null {
-  // Handle formats like "\xC0\xFF\xEE" or "C0FFEE"
   const cleanHex = hex.replace(/\\x|0x/gi, "");
   if (cleanHex.length % 2 !== 0) {
     return null;
   }
+
   try {
     const bytes = new Uint8Array(cleanHex.length / 2);
-    for (let i = 0; i < bytes.length; i++) {
-      bytes[i] = parseInt(cleanHex.slice(i * 2, i * 2 + 2), 16);
+    for (let index = 0; index < bytes.length; index += 1) {
+      bytes[index] = parseInt(cleanHex.slice(index * 2, index * 2 + 2), 16);
     }
     return bytes;
   } catch {
@@ -134,16 +126,10 @@ function getStringLikeValue(
     return asBlob ? new Uint8Array() : "";
   }
 
-  // DuckDB's string/blob result layout uses 64-byte headers per row
-  // The header contains: 8 bytes length + 8 bytes pointer to data
   const headerOffset = row * BYTE_SIZE_64;
-
-  // Get the length from the header (first 8 bytes)
   const length = Number(dataView.getBigUint64(headerOffset));
 
-  // Safety check: if length is unreasonable, use fallback
   if (length > 10 * 1024 * 1024) {
-    // > 10MB
     if (handle !== undefined && columnIndex !== undefined) {
       const fallback = readResultValueAsText(handle, row, columnIndex);
       if (fallback !== null) {
@@ -157,7 +143,6 @@ function getStringLikeValue(
     return asBlob ? new Uint8Array() : "";
   }
 
-  // Get the inner pointer to the actual string data (at offset 8 bytes)
   const innerPtr = dataView.getPointer(headerOffset + BYTE_SIZE_64);
   if (!innerPtr) {
     return asBlob ? new Uint8Array() : "";
@@ -169,13 +154,11 @@ function getStringLikeValue(
   }
 
   if (asBlob) {
-    // For BLOB, read the exact number of bytes specified in the length
     return readBytes(innerView, 0, length);
   }
 
-  // For VARCHAR, read the string with the specified length
   const bytes = readBytes(innerView, 0, length);
-  return new TextDecoder().decode(bytes);
+  return textDecoder.decode(bytes);
 }
 
 function decodeHugeInt(
@@ -223,10 +206,7 @@ function microsecondsToTimeString(value: bigint): string {
   const seconds = totalSeconds % 60n;
   const micros = value % 1_000_000n;
 
-  const prefix = `${String(hours).padStart(2, "0")}:${
-    String(minutes).padStart(2, "0")
-  }:${String(seconds).padStart(2, "0")}`;
-
+  const prefix = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   return micros === 0n ? prefix : `${prefix}.${String(micros).padStart(6, "0")}`;
 }
 
@@ -266,49 +246,33 @@ function decodeValueByType(
     return null;
   }
 
-  // For VARCHAR, BLOB, and unknown types, use text fallback directly
-  // to avoid issues with null detection for some types
   if (isTextFallbackType(type)) {
-    // Handle VARCHAR and BLOB with direct reading when possible
     if (type === DUCKDB_TYPE.DUCKDB_TYPE_VARCHAR) {
-      // Check null via cached bitmap
       if (isNullFromBitmap(validityView, rowIndex, handle, columnIndex)) {
         return null;
       }
       return getStringLikeValue(dataView, rowIndex, false, handle, columnIndex);
     }
+
     if (type === DUCKDB_TYPE.DUCKDB_TYPE_BLOB) {
-      // Check null via cached bitmap
-      if (isNullFromBitmap(validityView, rowIndex)) {
+      if (isNullFromBitmap(validityView, rowIndex, handle, columnIndex)) {
         return null;
       }
-      // Try direct read first
+
       if (dataView) {
         const headerOffset = rowIndex * BYTE_SIZE_64;
         const length = Number(dataView.getBigUint64(headerOffset));
-        // Safety check: only read if length is reasonable (< 1MB)
         if (length > 0 && length < 1024 * 1024) {
           const innerPtr = dataView.getPointer(headerOffset + BYTE_SIZE_64);
           if (innerPtr) {
             const innerView = createPointerView(innerPtr);
             if (innerView) {
-              const bytes = readBytes(innerView, 0, length);
-              // Check if we got reasonable data
-              let hasNull = false;
-              for (let i = 0; i < Math.min(length, bytes.length); i++) {
-                if (bytes[i] === 0 && i < bytes.length - 1) {
-                  hasNull = true;
-                  break;
-                }
-              }
-              if (!hasNull || bytes.length === length) {
-                return bytes;
-              }
+              return readBytes(innerView, 0, length);
             }
           }
         }
       }
-      // Fallback: try to parse hex string from text API
+
       const text = decodeLegacyTextFallback(handle, rowIndex, columnIndex);
       if (typeof text === "string") {
         const bytes = parseHexToBytes(text);
@@ -318,45 +282,22 @@ function decodeValueByType(
       }
       return new Uint8Array();
     }
-    // Handle BIT as a string type (like VARCHAR)
-    // Note: BIT type (id 29) has no direct column data in DuckDB FFI and
-    // duckdb_value_varchar returns null. Users should use CAST to VARCHAR
-    // in their queries for reliable results.
-    if (type === DUCKDB_TYPE.DUCKDB_TYPE_BIT) {
-      // Check null via cached bitmap
-      if (isNullFromBitmap(validityView, rowIndex)) {
+
+    if (type === DUCKDB_TYPE.DUCKDB_TYPE_BIT || type === DUCKDB_TYPE.DUCKDB_TYPE_UUID) {
+      if (isNullFromBitmap(validityView, rowIndex, handle, columnIndex)) {
         return null;
       }
-      // If dataView is null (no direct data pointer), try text fallback
+
       if (!dataView) {
-        const textResult = decodeLegacyTextFallback(handle, rowIndex, columnIndex);
-        // Text fallback also returns null for BIT - return empty string to avoid null confusion
-        return textResult ?? "";
+        return decodeLegacyTextFallback(handle, rowIndex, columnIndex) ?? "";
       }
+
       return getStringLikeValue(dataView, rowIndex, false, handle, columnIndex);
     }
-    // Handle UUID as a string type
-    // Note: UUID type (id 27) has no direct column data in DuckDB FFI and
-    // duckdb_value_varchar returns null. Users should use CAST to VARCHAR
-    // in their queries for reliable results.
-    if (type === DUCKDB_TYPE.DUCKDB_TYPE_UUID) {
-      // Check null via cached bitmap
-      if (isNullFromBitmap(validityView, rowIndex)) {
-        return null;
-      }
-      // If dataView is null, try text fallback
-      if (!dataView) {
-        const textResult = decodeLegacyTextFallback(handle, rowIndex, columnIndex);
-        // Text fallback also returns null for UUID - return empty string
-        return textResult ?? "";
-      }
-      return getStringLikeValue(dataView, rowIndex, false, handle, columnIndex);
-    }
-    // For unknown types, use text fallback
+
     return decodeLegacyTextFallback(handle, rowIndex, columnIndex);
   }
 
-  // Check null via cached bitmap for primitive types
   if (isNullFromBitmap(validityView, rowIndex, handle, columnIndex)) {
     return null;
   }
@@ -394,15 +335,11 @@ function decodeValueByType(
         : "";
     case DUCKDB_TYPE.DUCKDB_TYPE_TIME:
       return dataView
-        ? microsecondsToTimeString(
-          dataView.getBigInt64(rowIndex * BYTE_SIZE_64),
-        )
+        ? microsecondsToTimeString(dataView.getBigInt64(rowIndex * BYTE_SIZE_64))
         : "";
     case DUCKDB_TYPE.DUCKDB_TYPE_TIMESTAMP:
       return dataView
-        ? microsecondsToTimestampString(
-          dataView.getBigInt64(rowIndex * BYTE_SIZE_64),
-        )
+        ? microsecondsToTimestampString(dataView.getBigInt64(rowIndex * BYTE_SIZE_64))
         : "";
     case DUCKDB_TYPE.DUCKDB_TYPE_TIMESTAMP_S:
       return dataView
@@ -460,9 +397,6 @@ function buildResultView(handle: ResultHandle): ResultView {
   };
 }
 
-/**
- * Cached result reader that avoids re-reading column metadata for every cell.
- */
 export class ResultReader {
   #view: ResultView;
 
@@ -513,11 +447,7 @@ export class ResultReader {
     assertIntegerIndex(rowIndex, "Row index", this.#view.rowCount);
     const row: RowData = new Array(this.#view.columnCount);
 
-    for (
-      let columnIndex = 0;
-      columnIndex < this.#view.columnCount;
-      columnIndex += 1
-    ) {
+    for (let columnIndex = 0; columnIndex < this.#view.columnCount; columnIndex += 1) {
       row[columnIndex] = this.getValue(rowIndex, columnIndex);
     }
 
@@ -528,11 +458,7 @@ export class ResultReader {
     assertIntegerIndex(rowIndex, "Row index", this.#view.rowCount);
     const row: ObjectRow = {};
 
-    for (
-      let columnIndex = 0;
-      columnIndex < this.#view.columnCount;
-      columnIndex += 1
-    ) {
+    for (let columnIndex = 0; columnIndex < this.#view.columnCount; columnIndex += 1) {
       const column = this.#view.columns[columnIndex];
       row[column.name] = this.getValue(rowIndex, columnIndex);
     }

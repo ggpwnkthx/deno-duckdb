@@ -9,7 +9,7 @@
  */
 
 import * as functional from "@ggpwnkthx/duckdb/functional";
-import { Database } from "@ggpwnkthx/duckdb/objective";
+import { type Connection, Database } from "@ggpwnkthx/duckdb/objective";
 import type { ObjectRow } from "@ggpwnkthx/duckdb";
 
 import {
@@ -58,21 +58,31 @@ function execFunctional(
   connection: Parameters<typeof functional.query>[0],
   sql: string,
 ): void {
+  // Use cached query for DDL - returns null on success
   const result = functional.query(connection, sql);
-  functional.destroyResult(result);
+  if (result === null) {
+    throw new Error(`Query failed: ${sql}`);
+  }
 }
 
 function queryFunctionalObjects(
   connection: Parameters<typeof functional.query>[0],
   sql: string,
 ): ObjectRow[] {
-  const result = functional.query(connection, sql);
-
-  try {
-    return functional.fetchObjects(result);
-  } finally {
-    functional.destroyResult(result);
+  // Use queryObjects for object format - returns cached data directly
+  const result = functional.queryObjects(connection, sql);
+  if (result === null) {
+    throw new Error(`Query failed: ${sql}`);
   }
+  return result;
+}
+
+function queryObjectiveObjects(connection: Connection, sql: string): ObjectRow[] {
+  // Use queryResult for QueryResult features
+  const result = connection.queryResult(sql);
+  const rows = result.toArrayOfObjects();
+  result.close();
+  return rows;
 }
 
 console.log("=== Functional API ===");
@@ -118,7 +128,8 @@ try {
       const result = functional.executePrepared(rangeStatement);
 
       try {
-        for (const row of functional.fetchObjects(result)) {
+        const reader = functional.createResultReader(result);
+        for (const row of functional.fetchObjects(reader)) {
           console.log(
             `  Order ${row.id}: customer=${row.customer_id}, product=${row.product_id}, quantity=${row.quantity}, date=${row.order_date}`,
           );
@@ -150,6 +161,7 @@ try {
   const objectiveConn = await objectiveDb.connect();
 
   try {
+    // DDL: use cached query (returns null on success)
     for (
       const sql of [
         CREATE_PRODUCTS,
@@ -160,20 +172,19 @@ try {
         INSERT_ORDERS,
       ]
     ) {
-      const result = objectiveConn.query(sql);
-      result.close();
+      objectiveConn.query(sql);
     }
 
     console.log("\nTables created and data inserted");
 
     printSection("Products by price");
-    printProductRows(objectiveConn.queryObjects(PRODUCTS_BY_PRICE));
+    printProductRows(queryObjectiveObjects(objectiveConn, PRODUCTS_BY_PRICE));
 
     printSection("Order details");
-    printOrderRows(objectiveConn.queryObjects(ORDER_DETAILS));
+    printOrderRows(queryObjectiveObjects(objectiveConn, ORDER_DETAILS));
 
     printSection("Customer totals");
-    printCustomerTotals(objectiveConn.queryObjects(CUSTOMER_TOTALS));
+    printCustomerTotals(queryObjectiveObjects(objectiveConn, CUSTOMER_TOTALS));
 
     printSection("Orders between 2024-01-01 and 2024-02-29");
     const statement = objectiveConn.prepare(ORDERS_BY_DATE_RANGE);

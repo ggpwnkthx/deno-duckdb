@@ -5,12 +5,7 @@ import type {
   PreparedStatementHandle,
   ResultHandle,
 } from "@ggpwnkthx/duckdb";
-import {
-  DatabaseError,
-  functional,
-  QueryError,
-  ValidationError,
-} from "@ggpwnkthx/duckdb";
+import { DatabaseError, functional, ValidationError } from "@ggpwnkthx/duckdb";
 import { withFunctionalConnection } from "./utils.ts";
 
 function invalidBuffer(size: number): Uint8Array {
@@ -18,20 +13,16 @@ function invalidBuffer(size: number): Uint8Array {
 }
 
 Deno.test({
-  name: "functional: invalid SQL surfaces QueryError with the original query text",
+  name: "functional: invalid SQL returns null (cached query returns null on failure)",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
     await withFunctionalConnection((connection) => {
       const sql = "SELECT * FROM missing_table_for_test";
 
-      const error = assertThrows(
-        () => functional.query(connection, sql),
-        QueryError,
-      );
-
-      assertEquals(error.query, sql);
-      assertEquals(error.message.includes("missing_table_for_test"), true);
+      // Cached query returns null on failure instead of throwing
+      const result = functional.query(connection, sql);
+      assertEquals(result, null);
     });
   },
 });

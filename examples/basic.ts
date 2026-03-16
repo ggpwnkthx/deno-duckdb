@@ -21,16 +21,14 @@ try {
   const functionalConn = await functional.create(functionalDb);
 
   try {
-    const result = functional.query(
+    // Use queryObjects for object format - returns cached rows directly
+    const rows = functional.queryObjects(
       functionalConn,
       "SELECT i, i * 2 AS doubled FROM range(5) t(i)",
     );
 
-    try {
-      const rows = functional.fetchObjects(result);
+    if (rows !== null) {
       printRows("Results:", rows);
-    } finally {
-      functional.destroyResult(result);
     }
   } finally {
     functional.closeConnection(functionalConn);
@@ -46,9 +44,12 @@ try {
   const objectiveConn = await objectiveDb.connect();
 
   try {
-    const rows = objectiveConn.queryObjects(
+    // Use queryResult for QueryResult features
+    const result = objectiveConn.queryResult(
       "SELECT i, i * 2 AS doubled FROM range(5) t(i)",
     );
+    const rows = result.toArrayOfObjects();
+    result.close();
     printRows("Results:", rows);
   } finally {
     objectiveConn.close();

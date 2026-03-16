@@ -2,13 +2,8 @@
  * Shared test helpers for the package.
  */
 
-import * as functional from "@ggpwnkthx/duckdb/functional";
-import { type Connection, Database } from "@ggpwnkthx/duckdb/objective";
-import type { ObjectRow, RowData } from "@ggpwnkthx/duckdb";
-import type { ResultReader } from "@ggpwnkthx/duckdb/functional";
-import type { ConnectionHandle } from "@ggpwnkthx/duckdb";
-
-export type { ObjectRow, RowData } from "@ggpwnkthx/duckdb";
+import { functional, objective } from "@ggpwnkthx/duckdb";
+import type { ConnectionHandle, ObjectRow, RowData } from "@ggpwnkthx/duckdb";
 
 export async function withFunctionalConnection<T>(
   fn: (connection: ConnectionHandle) => Promise<T> | T,
@@ -29,9 +24,12 @@ export async function withFunctionalConnection<T>(
 }
 
 export async function withObjectiveConnection<T>(
-  fn: (database: Database, connection: Connection) => Promise<T> | T,
+  fn: (
+    database: objective.Database,
+    connection: objective.Connection,
+  ) => Promise<T> | T,
 ): Promise<T> {
-  const database = new Database();
+  const database = new objective.Database();
 
   try {
     const connection = await database.connect();
@@ -90,7 +88,7 @@ export function queryCachedObjects(
 }
 
 export function materializeResultRows(
-  reader: ResultReader,
+  reader: functional.ResultReader,
 ): RowData[] {
   return [...functional.iterateRows(reader)].map((row) =>
     row.map((value) => value instanceof Uint8Array ? value.slice() : value)
@@ -98,7 +96,7 @@ export function materializeResultRows(
 }
 
 export function materializeResultObjects(
-  reader: ResultReader,
+  reader: functional.ResultReader,
 ): ObjectRow[] {
   return [...functional.iterateObjects(reader)].map((row) =>
     Object.fromEntries(

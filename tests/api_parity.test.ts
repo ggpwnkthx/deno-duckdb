@@ -1,6 +1,5 @@
 import { assertEquals } from "@std/assert";
-import * as functional from "@ggpwnkthx/duckdb/functional";
-import { Database } from "@ggpwnkthx/duckdb/objective";
+import { functional, objective } from "@ggpwnkthx/duckdb";
 import { materializeResultObjects, materializeResultRows } from "./utils.ts";
 
 Deno.test({
@@ -42,7 +41,7 @@ Deno.test({
     const functionalDatabase = await functional.open();
     const functionalConnection = await functional.create(functionalDatabase);
 
-    const objectiveDatabase = new Database();
+    const objectiveDatabase = new objective.Database();
     const objectiveConnection = await objectiveDatabase.connect();
 
     try {
@@ -88,7 +87,7 @@ Deno.test({
     const functionalDatabase = await functional.open();
     const functionalConnection = await functional.create(functionalDatabase);
 
-    const objectiveDatabase = new Database();
+    const objectiveDatabase = new objective.Database();
     const objectiveConnection = await objectiveDatabase.connect();
 
     try {

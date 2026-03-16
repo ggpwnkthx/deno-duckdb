@@ -10,7 +10,7 @@ import type {
   RowData,
   ValueType,
 } from "../types.ts";
-import { createPointerView, validateResultHandle } from "./handles.ts";
+import { createPointerView, validateResultHandle } from "../core/handles.ts";
 
 /**
  * Fixed-width byte sizes used by DuckDB's legacy result memory layout.
@@ -31,7 +31,7 @@ import {
   isResultValueNull,
   readResultValueAsText,
 } from "./native.ts";
-import { assertIntegerIndex } from "./validate.ts";
+import { assertIntegerIndex } from "../core/validate.ts";
 
 const textDecoder = new TextDecoder();
 

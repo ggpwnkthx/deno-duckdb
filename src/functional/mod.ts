@@ -8,6 +8,8 @@ import type { ConnectionHandle, ObjectRow, RowData } from "../types.ts";
 import {
   // Prepared
   bindPreparedParameters,
+  // Types
+  type BindValue,
   closeConnection,
   // Database
   closeDatabase,
@@ -28,21 +30,9 @@ import {
   preparedColumnCount,
   prepareStatement,
   resetPreparedStatement,
-} from "../core/native.ts";
+} from "./native.ts";
 
-// Import from handles
-import {
-  getPointerValue,
-  validateConnectionHandle,
-  validateDatabaseHandle,
-} from "../core/handles.ts";
-
-import type { BindValue } from "../core/native.ts";
-import {
-  executePreparedResult,
-  executeSqlResult,
-  LazyResult,
-} from "../core/execution.ts";
+import { executePreparedResult, executeSqlResult, LazyResult } from "./execution.ts";
 import {
   createResultReader,
   getDouble,
@@ -69,11 +59,9 @@ import {
 
 // Database
 export { closeDatabase, isValidDatabaseHandle, openDatabase };
-export { getPointerValue, validateDatabaseHandle };
 
 // Connection
 export { closeConnection, connectToDatabase, isValidConnectionHandle };
-export { validateConnectionHandle };
 
 // Prepared
 export {

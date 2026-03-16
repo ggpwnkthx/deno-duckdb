@@ -16,8 +16,8 @@ import { createResultReader, type ResultReader } from "./result.ts";
 import {
   validateConnectionHandle,
   validatePreparedStatementHandle,
-} from "./handles.ts";
-import { assertNonEmptyString } from "./validate.ts";
+} from "../core/handles.ts";
+import { assertNonEmptyString } from "../core/validate.ts";
 
 export type ExecutionRequest =
   | {

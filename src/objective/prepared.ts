@@ -2,15 +2,15 @@
  * Object-oriented prepared statement wrapper.
  */
 
-import type { PreparedStatementHandle } from "../types.ts";
-import type { BindValue } from "../core/native.ts";
 import {
   bindPreparedParameters,
+  type BindValue,
   destroyPreparedStatement,
   executePreparedStatement,
   preparedColumnCount,
   resetPreparedStatement,
-} from "../core/native.ts";
+} from "@ggpwnkthx/duckdb/functional";
+import type { PreparedStatementHandle } from "../types.ts";
 import { DisposableResource } from "./base.ts";
 import { QueryResult } from "./query.ts";
 

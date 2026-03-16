@@ -1,6 +1,7 @@
 import { assertEquals, assertThrows } from "@std/assert";
 import { DatabaseError, functional, ValidationError } from "@ggpwnkthx/duckdb";
 import { execFunctional, withFunctionalConnection } from "./utils.ts";
+import { getPointerValue } from "../src/core/handles.ts";
 
 Deno.test({
   name: "functional: database and connection lifecycle exposes valid handles",
@@ -12,8 +13,8 @@ Deno.test({
 
     assertEquals(functional.isValidDatabase(database), true);
     assertEquals(functional.isValidConnection(connection), true);
-    assertEquals(functional.getPointerValue(database) !== 0n, true);
-    assertEquals(functional.getPointerValue(connection) !== 0n, true);
+    assertEquals(getPointerValue(database) !== 0n, true);
+    assertEquals(getPointerValue(connection) !== 0n, true);
 
     functional.closeConnection(connection);
     functional.closeDatabase(database);

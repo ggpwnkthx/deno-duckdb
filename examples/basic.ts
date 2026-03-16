@@ -2,8 +2,7 @@
  * Example: Basic usage with the production-ready functional and objective APIs.
  */
 
-import * as functional from "@ggpwnkthx/duckdb/functional";
-import { Database } from "@ggpwnkthx/duckdb/objective";
+import { functional, objective } from "@ggpwnkthx/duckdb";
 import type { ObjectRow } from "@ggpwnkthx/duckdb";
 
 function printRows(title: string, rows: readonly ObjectRow[]): void {
@@ -39,7 +38,7 @@ try {
 
 console.log("=== Objective API ===\n");
 
-const objectiveDb = new Database();
+const objectiveDb = new objective.Database();
 try {
   const objectiveConn = await objectiveDb.connect();
 

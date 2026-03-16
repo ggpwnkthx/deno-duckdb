@@ -5,8 +5,7 @@
  * to stable snake_case names for display.
  */
 
-import * as functional from "@ggpwnkthx/duckdb/functional";
-import { Database } from "@ggpwnkthx/duckdb/objective";
+import { functional, objective } from "@ggpwnkthx/duckdb";
 import type { ConnectionHandle, ObjectRow } from "@ggpwnkthx/duckdb";
 
 const AZURE_BLOB_URL =
@@ -85,7 +84,7 @@ try {
 
 console.log("\n=== Objective API ===\n");
 
-const objectiveDb = new Database();
+const objectiveDb = new objective.Database();
 try {
   const objectiveConn = await objectiveDb.connect();
 

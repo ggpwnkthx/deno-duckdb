@@ -26,16 +26,16 @@ import {
   validateDatabaseHandle,
   validatePreparedStatementHandle,
   validateResultHandle,
-} from "./handles.ts";
-import { getLibrary, getLibraryFast } from "./library.ts";
-import { stringToCStringPointer } from "./strings.ts";
+} from "../core/handles.ts";
+import { getLibrary, getLibraryFast } from "../core/library.ts";
+import { stringToCStringPointer } from "../core/strings.ts";
 import {
   assertFiniteNumber,
   assertIntegerIndex,
   assertNonEmptyString,
   assertSafeInteger,
-} from "./validate.ts";
-import { normalizeDatabaseConfig } from "./config.ts";
+} from "../core/validate.ts";
+import { normalizeDatabaseConfig } from "../core/config.ts";
 
 const encoder = new TextEncoder();
 

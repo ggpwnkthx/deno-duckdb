@@ -9,7 +9,7 @@ import {
   connectToDatabase,
   isValidConnectionHandle,
   openDatabase,
-} from "../core/native.ts";
+} from "@ggpwnkthx/duckdb/functional";
 import { Connection } from "./connection.ts";
 
 export class Database {

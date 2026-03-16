@@ -3,8 +3,11 @@
  */
 
 import type { ColumnInfo, ObjectRow, ResultHandle, RowData } from "../types.ts";
-import { createResultReader, type ResultReader } from "../core/result.ts";
-import { destroyResult } from "../core/native.ts";
+import {
+  createResultReader,
+  destroyResult,
+  type ResultReader,
+} from "@ggpwnkthx/duckdb/functional";
 import { DisposableResource } from "./base.ts";
 
 export class QueryResult extends DisposableResource<ResultHandle> {

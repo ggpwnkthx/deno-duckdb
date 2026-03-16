@@ -3,11 +3,11 @@
  */
 
 import type { ObjectRow, RowData, ValueType } from "../types.ts";
-import { LazyResult } from "../core/execution.ts";
-import type { ResultReader } from "../core/result.ts";
+import { LazyResult } from "./execution.ts";
+import type { ResultReader } from "./result.ts";
 
-export { LazyResult } from "../core/execution.ts";
-export { createResultReader, ResultReader } from "../core/result.ts";
+export { LazyResult } from "./execution.ts";
+export { createResultReader, ResultReader } from "./result.ts";
 
 function toReader(result: LazyResult | ResultReader): ResultReader {
   return result instanceof LazyResult ? result.reader() : result;

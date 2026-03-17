@@ -29,7 +29,7 @@ import {
   getPointerValue,
   isValidHandle,
   requireOpaqueHandle,
-  toPointerValue,
+  toDenoPointerValue,
   validateConnectionHandle,
   validateDatabaseHandle,
   validatePreparedStatementHandle,
@@ -203,7 +203,7 @@ export async function openDatabase(
       const errorPointerValue = getPointerValue(errorHandle);
       const errorMessage = errorPointerValue === 0n
         ? "Failed to open database"
-        : readOwnedCString(toPointerValue(errorPointerValue))
+        : readOwnedCString(toDenoPointerValue(errorPointerValue))
           ?? "Failed to open database";
 
       throw new DatabaseError(errorMessage, {

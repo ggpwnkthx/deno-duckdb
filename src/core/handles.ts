@@ -69,7 +69,7 @@ export function createResultHandle(): ResultHandle {
  * Read a 64-bit pointer value from a handle buffer.
  *
  * @param handle - Handle buffer to read from
- * @returns Pointer value as bigint (little-endian)
+ * @returns Pointer value as bigint (little-endian), or 0n if null
  */
 export function getPointerValue(handle: Uint8Array<ArrayBuffer>): bigint {
   return new DataView(handle.buffer, handle.byteOffset, handle.byteLength)
@@ -77,15 +77,54 @@ export function getPointerValue(handle: Uint8Array<ArrayBuffer>): bigint {
 }
 
 /**
- * Convert a bigint pointer value to a Deno pointer object.
+ * A raw opaque pointer value returned from DuckDB's C API.
  *
- * @param value - Pointer value as bigint
- * @returns Deno pointer object for FFI calls
+ * This is a bigint representation of a memory address. Zero (0n) represents
+ * a null pointer. This type is used internally to represent handles before
+ * they are validated and converted to FFI pointer types.
+ *
+ * @see toDenoPointerValue for conversion to Deno's pointer types
+ */
+export type OpaquePointer = bigint;
+
+/**
+ * Convert a raw opaque pointer to Deno's PointerValue type.
+ *
+ * This is the FFI boundary conversion: DuckDB returns opaque pointers as bigint
+ * addresses, but Deno's FFI functions expect PointerValue. This function validates
+ * that the pointer is non-null before converting.
+ *
+ * @param value - Raw pointer value from DuckDB (bigint)
+ * @returns Deno PointerValue for FFI calls
+ * @throws {ValidationError} if pointer is null (0n)
+ */
+export function toDenoPointerValue(
+  value: OpaquePointer,
+): Deno.PointerValue<unknown> {
+  if (value === 0n) {
+    throw new ValidationError("Cannot convert null pointer to PointerValue", {
+      value: "0n",
+    });
+  }
+
+  // Deno's PointerObject is fundamentally a wrapper around a pointer address.
+  // The cast is necessary because there's no safe way to construct a PointerObject
+  // from a raw bigint - they're typically returned from FFI calls. This works
+  // because the bigint represents a valid memory address from DuckDB.
+  //
+  // Boundary semantics: We've validated value !== 0n, so this is a non-null pointer.
+  // The PointerValue type accepts non-null pointers (which become PointerObject at runtime).
+  return value as unknown as Deno.PointerValue<unknown>;
+}
+
+/**
+ * @deprecated Use toDenoPointerValue instead. Kept for backward compatibility.
+ * @see toDenoPointerValue
  */
 export function toPointerValue(
   value: bigint,
 ): Deno.PointerObject<unknown> {
-  return value as unknown as Deno.PointerObject<unknown>;
+  return toDenoPointerValue(value) as Deno.PointerObject<unknown>;
 }
 
 /**

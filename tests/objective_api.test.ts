@@ -10,7 +10,7 @@ Deno.test({
   async fn() {
     const database = new Database();
 
-    assertEquals(database.isClosed(), false);
+    assertEquals(database.closed, false);
 
     const connection = await database.connect();
     // Use queryResult for tests that need QueryResult features
@@ -24,7 +24,7 @@ Deno.test({
       database.close();
     }
 
-    assertEquals(database.isClosed(), true);
+    assertEquals(database.closed, true);
   },
 });
 
@@ -52,10 +52,10 @@ Deno.test({
         assertEquals(result.rowCount(), 2n);
         assertEquals(result.columnCount(), 4n);
         assertEquals(
-          result.getColumnInfos().map((column) => column.name),
+          result.columnInfos.map((column: { name: string }) => column.name),
           ["id", "name", "amount", "payload"],
         );
-        assertEquals(result.getRow(0), [1, "alpha", 1.5, new Uint8Array([0xCA, 0xFE])]);
+        assertEquals(result.row(0), [1, "alpha", 1.5, new Uint8Array([0xCA, 0xFE])]);
         assertEquals([...result.rows()], [
           [1, "alpha", 1.5, new Uint8Array([0xCA, 0xFE])],
           [2, "beta", 2.5, new Uint8Array([0xBE, 0xEF])],
@@ -201,7 +201,7 @@ Deno.test({
     database.close();
 
     assertThrows(
-      () => result.getRow(0),
+      () => result.row(0),
       InvalidResourceError,
       "QueryResult is closed",
     );

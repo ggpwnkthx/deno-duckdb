@@ -33,7 +33,7 @@ export abstract class DisposableResource<THandle extends Uint8Array> {
     return current;
   }
 
-  isClosed(): boolean {
+  get closed(): boolean {
     return this.handle === null;
   }
 

@@ -105,11 +105,11 @@ export class Database {
   }
 
   /**
-   * Check if the database has been closed.
+   * Whether the database has been closed.
    *
    * @returns true if closed, false otherwise
    */
-  isClosed(): boolean {
+  get closed(): boolean {
     return this.#closed;
   }
 

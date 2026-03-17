@@ -3,8 +3,7 @@
 Type-safe DuckDB FFI bindings for Deno with both functional and object-oriented APIs.
 
 > **Note:** While this library is stable and production-ready, I haven't fully settled on a
-> consistent function naming pattern yet. Some functions use camelCase (e.g., `createConnection`),
-> others use snake_case (e.g., `fetch_all`). This will be normalized in a future major version.
+> consistent function naming pattern yet. This will be normalized in a future major version.
 >
 > Starting with version 1.2.0, this project will adhere to **semantic versioning**:
 >

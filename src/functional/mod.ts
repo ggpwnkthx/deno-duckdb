@@ -603,11 +603,11 @@ export const rowCount = getResultRowCount;
 export const columnCount = getResultColumnCount;
 
 /**
- * Execute a query and return an iterable of rows.
+ * Execute a query and return an array of rows.
  *
  * @param connectionHandle - An open connection handle
  * @param sql - SQL query string
- * @returns An iterable of rows, or null if the query fails
+ * @returns An array of rows, or null if the query fails
  * @throws {ValidationError} if the SQL is empty
  *
  * @example
@@ -623,10 +623,15 @@ export const columnCount = getResultColumnCount;
 export function query(
   connectionHandle: ConnectionHandle,
   sql: string,
-): IterableIterator<RowData> | null {
+): RowData[] | null {
   try {
     const result = executeSqlResult(connectionHandle, sql);
-    return result ? result.rows() : null;
+    if (!result) return null;
+    try {
+      return [...result.rows()];
+    } finally {
+      result.close();
+    }
   } catch (e) {
     // Re-throw validation errors - they indicate bad input
     if (e instanceof ValidationError) {
@@ -638,11 +643,11 @@ export function query(
 }
 
 /**
- * Execute a query and return an iterable of object rows.
+ * Execute a query and return an array of object rows.
  *
  * @param connectionHandle - An open connection handle
  * @param sql - SQL query string
- * @returns An iterable of object rows, or null if the query fails
+ * @returns An array of object rows, or null if the query fails
  * @throws {ValidationError} if the SQL is empty
  *
  * @example
@@ -658,10 +663,15 @@ export function query(
 export function queryObjects(
   connectionHandle: ConnectionHandle,
   sql: string,
-): IterableIterator<ObjectRow> | null {
+): ObjectRow[] | null {
   try {
     const result = executeSqlResult(connectionHandle, sql);
-    return result ? result.objects() : null;
+    if (!result) return null;
+    try {
+      return [...result.objects()];
+    } finally {
+      result.close();
+    }
   } catch (e) {
     // Re-throw validation errors - they indicate bad input
     if (e instanceof ValidationError) {

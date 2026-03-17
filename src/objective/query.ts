@@ -74,7 +74,7 @@ export class QueryResult extends DisposableResource<ResultHandle> {
    *
    * @returns Array of column information
    */
-  getColumnInfos(): ColumnInfo[] {
+  get columnInfos(): ColumnInfo[] {
     return [...this.#getReader().columns];
   }
 
@@ -84,7 +84,7 @@ export class QueryResult extends DisposableResource<ResultHandle> {
    * @param index - Row index (0-based)
    * @returns Row data as array
    */
-  getRow(index: number): RowData {
+  row(index: number): RowData {
     return this.#getReader().getRow(index);
   }
 

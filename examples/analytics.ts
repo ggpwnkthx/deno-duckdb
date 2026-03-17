@@ -8,7 +8,7 @@
  * - Statistical functions (correlation, percentiles, stddev)
  * - Complex CTEs (customer lifetime value, product performance)
  * - Parquet file operations (export and query)
- * - Lazy iteration for streaming large results
+ * - Lazy iteration for on-demand row decoding from in-memory results
  * - Cohort analysis for customer retention
  */
 
@@ -351,9 +351,9 @@ try {
   printTable(parquetData.slice(0, 5), { title: "Sample data from Parquet (2023+)" });
 
   // Step 9: Lazy Iteration
-  printSection("Step 9: Lazy Iteration - Streaming Large Results");
+  printSection("Step 9: Lazy Iteration - On-Demand Row Decoding");
   console.log(
-    "Using lazy iteration to stream results without loading all into memory...",
+    "Using lazy iteration to decode rows on-demand from in-memory result buffer...",
   );
 
   const result = conn.execute(STREAM_ALL_ORDERS);
@@ -370,7 +370,7 @@ try {
   }
   result.close();
 
-  printSuccess(`Processed ${count} rows (lazy iteration - only what we needed)`);
+  printSuccess(`Processed ${count} rows (lazy decoding - stops after needed rows)`);
   printTable(sampleRows, { title: "First 5 Premium Customer Orders" });
 
   // Step 10: Cohort Analysis

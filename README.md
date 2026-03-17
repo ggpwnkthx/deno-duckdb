@@ -74,8 +74,8 @@ The library uses a three-layer architecture:
 
 ### Lazy Iteration
 
-Both APIs support lazy row iteration for handling large query results without loading
-all into memory:
+Both APIs support lazy row iteration that decodes rows on-demand from an in-memory
+result buffer:
 
 **Functional API:**
 

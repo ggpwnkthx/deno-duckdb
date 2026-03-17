@@ -61,10 +61,12 @@ function executeRequest(request: ExecutionRequest): ResultHandle {
 }
 
 /**
- * A lazy result that defers materialization until iteration.
+ * A lazy result that defers decoding until iteration.
  *
- * Provides methods for lazy iteration over query results without loading
- * all rows into memory at once.
+ * Provides methods for lazy iteration over query results, decoding rows on-demand
+ * from an in-memory result buffer. Note that DuckDB materializes the full result
+ * in memory when the query executes; this class only lazy-decodes individual rows
+ * rather than materializing all row data upfront.
  *
  * @example
  * ```ts

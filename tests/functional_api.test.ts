@@ -238,6 +238,69 @@ Deno.test({
 });
 
 Deno.test({
+  name: "functional: larger strings decode correctly",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    await withFunctionalConnection((connection) => {
+      // Test medium string (100 chars)
+      const mediumString = "x".repeat(100);
+      const mediumRows = [
+        ...functional.query(
+          connection,
+          `SELECT '${mediumString}' AS content`,
+        )!,
+      ];
+      assertEquals(mediumRows[0][0], mediumString);
+
+      // Test large string (1000 chars)
+      const largeString = "y".repeat(1000);
+      const largeRows = [
+        ...functional.query(
+          connection,
+          `SELECT '${largeString}' AS content`,
+        )!,
+      ];
+      assertEquals(largeRows[0][0], largeString);
+
+      // Test extra large string (10KB)
+      const xlargeString = "z".repeat(10240);
+      const xlargeRows = [
+        ...functional.query(
+          connection,
+          `SELECT '${xlargeString}' AS content`,
+        )!,
+      ];
+      assertEquals(xlargeRows[0][0], xlargeString);
+
+      // Test empty string
+      const emptyRows = [
+        ...functional.query(connection, `SELECT '' AS content`)!,
+      ];
+      assertEquals(emptyRows[0][0], "");
+
+      // Test NULL string
+      const nullRows = [
+        ...functional.query(connection, `SELECT NULL AS content`)!,
+      ];
+      assertEquals(nullRows[0][0], null);
+
+      // Test mixed NULL and large strings
+      const mixedRows = [
+        ...functional.query(
+          connection,
+          `SELECT NULL AS a, '${largeString}' AS b UNION ALL SELECT '${mediumString}', NULL`,
+        )!,
+      ];
+      assertEquals(mixedRows[0][0], null);
+      assertEquals(mixedRows[0][1], largeString);
+      assertEquals(mixedRows[1][0], mediumString);
+      assertEquals(mixedRows[1][1], null);
+    });
+  },
+});
+
+Deno.test({
   name: "functional: sync destroy helpers do not poison the active connection",
   sanitizeResources: false,
   sanitizeOps: false,

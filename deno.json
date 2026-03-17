@@ -15,9 +15,6 @@
     "@ggpwnkthx/duckdb/objective": "./src/objective/mod.ts"
   },
   "tasks": {
-    "check": "deno check src/mod.ts examples/basic.ts examples/data_analysis.ts examples/azure.ts bench.ts tests/*.ts",
-    "fmt": "deno fmt",
-    "lint": "deno lint",
     "test": "deno test -A ./tests/*",
     "bench": "deno bench -A ./benchmarks/*",
     "example:basic": "deno run -A ./examples/basic.ts",

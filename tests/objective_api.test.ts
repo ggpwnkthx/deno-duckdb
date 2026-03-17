@@ -233,6 +233,54 @@ Deno.test({
 });
 
 Deno.test({
+  name: "objective: larger strings decode correctly",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    await withObjectiveConnection((_database, connection) => {
+      // Test medium string (100 chars)
+      const mediumString = "x".repeat(100);
+      const mediumResult = connection.execute(`SELECT '${mediumString}' AS content`);
+      assertEquals([...mediumResult.rows()][0][0], mediumString);
+      mediumResult.close();
+
+      // Test large string (1000 chars)
+      const largeString = "y".repeat(1000);
+      const largeResult = connection.execute(`SELECT '${largeString}' AS content`);
+      assertEquals([...largeResult.rows()][0][0], largeString);
+      largeResult.close();
+
+      // Test extra large string (10KB)
+      const xlargeString = "z".repeat(10240);
+      const xlargeResult = connection.execute(`SELECT '${xlargeString}' AS content`);
+      assertEquals([...xlargeResult.rows()][0][0], xlargeString);
+      xlargeResult.close();
+
+      // Test empty string
+      const emptyResult = connection.execute(`SELECT '' AS content`);
+      assertEquals([...emptyResult.rows()][0][0], "");
+      emptyResult.close();
+
+      // Test NULL string
+      const nullResult = connection.execute(`SELECT NULL AS content`);
+      assertEquals([...nullResult.rows()][0][0], null);
+      nullResult.close();
+
+      // Test mixed NULL and large strings
+      const mixedResult = connection.execute(
+        `SELECT NULL AS a, '${largeString}' AS b UNION ALL SELECT '${mediumString}', NULL`,
+      );
+      const mixedRows = [...mixedResult.rows()];
+      assertEquals(mixedRows[0][0], null);
+      assertEquals(mixedRows[0][1], largeString);
+      assertEquals(mixedRows[1][0], mediumString);
+      assertEquals(mixedRows[1][1], null);
+      mixedResult.close();
+    });
+  },
+});
+
+Deno.test({
   name: "objective: cached query returns rows directly",
   sanitizeResources: false,
   sanitizeOps: false,

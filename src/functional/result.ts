@@ -1,5 +1,5 @@
 /**
- * Result decoding and row/object materialization.
+ * Result decoding and row/object decode.
  *
  * Implements the ResultReader class for reading typed values from DuckDB result sets.
  * Handles type-specific decoding including dates, times, intervals, and blobs.

@@ -98,7 +98,7 @@ Deno.bench("Scaling: 10K rows, 100 columns", () => {
   result.close();
 });
 
-// Execution-only tests (no materialization)
+// Execution-only tests (no decode)
 for (const rowCount of ROW_SIZES) {
   Deno.bench(`Scaling: ${rowCount.toLocaleString()} rows (execution only)`, () => {
     const result = functional.executeSqlResult(

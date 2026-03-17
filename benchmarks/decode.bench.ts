@@ -89,7 +89,7 @@ Deno.bench("Standard Query: Functional API (execution-only)", () => {
 });
 
 Deno.bench(
-  "Standard Query: Functional API (execution + materialization)",
+  "Standard Query: Functional API (execution + decode)",
   () => {
     const result = functional.executeSqlResult(connHandleFunc, QUERY);
 
@@ -113,7 +113,7 @@ Deno.bench("Standard Query: Objective API (execution-only)", () => {
 });
 
 Deno.bench(
-  "Standard Query: Objective API (execution + materialization)",
+  "Standard Query: Objective API (execution + decode)",
   () => {
     const result = connObj.execute(QUERY);
 
@@ -144,7 +144,7 @@ Deno.bench(
 );
 
 Deno.bench(
-  "Prepared Statement: Functional API (prepared once, execution + materialization)",
+  "Prepared Statement: Functional API (prepared once, execution + decode)",
   () => {
     functional.bind(preparedHandleFunc, [EXPECTED_ROWS]);
 
@@ -175,7 +175,7 @@ Deno.bench(
 );
 
 Deno.bench(
-  "Prepared Statement: Objective API (prepared once, execution + materialization)",
+  "Prepared Statement: Objective API (prepared once, execution + decode)",
   () => {
     preparedObj.bind([EXPECTED_ROWS]);
     const result = preparedObj.execute();
@@ -212,7 +212,7 @@ Deno.bench(
 );
 
 Deno.bench(
-  "Prepared Statement: Full cycle (Functional, execution + materialization)",
+  "Prepared Statement: Full cycle (Functional, execution + decode)",
   () => {
     const stmtHandle = functional.prepare(connHandleFunc, PREP_QUERY);
 
@@ -255,7 +255,7 @@ Deno.bench(
 );
 
 Deno.bench(
-  "Prepared Statement: Full cycle (Objective, execution + materialization)",
+  "Prepared Statement: Full cycle (Objective, execution + decode)",
   () => {
     const stmt = connObj.prepare(PREP_QUERY);
 

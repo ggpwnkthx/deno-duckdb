@@ -33,7 +33,7 @@ const connHandle = await functional.create(dbHandle);
 const QUERY = `SELECT i as a, i + 1 as b FROM generate_series(1, ${ROW_COUNT}) s(i)`;
 
 // toArray() vs rows() iteration
-Deno.bench("Materialization: toArray()", () => {
+Deno.bench("Decode: toArray()", () => {
   const result = functional.executeSqlResult(connHandle, QUERY);
   if (!result) throw new Error("Query failed");
   const rows = result.toArray();
@@ -42,7 +42,7 @@ Deno.bench("Materialization: toArray()", () => {
   result.close();
 });
 
-Deno.bench("Materialization: rows() iterator with for...of", () => {
+Deno.bench("Decode: rows() iterator with for...of", () => {
   const result = functional.executeSqlResult(connHandle, QUERY);
   if (!result) throw new Error("Query failed");
   let sum = 0n;
@@ -53,7 +53,7 @@ Deno.bench("Materialization: rows() iterator with for...of", () => {
   result.close();
 });
 
-Deno.bench("Materialization: rows() iterator with manual next()", () => {
+Deno.bench("Decode: rows() iterator with manual next()", () => {
   const result = functional.executeSqlResult(connHandle, QUERY);
   if (!result) throw new Error("Query failed");
   const iter = result.rows();
@@ -68,7 +68,7 @@ Deno.bench("Materialization: rows() iterator with manual next()", () => {
 });
 
 // Array vs Object rows
-Deno.bench("Materialization: toArray() - array rows", () => {
+Deno.bench("Decode: toArray() - array rows", () => {
   const result = functional.executeSqlResult(connHandle, QUERY);
   if (!result) throw new Error("Query failed");
   const rows = result.toArray();
@@ -77,7 +77,7 @@ Deno.bench("Materialization: toArray() - array rows", () => {
   result.close();
 });
 
-Deno.bench("Materialization: toObjectArray() - object rows", () => {
+Deno.bench("Decode: toObjectArray() - object rows", () => {
   const result = functional.executeSqlResult(connHandle, QUERY);
   if (!result) throw new Error("Query failed");
   const rows = result.toObjectArray();
@@ -86,7 +86,7 @@ Deno.bench("Materialization: toObjectArray() - object rows", () => {
   result.close();
 });
 
-Deno.bench("Materialization: rows() iterator - array rows", () => {
+Deno.bench("Decode: rows() iterator - array rows", () => {
   const result = functional.executeSqlResult(connHandle, QUERY);
   if (!result) throw new Error("Query failed");
   let sum = 0n;
@@ -97,7 +97,7 @@ Deno.bench("Materialization: rows() iterator - array rows", () => {
   result.close();
 });
 
-Deno.bench("Materialization: objects() iterator - object rows", () => {
+Deno.bench("Decode: objects() iterator - object rows", () => {
   const result = functional.executeSqlResult(connHandle, QUERY);
   if (!result) throw new Error("Query failed");
   let sum = 0n;
@@ -109,7 +109,7 @@ Deno.bench("Materialization: objects() iterator - object rows", () => {
 });
 
 // Single cell access
-Deno.bench("Materialization: getRow() - full row", () => {
+Deno.bench("Decode: getRow() - full row", () => {
   const result = functional.executeSqlResult(connHandle, QUERY);
   if (!result) throw new Error("Query failed");
   // Get a subset of rows
@@ -123,7 +123,7 @@ Deno.bench("Materialization: getRow() - full row", () => {
   result.close();
 });
 
-Deno.bench("Materialization: getValue() - single cell", () => {
+Deno.bench("Decode: getValue() - single cell", () => {
   const result = functional.executeSqlResult(connHandle, QUERY);
   if (!result) throw new Error("Query failed");
   // Get a subset of cells using functional.getValue
@@ -136,7 +136,7 @@ Deno.bench("Materialization: getValue() - single cell", () => {
   result.close();
 });
 
-// Execution-only (no materialization)
+// Execution-only (no decode)
 Deno.bench("Execution-only: row count only", () => {
   const result = functional.executeSqlResult(connHandle, QUERY);
   if (!result) throw new Error("Query failed");

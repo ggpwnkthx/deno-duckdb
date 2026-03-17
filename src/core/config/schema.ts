@@ -283,9 +283,9 @@ export const configSchema: Record<string, ConfigOptionDefinition> = {
 
   explain_output: {
     type: "enum",
-    values: ["all", "optimized_only", "物理_only"] as const,
+    values: ["all", "optimized_only", "physical_only"] as const,
     default: "all",
-  } as EnumConfigOption<"all" | "optimized_only" | "物理_only">,
+  } as EnumConfigOption<"all" | "optimized_only" | "physical_only">,
 
   enable_progress_bar: {
     type: "boolean",

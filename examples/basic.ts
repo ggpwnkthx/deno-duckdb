@@ -4,15 +4,8 @@
 
 import * as functional from "@ggpwnkthx/duckdb/functional";
 import * as objective from "@ggpwnkthx/duckdb/objective";
-import type { ObjectRow } from "@ggpwnkthx/duckdb";
 
-function printRows(title: string, rows: readonly ObjectRow[]): void {
-  console.log(title);
-  for (const row of rows) {
-    console.log(`  ${row.i} * 2 = ${row.doubled}`);
-  }
-  console.log();
-}
+import { printTable } from "./shared/console.ts";
 
 console.log("=== Functional API ===\n");
 
@@ -28,7 +21,7 @@ try {
     );
 
     if (rows !== null) {
-      printRows("Results:", [...rows]);
+      printTable([...rows], { title: "Results:" });
     }
   } finally {
     functional.closeConnection(functionalConn);
@@ -50,12 +43,10 @@ try {
     );
     const rows = [...result.objects()];
     result.close();
-    printRows("Results:", rows);
+    printTable(rows, { title: "Results:" });
   } finally {
     objectiveConn.close();
   }
 } finally {
   objectiveDb.close();
 }
-
-console.log("All done!");

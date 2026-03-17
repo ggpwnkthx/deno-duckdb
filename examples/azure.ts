@@ -7,22 +7,17 @@
 
 import * as functional from "@ggpwnkthx/duckdb/functional";
 import * as objective from "@ggpwnkthx/duckdb/objective";
-import type { ConnectionHandle, ObjectRow } from "@ggpwnkthx/duckdb";
+import type { ConnectionHandle } from "@ggpwnkthx/duckdb";
+import {
+  AZURE_BLOB_URL,
+  INSTALL_AZURE,
+  LOAD_AZURE,
+  SAMPLE_QUERY,
+  SET_AZURE_CONNECTION_STRING,
+  SET_AZURE_TRANSPORT_TYPE,
+} from "./sql/azure.ts";
 
-const AZURE_BLOB_URL =
-  "az://azureopendatastorage.blob.core.windows.net/nyctlc/yellow/puYear=*/puMonth=1/*.parquet";
-
-const SAMPLE_QUERY = `
-SELECT
-  vendorID AS vendor_id,
-  tpepPickupDateTime AS pickup_datetime,
-  tpepDropoffDateTime AS dropoff_datetime,
-  passengerCount AS passenger_count,
-  tripDistance AS trip_distance,
-  puLocationId AS pickup_location_id
-FROM read_parquet('${AZURE_BLOB_URL}')
-LIMIT 10
-`;
+import { printTable } from "./shared/console.ts";
 
 function execFunctional(connection: ConnectionHandle, sql: string): void {
   // Use cached query - returns null on success for DDL, but side effects happen
@@ -34,20 +29,6 @@ function execFunctional(connection: ConnectionHandle, sql: string): void {
   [...result];
 }
 
-function printRows(rows: readonly ObjectRow[]): void {
-  if (rows.length === 0) {
-    console.log("No rows returned");
-    return;
-  }
-
-  console.log("First 10 rows:");
-  for (const row of rows) {
-    console.log(
-      `  vendor=${row.vendor_id} | ${row.pickup_datetime} -> ${row.dropoff_datetime} | passengers=${row.passenger_count} | distance=${row.trip_distance} | pickup_location=${row.pickup_location_id}`,
-    );
-  }
-}
-
 console.log("=== Functional API ===\n");
 
 const functionalDb = await functional.open();
@@ -56,14 +37,14 @@ try {
 
   try {
     console.log("Installing Azure extension...");
-    execFunctional(functionalConn, "INSTALL azure");
+    execFunctional(functionalConn, INSTALL_AZURE);
 
     console.log("Loading Azure extension...");
-    execFunctional(functionalConn, "LOAD azure");
+    execFunctional(functionalConn, LOAD_AZURE);
 
     console.log("Configuring Azure for anonymous access...");
-    execFunctional(functionalConn, "SET azure_storage_connection_string = ''");
-    execFunctional(functionalConn, "SET azure_transport_option_type = 'curl'");
+    execFunctional(functionalConn, SET_AZURE_CONNECTION_STRING);
+    execFunctional(functionalConn, SET_AZURE_TRANSPORT_TYPE);
 
     console.log(`Querying: ${AZURE_BLOB_URL}`);
     // Use queryObjects for object format - returns iterator, convert to array
@@ -74,7 +55,7 @@ try {
     } else {
       const objectArray = [...objects];
       console.log(`Result: ${objectArray.length} rows\n`);
-      printRows(objectArray);
+      printTable(objectArray, { title: "First 10 rows:", limit: 10 });
     }
   } finally {
     functional.closeConnection(functionalConn);
@@ -92,14 +73,14 @@ try {
   try {
     console.log("Installing Azure extension...");
     // DDL returns null from cached query - just execute it
-    objectiveConn.query("INSTALL azure");
+    objectiveConn.query(INSTALL_AZURE);
 
     console.log("Loading Azure extension...");
-    objectiveConn.query("LOAD azure");
+    objectiveConn.query(LOAD_AZURE);
 
     console.log("Configuring Azure for anonymous access...");
-    objectiveConn.query("SET azure_storage_connection_string = ''");
-    objectiveConn.query("SET azure_transport_option_type = 'curl'");
+    objectiveConn.query(SET_AZURE_CONNECTION_STRING);
+    objectiveConn.query(SET_AZURE_TRANSPORT_TYPE);
 
     console.log(`Querying: ${AZURE_BLOB_URL}`);
     // Use queryResult for QueryResult features
@@ -108,7 +89,7 @@ try {
     try {
       const rows = [...result.objects()];
       console.log(`Result: ${rows.length} rows\n`);
-      printRows(rows);
+      printTable(rows, { title: "First 10 rows:", limit: 10 });
     } finally {
       result.close();
     }
@@ -118,5 +99,3 @@ try {
 } finally {
   objectiveDb.close();
 }
-
-console.log("\n=== Done! ===");

@@ -46,33 +46,9 @@ import {
   PRODUCTS_BY_PRICE,
   QUERY_PARQUET,
   STREAM_ALL_ORDERS,
-} from "./shared/data_analysis.ts";
+} from "./sql/analytics.ts";
 
-function printSection(title: string): void {
-  console.log(`\n--- ${title} ---`);
-}
-
-function printProductRows(rows: readonly ObjectRow[]): void {
-  for (const row of rows) {
-    console.log(`  ${row.name}: $${row.price} (${row.category})`);
-  }
-}
-
-function printOrderRows(rows: readonly ObjectRow[]): void {
-  for (const row of rows) {
-    console.log(
-      `  Order ${row.order_id}: ${row.customer_name} bought ${row.product_name} x${row.quantity} on ${row.order_date} ($${row.total})`,
-    );
-  }
-}
-
-function printCustomerTotals(rows: readonly ObjectRow[]): void {
-  for (const row of rows) {
-    const total = row.total_spent ?? "0";
-    const count = row.order_count ?? 0;
-    console.log(`  ${row.customer_name}: $${total} (${count} orders)`);
-  }
-}
+import { printList, printSection, printSuccess, printTable } from "./shared/console.ts";
 
 function execFunctional(
   connection: Parameters<typeof functional.query>[0],
@@ -116,15 +92,10 @@ function queryObjectiveObjects(
 // Main Example
 // =============================================================================
 
-console.log(`
-╔══════════════════════════════════════════════════════════════════════╗
-║     DuckDB E-commerce Analytics Showcase                              ║
-║     Demonstrating DuckDB's Analytical Power                            ║
-╚══════════════════════════════════════════════════════════════════════╝
-`);
+printSection("DuckDB E-commerce Analytics Showcase");
 
 // First, show the basic example (from original data_analysis.ts)
-console.log(">>> PART 1: Basic Data Analysis (Original Example)");
+console.log("\n>>> PART 1: Basic Data Analysis (Original Example)");
 
 console.log("\n=== Functional API ===");
 
@@ -149,18 +120,33 @@ try {
     console.log("\nTables created and data inserted");
 
     printSection("Products by price");
-    printProductRows(queryFunctionalObjects(functionalConn, PRODUCTS_BY_PRICE));
+    printList(
+      queryFunctionalObjects(functionalConn, PRODUCTS_BY_PRICE),
+      (row) => `  ${row.name}: $${row.price} (${row.category})`,
+    );
 
     printSection("Order details");
-    printOrderRows(queryFunctionalObjects(functionalConn, ORDER_DETAILS));
+    printList(
+      queryFunctionalObjects(functionalConn, ORDER_DETAILS),
+      (row) =>
+        `  Order ${row.order_id}: ${row.customer_name} bought ${row.product_name} x${row.quantity} on ${row.order_date} ($${row.total})`,
+    );
 
     printSection("Customer totals");
-    printCustomerTotals(queryFunctionalObjects(functionalConn, CUSTOMER_TOTALS));
+    printList(
+      queryFunctionalObjects(functionalConn, CUSTOMER_TOTALS),
+      (row) => {
+        const total = row.total_spent ?? "0";
+        const count = row.order_count ?? 0;
+        return `  ${row.customer_name}: $${total} (${count} orders)`;
+      },
+    );
 
     printSection("Electronics by price");
-    for (const row of queryFunctionalObjects(functionalConn, ELECTRONICS_BY_PRICE)) {
-      console.log(`  ${row.name}: $${row.price}`);
-    }
+    printList(
+      queryFunctionalObjects(functionalConn, ELECTRONICS_BY_PRICE),
+      (row) => `  ${row.name}: $${row.price}`,
+    );
 
     printSection("Orders between 2024-01-01 and 2024-02-29");
     const rangeStatement = functional.prepare(functionalConn, ORDERS_BY_DATE_RANGE);
@@ -183,11 +169,11 @@ try {
     }
 
     printSection("All orders");
-    for (const row of queryFunctionalObjects(functionalConn, ALL_ORDERS)) {
-      console.log(
+    printList(
+      queryFunctionalObjects(functionalConn, ALL_ORDERS),
+      (row) =>
         `  ${row.id}: customer=${row.customer_id}, product=${row.product_id}, quantity=${row.quantity}, date=${row.order_date}`,
-      );
-    }
+    );
   } finally {
     functional.closeConnection(functionalConn);
   }
@@ -218,13 +204,27 @@ try {
     console.log("\nTables created and data inserted");
 
     printSection("Products by price");
-    printProductRows(queryObjectiveObjects(objectiveConn, PRODUCTS_BY_PRICE));
+    printList(
+      queryObjectiveObjects(objectiveConn, PRODUCTS_BY_PRICE),
+      (row) => `  ${row.name}: $${row.price} (${row.category})`,
+    );
 
     printSection("Order details");
-    printOrderRows(queryObjectiveObjects(objectiveConn, ORDER_DETAILS));
+    printList(
+      queryObjectiveObjects(objectiveConn, ORDER_DETAILS),
+      (row) =>
+        `  Order ${row.order_id}: ${row.customer_name} bought ${row.product_name} x${row.quantity} on ${row.order_date} ($${row.total})`,
+    );
 
     printSection("Customer totals");
-    printCustomerTotals(queryObjectiveObjects(objectiveConn, CUSTOMER_TOTALS));
+    printList(
+      queryObjectiveObjects(objectiveConn, CUSTOMER_TOTALS),
+      (row) => {
+        const total = row.total_spent ?? "0";
+        const count = row.order_count ?? 0;
+        return `  ${row.customer_name}: $${total} (${count} orders)`;
+      },
+    );
 
     printSection("Orders between 2024-01-01 and 2024-02-29");
     const statement = objectiveConn.prepare(ORDERS_BY_DATE_RANGE);
@@ -273,69 +273,30 @@ try {
   execObjective(conn, GENERATE_CUSTOMERS_DATA);
   execObjective(conn, GENERATE_ECOMMERCE_DATA);
 
-  console.log("  ✓ Generated 500 products");
-  console.log("  ✓ Generated 1,000 customers");
-  console.log("  ✓ Generated 10,000 order events");
+  printSuccess("Generated 500 products");
+  printSuccess("Generated 1,000 customers");
+  printSuccess("Generated 10,000 order events");
 
   // Step 2: Window Functions - Customer Ranking
   printSection("Step 2: Window Functions - Customer Rankings");
   console.log("Ranking customers by total spend with percentile rankings...");
 
   const customerRanking = queryObjectiveObjects(conn, CUSTOMER_RANKING);
-  console.log("\nTop 10 Customers by Spend:");
-  console.log(
-    "  Rank | Customer ID | Total Spent   | Orders | % of Total",
-  );
-  console.log("  " + "-".repeat(55));
-  for (const row of customerRanking.slice(0, 10)) {
-    console.log(
-      `  ${String(row.spend_rank).padStart(4)} | ${
-        String(row.customer_id).padStart(11)
-      } | ${String(row.total_spent).padStart(13)} | ${
-        String(row.order_count).padStart(6)
-      } | ${row.pct_of_total}%`,
-    );
-  }
+  printTable(customerRanking.slice(0, 10), { title: "Top 10 Customers by Spend" });
 
   // Step 3: Time-Series Analysis - Daily Revenue Trends
   printSection("Step 3: Time-Series Analysis - Daily Revenue");
   console.log("Daily revenue with running totals and 7-day moving average...");
 
   const dailyTrends = queryObjectiveObjects(conn, DAILY_REVENUE_TRENDS);
-  console.log("\nFirst 10 Days:");
-  console.log(
-    "  Date       | Revenue    | Running Total | 7-Day Avg  | % Change",
-  );
-  console.log("  " + "-".repeat(60));
-  for (const row of dailyTrends.slice(0, 10)) {
-    const pctChange = row.pct_change_vs_prev_day ?? "N/A";
-    console.log(
-      `  ${row.order_date} | ${String(row.daily_revenue).padStart(9)} | ${
-        String(Math.round(Number(row.running_total_revenue))).padStart(13)
-      } | ${String(row.moving_avg_7day).padStart(10)} | ${pctChange}%`,
-    );
-  }
+  printTable(dailyTrends.slice(0, 10), { title: "First 10 Days" });
 
   // Step 4: Monthly Revenue Analysis
   printSection("Step 4: Monthly Revenue with Month-over-Month Growth");
   console.log("Monthly aggregated revenue with MoM growth percentages...");
 
   const monthlyRevenue = queryObjectiveObjects(conn, MONTHLY_REVENUE_ANALYSIS);
-  console.log("\nMonthly Revenue Trend:");
-  console.log(
-    "  Month     | Revenue     | Customers | Orders | Avg Order | MoM Growth",
-  );
-  console.log("  " + "-".repeat(65));
-  for (const row of monthlyRevenue) {
-    const momGrowth = row.mom_growth_pct ?? "N/A";
-    console.log(
-      `  ${row.month} | ${String(row.revenue).padStart(10)} | ${
-        String(row.unique_customers).padStart(9)
-      } | ${String(row.total_orders).padStart(6)} | ${
-        String(row.avg_order_value).padStart(9)
-      } | ${momGrowth}%`,
-    );
-  }
+  printTable(monthlyRevenue, { title: "Monthly Revenue Trend" });
 
   // Step 5: Statistical Functions
   printSection("Step 5: Statistical Functions - Order Value Analysis");
@@ -369,58 +330,25 @@ try {
   console.log("Calculating CLV with segment-based rankings...");
 
   const clvData = queryObjectiveObjects(conn, CUSTOMER_LIFETIME_VALUE);
-  console.log("\nTop 10 Customers by Lifetime Value:");
-  console.log(
-    "  Customer ID | Name         | Segment | Lifetime Value | Orders | Avg Order",
-  );
-  console.log("  " + "-".repeat(70));
-  for (const row of clvData.slice(0, 10)) {
-    console.log(
-      `  ${String(row.customer_id).padStart(11)} | ${String(row.name).padStart(11)} | ${
-        String(row.segment).padStart(7)
-      } | ${String(row.lifetime_value).padStart(14)} | ${
-        String(row.total_orders).padStart(6)
-      } | $${row.avg_order_value}`,
-    );
-  }
+  printTable(clvData.slice(0, 10), { title: "Top 10 Customers by Lifetime Value" });
 
   // Step 7: Product Performance Metrics
   printSection("Step 7: Complex CTE - Product Performance Metrics");
   console.log("Ranking products by revenue within categories...");
 
   const productPerf = queryObjectiveObjects(conn, PRODUCT_PERFORMANCE);
-  console.log("\nTop 10 Products by Revenue:");
-  console.log(
-    "  Product ID | Name        | Category        | Revenue    | Units | Rank",
-  );
-  console.log("  " + "-".repeat(65));
-  for (const row of productPerf.slice(0, 10)) {
-    console.log(
-      `  ${String(row.product_id).padStart(10)} | ${String(row.name).padStart(10)} | ${
-        String(row.category).padStart(15)
-      } | ${String(row.total_revenue).padStart(10)} | ${
-        String(row.units_sold).padStart(5)
-      } | ${row.overall_rank}`,
-    );
-  }
+  printTable(productPerf.slice(0, 10), { title: "Top 10 Products by Revenue" });
 
   // Step 8: Parquet Operations
   printSection("Step 8: Parquet File Operations");
   console.log("Exporting query results to Parquet and reading back...");
 
   execObjective(conn, EXPORT_TO_PARQUET);
-  console.log("  ✓ Exported monthly summary to 'monthly_summary.parquet'");
+  printSuccess("Exported monthly summary to 'monthly_summary.parquet'");
 
   const parquetData = queryObjectiveObjects(conn, QUERY_PARQUET);
-  console.log(`  ✓ Read ${parquetData.length} rows from Parquet file`);
-  console.log("\n  Sample data from Parquet (2023+):");
-  console.log("  Date       | Orders | Revenue");
-  console.log("  " + "-".repeat(30));
-  for (const row of parquetData.slice(0, 5)) {
-    console.log(
-      `  ${row.order_date} | ${String(row.order_count).padStart(6)} | ${row.revenue}`,
-    );
-  }
+  printSuccess(`Read ${parquetData.length} rows from Parquet file`);
+  printTable(parquetData.slice(0, 5), { title: "Sample data from Parquet (2023+)" });
 
   // Step 9: Lazy Iteration
   printSection("Step 9: Lazy Iteration - Streaming Large Results");
@@ -442,47 +370,26 @@ try {
   }
   result.close();
 
-  console.log(`  Processed ${count} rows (lazy iteration - only what we needed)`);
-  console.log("\n  First 5 Premium Customer Orders:");
-  console.log(
-    "  Order ID | Customer    | Product      | Qty | Date       | Final Price",
-  );
-  console.log("  " + "-".repeat(65));
-  for (const row of sampleRows) {
-    console.log(
-      `  ${String(row.order_id).padStart(8)} | ${
-        String(row.customer_name).padStart(10)
-      } | ${String(row.product_name).padStart(11)} | ${
-        String(row.quantity).padStart(3)
-      } | ${row.order_date} | $${Number(row.final_price).toFixed(2)}`,
-    );
-  }
+  printSuccess(`Processed ${count} rows (lazy iteration - only what we needed)`);
+  printTable(sampleRows, { title: "First 5 Premium Customer Orders" });
 
   // Step 10: Cohort Analysis
   printSection("Step 10: Cohort Analysis - Customer Retention");
   console.log("Tracking customer retention by cohort month...");
 
   const cohortData = queryObjectiveObjects(conn, COHORT_ANALYSIS);
-  console.log("\nRetention by Cohort (first 6 months):");
-  console.log(
-    "  Cohort     | Cohort Size | Retained | Retention % | Months",
+  printTable(
+    cohortData.filter((row) => {
+      const months = Number(row.months_since_start);
+      return !isNaN(months) && months <= 6;
+    }),
+    { title: "Retention by Cohort (first 6 months)" },
   );
-  console.log("  " + "-".repeat(55));
-  for (const row of cohortData) {
-    const months = Number(row.months_since_start);
-    if (!isNaN(months) && months <= 6) {
-      console.log(
-        `  ${row.cohort_month} | ${String(row.cohort_size).padStart(11)} | ${
-          String(row.retained_customers).padStart(9)
-        } | ${String(row.retention_pct).padStart(12)}% | ${months}`,
-      );
-    }
-  }
 
   // Cleanup - delete the parquet file
   try {
     await Deno.remove("monthly_summary.parquet");
-    console.log("\n  ✓ Cleaned up temporary Parquet file");
+    printSuccess("Cleaned up temporary Parquet file");
   } catch {
     // File might not exist, that's ok
   }
@@ -491,20 +398,3 @@ try {
 } finally {
   analyticsDb.close();
 }
-
-console.log(`
-\n${"=".repeat(60)}
-  ✓ All analytics queries completed successfully!
-  ✓ Demonstrated DuckDB's analytical capabilities:
-    - Large-scale data generation
-    - Window functions (rankings, running totals, moving averages)
-    - Time-series analysis with MoM growth
-    - Statistical functions (correlation, percentiles, stddev)
-    - Complex CTEs for business metrics
-    - Parquet file export/import
-    - Lazy iteration for streaming results
-    - Cohort analysis for customer retention
-${"=".repeat(60)}
-`);
-
-console.log("\nAll done!");

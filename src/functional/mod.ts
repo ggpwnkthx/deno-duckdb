@@ -89,6 +89,36 @@ import {
   ResultReader,
 } from "./value.ts";
 import { ValidationError } from "../errors.ts";
+import { setStrictValidation } from "../core/runtime.ts";
+
+/**
+ * Enable or disable strict index validation on FFI entry points.
+ *
+ * When enabled, index bounds are validated on public FFI entry points
+ * (getResultColumnName, getResultColumnType, getResultColumnData,
+ * getResultColumnValidity, isResultValueNull, readResultValueAsText).
+ * This adds overhead but catches bugs during development.
+ *
+ * Defaults to false for performance.
+ *
+ * @param value - true to enable strict validation, false to disable
+ *
+ * @example
+ * ```ts
+ * import { setStrictValidation } from "@ggpwnkthx/duckdb/functional";
+ *
+ * // Enable validation during development
+ * setStrictValidation(true);
+ *
+ * // Now invalid indexes will throw ValidationError
+ * const result = executeSqlResult(conn, "SELECT 1 as a, 2 as b");
+ * getResultColumnName(result, 999); // throws ValidationError
+ *
+ * // Disable for production
+ * setStrictValidation(false);
+ * ```
+ */
+export { setStrictValidation };
 
 // Database
 

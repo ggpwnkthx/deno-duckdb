@@ -44,6 +44,7 @@ import {
   assertSafeInteger,
 } from "../core/validate.ts";
 import { normalizeDatabaseConfig } from "../core/config.ts";
+import { strictValidation } from "../core/runtime.ts";
 
 const encoder = new TextEncoder();
 
@@ -204,7 +205,7 @@ export async function openDatabase(
       const errorMessage = errorPointerValue === 0n
         ? "Failed to open database"
         : readOwnedCString(toDenoPointerValue(errorPointerValue))
-          ?? "Failed to open database";
+        ?? "Failed to open database";
 
       throw new DatabaseError(errorMessage, {
         path: normalized.path,
@@ -339,7 +340,7 @@ export function executeQuery(
  * @param handle - A valid result handle
  */
 export function destroyResult(handle: ResultHandle): void {
-  validateResultHandle(handle);
+  if (strictValidation) validateResultHandle(handle);
   const library = getLibraryFast();
   library.symbols.duckdb_destroy_result(handle);
 }
@@ -633,7 +634,7 @@ export function destroyPreparedStatement(
  * ```
  */
 export function getResultRowCount(handle: ResultHandle): bigint {
-  validateResultHandle(handle);
+  if (strictValidation) validateResultHandle(handle);
   return getLibraryFast().symbols.duckdb_row_count(handle);
 }
 
@@ -650,7 +651,7 @@ export function getResultRowCount(handle: ResultHandle): bigint {
  * ```
  */
 export function getResultColumnCount(handle: ResultHandle): bigint {
-  validateResultHandle(handle);
+  if (strictValidation) validateResultHandle(handle);
   return getLibraryFast().symbols.duckdb_column_count(handle);
 }
 
@@ -672,7 +673,11 @@ export function getResultColumnName(
   handle: ResultHandle,
   columnIndex: number,
 ): string {
-  validateResultHandle(handle);
+  if (strictValidation) {
+    const columnCount = Number(getResultColumnCount(handle));
+    assertIntegerIndex(columnIndex, "Column index", columnCount);
+  }
+
   const pointer = getLibraryFast().symbols.duckdb_column_name(
     handle,
     BigInt(columnIndex),
@@ -698,7 +703,11 @@ export function getResultColumnType(
   handle: ResultHandle,
   columnIndex: number,
 ): DUCKDB_TYPE {
-  validateResultHandle(handle);
+  if (strictValidation) {
+    const columnCount = Number(getResultColumnCount(handle));
+    assertIntegerIndex(columnIndex, "Column index", columnCount);
+  }
+
   return getLibraryFast().symbols.duckdb_column_type(
     handle,
     BigInt(columnIndex),
@@ -743,7 +752,11 @@ export function getResultColumnData(
   handle: ResultHandle,
   columnIndex: number,
 ): Deno.UnsafePointerView | null {
-  validateResultHandle(handle);
+  if (strictValidation) {
+    const columnCount = Number(getResultColumnCount(handle));
+    assertIntegerIndex(columnIndex, "Column index", columnCount);
+  }
+
   return createPointerView(
     getLibraryFast().symbols.duckdb_column_data(handle, BigInt(columnIndex)),
   );
@@ -763,13 +776,16 @@ export function getResultColumnValidity(
   handle: ResultHandle,
   columnIndex: number,
 ): Deno.UnsafePointerView | null {
-  validateResultHandle(handle);
+  if (strictValidation) {
+    const columnCount = Number(getResultColumnCount(handle));
+    assertIntegerIndex(columnIndex, "Column index", columnCount);
+  }
 
   const library = getLibraryFast();
   const validityFn =
     (library.symbols as Record<string, unknown>)["duckdb_column_validity"] as
-      | ((handle: ResultHandle, col: bigint) => Deno.PointerValue<unknown>)
-      | undefined;
+    | ((handle: ResultHandle, col: bigint) => Deno.PointerValue<unknown>)
+    | undefined;
 
   if (!validityFn) {
     return null;
@@ -792,7 +808,12 @@ export function isResultValueNull(
   rowIndex: number,
   columnIndex: number,
 ): boolean {
-  validateResultHandle(handle);
+  if (strictValidation) {
+    const rowCount = Number(getResultRowCount(handle));
+    const columnCount = Number(getResultColumnCount(handle));
+    assertIntegerIndex(rowIndex, "Row index", rowCount);
+    assertIntegerIndex(columnIndex, "Column index", columnCount);
+  }
 
   return Boolean(
     getLibraryFast().symbols.duckdb_value_is_null(
@@ -816,11 +837,12 @@ export function readResultValueAsText(
   rowIndex: number,
   columnIndex: number,
 ): string | null {
-  validateResultHandle(handle);
-  const rowCount = Number(getResultRowCount(handle));
-  const columnCount = Number(getResultColumnCount(handle));
-  assertIntegerIndex(rowIndex, "Row index", rowCount);
-  assertIntegerIndex(columnIndex, "Column index", columnCount);
+  if (strictValidation) {
+    const rowCount = Number(getResultRowCount(handle));
+    const columnCount = Number(getResultColumnCount(handle));
+    assertIntegerIndex(rowIndex, "Row index", rowCount);
+    assertIntegerIndex(columnIndex, "Column index", columnCount);
+  }
 
   if (isResultValueNull(handle, rowIndex, columnIndex)) {
     return null;

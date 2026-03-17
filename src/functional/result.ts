@@ -41,6 +41,7 @@ import {
   readResultValueAsText,
 } from "./native.ts";
 import { assertIntegerIndex } from "../core/validate.ts";
+import { strictValidation } from "../core/runtime.ts";
 
 const textDecoder = new TextDecoder();
 
@@ -447,7 +448,7 @@ function decodeValueByType(
  * @returns Cached ResultView with column metadata and data pointers
  */
 function buildResultView(handle: ResultHandle): ResultView {
-  validateResultHandle(handle);
+  if (strictValidation) validateResultHandle(handle);
   const columnInfos = getResultColumnInfos(handle);
   const rowCount = Number(getResultRowCount(handle));
 

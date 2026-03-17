@@ -1,6 +1,6 @@
 {
   "name": "@ggpwnkthx/duckdb",
-  "version": "1.1.12",
+  "version": "1.1.13",
   "exports": {
     ".": "./src/mod.ts",
     "./functional": "./src/functional/mod.ts",
@@ -22,7 +22,7 @@
     "example:azure": "deno run -A ./examples/azure.ts",
     "example:datatypes": "deno run -A ./examples/datatypes.ts",
     "examples": "deno task example:basic && deno task example:analytics && deno task example:azure && deno task example:datatypes",
-    "ci": "deno task fmt && deno task lint && deno task check && deno task test"
+    "ci": "deno fmt && deno lint && deno check && deno task test"
   },
   "compilerOptions": {
     "strict": true

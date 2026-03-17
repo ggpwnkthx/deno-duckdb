@@ -58,12 +58,22 @@ export interface ColumnInfo {
  *
  * Known ergonomic fields such as `accessMode` are normalized to the names
  * expected by DuckDB (`access_mode`) before FFI calls.
+ *
+ * Type-safe configuration options are available by importing the config schema:
+ * ```ts
+ * import { configSchema } from "./core/config_schema.ts";
+ * ```
+ *
+ * For validation at runtime, use `validateDatabaseConfig`:
+ * ```ts
+ * import { validateDatabaseConfig } from "./core/validate_config.ts";
+ * ```
  */
 export interface DatabaseConfig {
   /** Database path, or `:memory:`. */
   path?: string;
   /** Ergonomic alias for DuckDB's `access_mode` option. */
-  accessMode?: "read_only" | "read_write" | string;
+  accessMode?: "automatic" | "read_only" | "read_write" | string;
   /** Any additional DuckDB config key/value pair. */
-  readonly [key: string]: string | undefined;
+  readonly [key: string]: unknown;
 }

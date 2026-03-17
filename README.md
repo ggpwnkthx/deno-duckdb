@@ -186,11 +186,3 @@ auto-download it. In that case you may also need:
 
 - `--allow-net`
 - `--allow-write`
-
-## Development
-
-```sh
-deno task check
-deno task test
-deno task ci
-```

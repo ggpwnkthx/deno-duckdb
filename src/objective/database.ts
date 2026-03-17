@@ -34,7 +34,7 @@ import {
   connectToDatabase,
   isValidConnectionHandle,
   openDatabase,
-} from "@ggpwnkthx/duckdb/functional";
+} from "../functional/mod.ts";
 import { Connection } from "./connection.ts";
 
 export class Database {

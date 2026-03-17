@@ -13,3 +13,20 @@
 
 export * from "./types.ts";
 export * from "./errors.ts";
+
+// Re-export config schema and utilities for advanced usage
+export {
+  configSchema,
+  isKnownConfigKey,
+  type KnownConfigKey,
+} from "./core/config/schema.ts";
+export {
+  getConfigDefault,
+  getConfigEnumValues,
+  getConfigOptionType,
+  isValidConfigKey,
+  validateConfigValue,
+  validateDatabaseConfig,
+} from "./core/config/validate.ts";
+export { type DatabaseConfig } from "./types.ts";
+export { type NormalizedDatabaseConfig, type NormalizedOption } from "./core/config/mod.ts";

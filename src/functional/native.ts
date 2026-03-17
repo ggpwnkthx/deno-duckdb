@@ -43,7 +43,7 @@ import {
   assertNonEmptyString,
   assertSafeInteger,
 } from "../core/validate.ts";
-import { normalizeDatabaseConfig } from "../core/config.ts";
+import { normalizeDatabaseConfig } from "../core/config/mod.ts";
 import { strictValidation } from "../core/runtime.ts";
 
 const encoder = new TextEncoder();

@@ -23,6 +23,7 @@ import {
   prepareStatement,
 } from "../functional/native.ts";
 import { assertNonEmptyString } from "../core/validate.ts";
+import { InvalidResourceError, ValidationError } from "../errors.ts";
 import { DisposableResource } from "./base.ts";
 import { PreparedStatement } from "./prepared.ts";
 import { QueryResult } from "./query.ts";
@@ -59,7 +60,12 @@ export class Connection extends DisposableResource<ConnectionHandle> {
       } finally {
         result.close();
       }
-    } catch {
+    } catch (e) {
+      // Re-throw validation and invalid resource errors - they indicate bad input
+      if (e instanceof ValidationError || e instanceof InvalidResourceError) {
+        throw e;
+      }
+      // Return null for other errors (like query execution failures)
       return null;
     }
   }
@@ -87,7 +93,12 @@ export class Connection extends DisposableResource<ConnectionHandle> {
       } finally {
         result.close();
       }
-    } catch {
+    } catch (e) {
+      // Re-throw validation and invalid resource errors - they indicate bad input
+      if (e instanceof ValidationError || e instanceof InvalidResourceError) {
+        throw e;
+      }
+      // Return null for other errors (like query execution failures)
       return null;
     }
   }

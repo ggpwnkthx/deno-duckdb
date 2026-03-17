@@ -26,7 +26,7 @@ import {
   executePreparedStatement,
   preparedColumnCount,
   resetPreparedStatement,
-} from "@ggpwnkthx/duckdb/functional";
+} from "../functional/mod.ts";
 import type { PreparedStatementHandle } from "../types.ts";
 import { DisposableResource } from "./base.ts";
 import { QueryResult } from "./query.ts";

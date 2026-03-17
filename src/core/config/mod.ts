@@ -3,9 +3,15 @@
  *
  * Handles user-friendly config options (like `accessMode`) and normalizes
  * them to DuckDB's expected naming convention (`access_mode`).
+ * Uses the config schema for validation and type information.
  */
 
-import type { DatabaseConfig } from "../types.ts";
+import type { DatabaseConfig } from "../../types.ts";
+import {
+  configSchema,
+  isKnownConfigKey,
+  type KnownConfigKey,
+} from "./schema.ts";
 
 /** A normalized configuration option for DuckDB. */
 export interface NormalizedOption {
@@ -21,6 +27,29 @@ export interface NormalizedDatabaseConfig {
   path: string;
   /** Sorted array of normalized options. */
   options: readonly NormalizedOption[];
+}
+
+/**
+ * Normalize a single config value based on its schema definition.
+ */
+function normalizeValue(key: KnownConfigKey, value: string): string {
+  const definition = configSchema[key];
+  const type = definition.type;
+
+  if (type === "enum") {
+    // Normalize enum values to uppercase for DuckDB
+    const lower = value.toLowerCase();
+    const matchingValue = definition.values.find((v) => v.toLowerCase() === lower);
+    return matchingValue ? matchingValue.toUpperCase() : value.toUpperCase();
+  }
+
+  if (type === "boolean") {
+    // Normalize boolean strings
+    return value.toLowerCase() === "true" ? "true" : "false";
+  }
+
+  // For other types (integer, bigint, string, string[]), pass through as-is
+  return value;
 }
 
 /**
@@ -54,7 +83,7 @@ export function normalizeDatabaseConfig(
       continue;
     }
 
-    const trimmedValue = rawValue.trim();
+    const trimmedValue = String(rawValue).trim();
     if (trimmedValue === "") {
       continue;
     }
@@ -62,6 +91,7 @@ export function normalizeDatabaseConfig(
     let name = key;
     let value = trimmedValue;
 
+    // Handle accessMode alias
     if (key === "accessMode") {
       name = "access_mode";
       const normalized = trimmedValue.toLowerCase();
@@ -69,9 +99,18 @@ export function normalizeDatabaseConfig(
         value = "READ_ONLY";
       } else if (normalized === "read_write") {
         value = "READ_WRITE";
+      } else if (normalized === "automatic") {
+        value = "AUTOMATIC";
       } else {
         value = trimmedValue.toUpperCase();
       }
+      options.push({ name, value });
+      continue;
+    }
+
+    // Use schema for known config keys
+    if (isKnownConfigKey(key)) {
+      value = normalizeValue(key, trimmedValue);
     }
 
     options.push({ name, value });

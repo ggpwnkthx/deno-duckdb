@@ -32,7 +32,7 @@ import {
   createResultReader,
   destroyResult,
   type ResultReader,
-} from "@ggpwnkthx/duckdb/functional";
+} from "../functional/mod.ts";
 import { DisposableResource } from "./base.ts";
 
 export class QueryResult extends DisposableResource<ResultHandle> {

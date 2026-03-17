@@ -60,16 +60,3 @@ export { PreparedStatement } from "./prepared.ts";
  * @see {@link ./query.ts}
  */
 export { QueryResult } from "./query.ts";
-
-/**
- * Error classes for DuckDB operations.
- *
- * Re-exports error types from the shared errors module.
- */
-export {
-  DatabaseError,
-  DuckDBError,
-  InvalidResourceError,
-  QueryError,
-  ValidationError,
-} from "../errors.ts";

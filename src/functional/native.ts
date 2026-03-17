@@ -1,5 +1,13 @@
 /**
- * Shared FFI operations used by both public APIs.
+ * Low-level FFI operations for DuckDB.
+ *
+ * Provides direct FFI bindings to DuckDB's C API. This module handles:
+ * - Database/connection/prepared statement lifecycle
+ * - Query execution and result handling
+ * - Parameter binding for prepared statements
+ * - Value extraction from result sets
+ *
+ * Used internally by both the functional and objective public APIs.
  */
 
 import type { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
@@ -39,11 +47,25 @@ import { normalizeDatabaseConfig } from "../core/config.ts";
 
 const encoder = new TextEncoder();
 
+/**
+ * Read a null-terminated C string from a pointer.
+ *
+ * @internal
+ * @param pointer - Pointer to C string
+ * @returns JavaScript string, or null if pointer is null
+ */
 function readCString(pointer: Deno.PointerValue<unknown>): string | null {
   const view = createPointerView(pointer);
   return view?.getCString() ?? null;
 }
 
+/**
+ * Read and free a C string allocated by DuckDB.
+ *
+ * @internal
+ * @param pointer - Pointer to owned C string
+ * @returns JavaScript string, or null if pointer is null
+ */
 function readOwnedCString(pointer: Deno.PointerValue<unknown>): string | null {
   if (!pointer) {
     return null;
@@ -61,11 +83,27 @@ function readOwnedCString(pointer: Deno.PointerValue<unknown>): string | null {
   return message;
 }
 
+/**
+ * Extract error message from a result handle.
+ *
+ * @internal
+ * @param handle - Result handle to check
+ * @param fallback - Message if no error is available
+ * @returns Error message string
+ */
 function resultErrorMessage(handle: ResultHandle, fallback: string): string {
   const library = getLibraryFast();
   return readCString(library.symbols.duckdb_result_error(handle)) ?? fallback;
 }
 
+/**
+ * Extract error message from a prepared statement handle.
+ *
+ * @internal
+ * @param handle - Prepared statement handle to check
+ * @param fallback - Message if no error is available
+ * @returns Error message string
+ */
 function preparedErrorMessage(
   handle: PreparedStatementHandle,
   fallback: string,
@@ -75,8 +113,8 @@ function preparedErrorMessage(
     handle,
     "PreparedStatementHandle",
   );
-  return readCString(library.symbols.duckdb_prepare_error(statementPointer)) ??
-    fallback;
+  return readCString(library.symbols.duckdb_prepare_error(statementPointer))
+    ?? fallback;
 }
 
 /**
@@ -165,8 +203,8 @@ export async function openDatabase(
       const errorPointerValue = getPointerValue(errorHandle);
       const errorMessage = errorPointerValue === 0n
         ? "Failed to open database"
-        : readOwnedCString(toPointerValue(errorPointerValue)) ??
-          "Failed to open database";
+        : readOwnedCString(toPointerValue(errorPointerValue))
+          ?? "Failed to open database";
 
       throw new DatabaseError(errorMessage, {
         path: normalized.path,
@@ -426,6 +464,15 @@ export function resetPreparedStatement(handle: PreparedStatementHandle): void {
   );
 }
 
+/**
+ * Throw a binding error with contextual information.
+ *
+ * @internal
+ * @param index - Parameter index that failed
+ * @param value - Value that failed to bind
+ * @param cause - Optional underlying error
+ * @throws {DatabaseError} always
+ */
 function bindFailure(
   index: number,
   value: BindValue,

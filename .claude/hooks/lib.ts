@@ -160,6 +160,6 @@ export function tryGetFilePathHint(input: HookInput): string | undefined {
 }
 
 export function isDenoFile(filePath: string | undefined): boolean {
-  return filePath !== undefined &&
-    DENO_EXTENSIONS.some((ext) => filePath.endsWith(ext));
+  return filePath !== undefined
+    && DENO_EXTENSIONS.some((ext) => filePath.endsWith(ext));
 }

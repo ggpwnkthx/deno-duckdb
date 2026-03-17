@@ -1,5 +1,9 @@
 /**
  * Functional result value extraction.
+ *
+ * Provides functions for reading values from result sets using either
+ * LazyResult (from executeSqlResult) or ResultReader (from createResultReader).
+ * Supports type-specific extraction and iteration helpers.
  */
 
 import type { ObjectRow, RowData, ValueType } from "../types.ts";
@@ -9,6 +13,13 @@ import type { ResultReader } from "./result.ts";
 export { LazyResult } from "./execution.ts";
 export { createResultReader, ResultReader } from "./result.ts";
 
+/**
+ * Convert a LazyResult or ResultReader to a ResultReader.
+ *
+ * @internal
+ * @param result - Either a LazyResult or ResultReader
+ * @returns ResultReader instance
+ */
 function toReader(result: LazyResult | ResultReader): ResultReader {
   return result instanceof LazyResult ? result.reader() : result;
 }

@@ -1,6 +1,6 @@
 {
   "name": "@ggpwnkthx/duckdb",
-  "version": "1.1.9",
+  "version": "1.1.10",
   "exports": {
     ".": "./src/mod.ts",
     "./functional": "./src/functional/mod.ts",
@@ -27,7 +27,13 @@
   },
   "fmt": {
     "lineWidth": 88,
+    "indentWidth": 2,
+    "useTabs": false,
     "semiColons": true,
-    "singleQuote": false
+    "singleQuote": false,
+    "proseWrap": "preserve",
+    "trailingCommas": "onlyMultiLine",
+    "operatorPosition": "nextLine",
+    "exclude": ["node_modules", ".git"]
   }
 }

@@ -2,6 +2,16 @@
 
 Type-safe DuckDB FFI bindings for Deno with both functional and object-oriented APIs.
 
+> **Note:** While this library is stable and production-ready, I haven't fully settled on a
+> consistent function naming pattern yet. Some functions use camelCase (e.g., `createConnection`),
+> others use snake_case (e.g., `fetch_all`). This will be normalized in a future major version.
+>
+> Starting with version 1.2.0, this project will adhere to **semantic versioning**:
+>
+> - **MAJOR** (x.0.0) - Breaking changes to the public API
+> - **MINOR** (1.x.0) - New features (backward-compatible)
+> - **PATCH** (1.2.x) - Bug fixes (backward-compatible)
+
 ## Installation
 
 ```ts
@@ -25,12 +35,9 @@ const db = await functional.open();
 const conn = await functional.create(db);
 
 try {
-  const result = functional.query(conn, "SELECT 42 AS answer");
-  try {
-    console.log(functional.fetchObjects(result));
-  } finally {
-    functional.destroyResult(result);
-  }
+  // Eager - get all rows as objects
+  const rows = functional.queryObjects(conn, "SELECT 42 AS answer");
+  console.log([...rows]);
 } finally {
   functional.closeConnection(conn);
   functional.closeDatabase(db);
@@ -43,14 +50,15 @@ Object-oriented API with classes that encapsulate DuckDB handles. Supports
 `Symbol.dispose` for automatic cleanup.
 
 ```ts
-import { Connection, Database, QueryResult } from "jsr:@ggpwnkthx/duckdb/objective";
+import { Database } from "jsr:@ggpwnkthx/duckdb/objective";
 
 using db = await Database.open();
 using conn = await db.connect();
 
-const result = await conn.query("SELECT 42 AS answer");
-console.log(result.toArrayOfObjects());
-// Result automatically cleaned up when it goes out of scope
+// Eager - get all rows as objects
+const rows = conn.queryObjects("SELECT 42 AS answer");
+console.log(rows);
+// Resources automatically cleaned up when exiting scope
 ```
 
 ## Architecture

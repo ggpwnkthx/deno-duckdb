@@ -1,5 +1,9 @@
 /**
  * Result decoding and row/object materialization.
+ *
+ * Implements the ResultReader class for reading typed values from DuckDB result sets.
+ * Handles type-specific decoding including dates, times, intervals, and blobs.
+ * Caches column metadata for efficient repeated access.
  */
 
 import { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
@@ -17,11 +21,16 @@ import { createPointerView, validateResultHandle } from "../core/handles.ts";
  *
  * These sizes match the libduckdb C ABI targeted by
  * `@ggpwnkthx/libduckdb@1.0.14` (DuckDB 1.4.4).
+ * @internal
  */
 const BYTE_SIZE_8 = 1;
+/** @internal */
 const BYTE_SIZE_16 = 2;
+/** @internal */
 const BYTE_SIZE_32 = 4;
+/** @internal */
 const BYTE_SIZE_64 = 8;
+/** @internal */
 const BYTE_SIZE_128 = 16;
 import {
   getResultColumnData,
@@ -50,6 +59,7 @@ interface ResultView {
   readonly columnInfos: readonly ColumnInfo[];
 }
 
+/** Types that should use text-based fallback decoding. */
 const TEXT_FALLBACK_TYPES = new Set([
   DUCKDB_TYPE.DUCKDB_TYPE_VARCHAR,
   DUCKDB_TYPE.DUCKDB_TYPE_BLOB,
@@ -58,10 +68,18 @@ const TEXT_FALLBACK_TYPES = new Set([
 
 // Pre-compute all valid DUCKDB_TYPE enum values at module load time
 // This avoids creating a new array and filtering on every call
+/** @internal */
 const ALL_VALID_TYPES = new Set(
   Object.values(DUCKDB_TYPE).filter((v) => typeof v === "number"),
 );
 
+/**
+ * Check if a type should use text fallback decoding.
+ *
+ * @internal
+ * @param type - DuckDB type enum
+ * @returns true if type needs text fallback
+ */
 function isTextFallbackType(type: DUCKDB_TYPE): boolean {
   if (TEXT_FALLBACK_TYPES.has(type)) {
     return true;
@@ -70,6 +88,16 @@ function isTextFallbackType(type: DUCKDB_TYPE): boolean {
   return !ALL_VALID_TYPES.has(type);
 }
 
+/**
+ * Check if a value is null using the validity bitmap.
+ *
+ * @internal
+ * @param validityView - Pointer to null bitmap, or null if no nulls
+ * @param rowIndex - Row index to check
+ * @param handle - Result handle for fallback check
+ * @param columnIndex - Column index for fallback check
+ * @returns true if value is null
+ */
 function isNullFromBitmap(
   validityView: Deno.UnsafePointerView | null,
   rowIndex: number,
@@ -89,6 +117,15 @@ function isNullFromBitmap(
   return (byte & (1 << bitIndex)) === 0;
 }
 
+/**
+ * Read bytes from a column data view.
+ *
+ * @internal
+ * @param view - Pointer view to column data
+ * @param offset - Byte offset to start reading
+ * @param length - Number of bytes to read
+ * @returns Uint8Array of requested bytes
+ */
 function readBytes(
   view: Deno.UnsafePointerView | null,
   offset: number,
@@ -177,6 +214,14 @@ function getStringLikeValue(
   return textDecoder.decode(bytes);
 }
 
+/**
+ * Decode a 128-bit signed integer (HugeInt) from column data.
+ *
+ * @internal
+ * @param dataView - Pointer view to column data
+ * @param row - Row index
+ * @returns Decoded bigint value
+ */
 function decodeHugeInt(
   dataView: Deno.UnsafePointerView | null,
   row: number,
@@ -394,6 +439,13 @@ function decodeValueByType(
   }
 }
 
+/**
+ * Build a cached result view from a result handle.
+ *
+ * @internal
+ * @param handle - Valid result handle
+ * @returns Cached ResultView with column metadata and data pointers
+ */
 function buildResultView(handle: ResultHandle): ResultView {
   validateResultHandle(handle);
   const columnInfos = getResultColumnInfos(handle);

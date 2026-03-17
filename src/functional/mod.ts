@@ -88,17 +88,7 @@ import {
   iterateRows,
   ResultReader,
 } from "./value.ts";
-import {
-  DatabaseError,
-  DuckDBError,
-  InvalidResourceError,
-  QueryError,
-  ValidationError,
-} from "../errors.ts";
-
-// ============================================
-// Re-export everything
-// ============================================
+import { ValidationError } from "../errors.ts";
 
 // Database
 
@@ -577,19 +567,6 @@ export { iterateRows };
  * ```
  */
 export { iterateObjects };
-
-/**
- * Error classes for DuckDB operations.
- *
- * Re-exports error types from the shared errors module.
- */
-export {
-  DatabaseError,
-  DuckDBError,
-  InvalidResourceError,
-  QueryError,
-  ValidationError,
-};
 
 // ============================================
 // Aliases for user-friendly API names

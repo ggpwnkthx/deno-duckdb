@@ -1,5 +1,8 @@
 /**
  * Unified lazy execution and result handling.
+ *
+ * Implements LazyResult for deferred query execution and iteration.
+ * Supports both raw SQL queries and prepared statement execution.
  */
 
 import type {
@@ -37,6 +40,13 @@ export type ExecutionRequest =
     statementHandle: PreparedStatementHandle;
   };
 
+/**
+ * Execute a request and return a result handle.
+ *
+ * @internal
+ * @param request - Execution request (SQL or prepared)
+ * @returns Result handle from query execution
+ */
 function executeRequest(request: ExecutionRequest): ResultHandle {
   if (request.kind === "sql") {
     validateConnectionHandle(request.connectionHandle);

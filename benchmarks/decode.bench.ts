@@ -12,7 +12,7 @@ import * as objective from "@ggpwnkthx/duckdb/objective";
 const QUERY = "select i, i as a from generate_series(1, 100000) s(i)";
 const PREP_QUERY = "select i, i as a from generate_series(1, ?) s(i)";
 
-const EXPECTED_ROWS = 100_000;
+const EXPECTED_ROWS = 100_000n;
 const EXPECTED_CHECKSUM = 100_000n * (100_000n + 1n);
 
 type CellValue = unknown;
@@ -31,7 +31,7 @@ function asBigIntCell(value: unknown, label: string): bigint {
   throw new TypeError(`${label} must be bigint or a safe integer number`);
 }
 
-function assertRowCount(actual: number): void {
+function assertRowCount(actual: bigint): void {
   if (actual !== EXPECTED_ROWS) {
     throw new Error(`Expected ${EXPECTED_ROWS} rows, got ${actual}`);
   }
@@ -55,7 +55,7 @@ function checksumRows(rows: RowsLike): bigint {
 }
 
 function assertMaterializedRows(rows: RowsLike): void {
-  if (rows.length !== EXPECTED_ROWS) {
+  if (rows.length !== Number(EXPECTED_ROWS)) {
     throw new Error(`Expected ${EXPECTED_ROWS} rows, got ${rows.length}`);
   }
 
@@ -108,7 +108,7 @@ Deno.bench("Standard Query: Objective API (execution-only)", () => {
   if (result === null) {
     throw new Error("Query returned null");
   }
-  assertRowCount(Number(result.rowCount()));
+  assertRowCount(result.rowCount());
   result.close();
 });
 
@@ -166,8 +166,7 @@ Deno.bench(
     const result = preparedObj.execute();
 
     try {
-      const rowCount = Number(result.rowCount());
-      assertRowCount(rowCount);
+      assertRowCount(result.rowCount());
     } finally {
       result.close();
     }
@@ -243,8 +242,7 @@ Deno.bench(
       const result = stmt.execute();
 
       try {
-        const rowCount = Number(result.rowCount());
-        assertRowCount(rowCount);
+        assertRowCount(result.rowCount());
       } finally {
         result.close();
       }

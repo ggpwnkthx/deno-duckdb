@@ -57,7 +57,7 @@ export class QueryResult extends DisposableResource<ResultHandle> {
    * @returns Number of rows
    */
   rowCount(): bigint {
-    return BigInt(this.#getReader().rowCount);
+    return this.#getReader().rowCount;
   }
 
   /**

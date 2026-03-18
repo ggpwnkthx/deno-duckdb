@@ -106,7 +106,7 @@ export class LazyResult {
     return this.#reader;
   }
 
-  get rowCount(): number {
+  get rowCount(): bigint {
     return this.reader().rowCount;
   }
 

@@ -107,7 +107,7 @@ for (const rowCount of ROW_SIZES) {
     );
     if (!result) throw new Error("Query failed");
     const count = result.rowCount;
-    if (count !== rowCount) throw new Error("Count mismatch");
+    if (count !== BigInt(rowCount)) throw new Error("Count mismatch");
     result.close();
   });
 }

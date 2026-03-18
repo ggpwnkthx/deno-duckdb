@@ -54,7 +54,7 @@ interface ColumnVector {
 
 interface ResultView {
   readonly handle: ResultHandle;
-  readonly rowCount: number;
+  readonly rowCount: bigint;
   readonly columnCount: number;
   readonly columns: readonly ColumnVector[];
   readonly columnInfos: readonly ColumnInfo[];
@@ -450,7 +450,7 @@ function decodeValueByType(
 function buildResultView(handle: ResultHandle): ResultView {
   if (strictValidation) validateResultHandle(handle);
   const columnInfos = getResultColumnInfos(handle);
-  const rowCount = Number(getResultRowCount(handle));
+  const rowCount = getResultRowCount(handle);
 
   const columns: ColumnVector[] = columnInfos.map((column, index) => ({
     name: column.name,
@@ -491,7 +491,7 @@ export class ResultReader {
     this.#view = buildResultView(handle);
   }
 
-  get rowCount(): number {
+  get rowCount(): bigint {
     return this.#view.rowCount;
   }
 
@@ -504,7 +504,7 @@ export class ResultReader {
   }
 
   isNull(rowIndex: number, columnIndex: number): boolean {
-    assertIntegerIndex(rowIndex, "Row index", this.#view.rowCount);
+    assertIntegerIndex(rowIndex, "Row index", Number(this.#view.rowCount));
     assertIntegerIndex(columnIndex, "Column index", this.#view.columnCount);
     const column = this.#view.columns[columnIndex];
     return isNullFromBitmap(
@@ -516,7 +516,7 @@ export class ResultReader {
   }
 
   getValue(rowIndex: number, columnIndex: number): ValueType {
-    assertIntegerIndex(rowIndex, "Row index", this.#view.rowCount);
+    assertIntegerIndex(rowIndex, "Row index", Number(this.#view.rowCount));
     assertIntegerIndex(columnIndex, "Column index", this.#view.columnCount);
 
     const column = this.#view.columns[columnIndex];
@@ -549,7 +549,7 @@ export class ResultReader {
   }
 
   getRow(rowIndex: number): RowData {
-    assertIntegerIndex(rowIndex, "Row index", this.#view.rowCount);
+    assertIntegerIndex(rowIndex, "Row index", Number(this.#view.rowCount));
     const columnCount = this.#view.columnCount;
     const columns = this.#view.columns;
     // Pre-allocate array and fill directly to avoid function mapper overhead
@@ -561,7 +561,7 @@ export class ResultReader {
   }
 
   getObjectRow(rowIndex: number): ObjectRow {
-    assertIntegerIndex(rowIndex, "Row index", this.#view.rowCount);
+    assertIntegerIndex(rowIndex, "Row index", Number(this.#view.rowCount));
     const columns = this.#view.columns;
     const row: ObjectRow = {};
     for (let i = 0; i < columns.length; i++) {
@@ -571,7 +571,7 @@ export class ResultReader {
   }
 
   *rows(): IterableIterator<RowData> {
-    const rowCount = this.#view.rowCount;
+    const rowCount = Number(this.#view.rowCount);
     const columnCount = this.#view.columnCount;
     const columns = this.#view.columns;
     for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
@@ -585,7 +585,7 @@ export class ResultReader {
   }
 
   *objects(): IterableIterator<ObjectRow> {
-    const rowCount = this.#view.rowCount;
+    const rowCount = Number(this.#view.rowCount);
     const columns = this.#view.columns;
     for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
       const row: ObjectRow = {};
@@ -597,7 +597,7 @@ export class ResultReader {
   }
 
   toArray(): RowData[] {
-    const rowCount = this.#view.rowCount;
+    const rowCount = Number(this.#view.rowCount);
     const columnCount = this.#view.columnCount;
     const columns = this.#view.columns;
     const result = new Array(rowCount);
@@ -613,7 +613,7 @@ export class ResultReader {
   }
 
   toObjectArray(): ObjectRow[] {
-    const rowCount = this.#view.rowCount;
+    const rowCount = Number(this.#view.rowCount);
     const columns = this.#view.columns;
     const result = new Array(rowCount);
     for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {

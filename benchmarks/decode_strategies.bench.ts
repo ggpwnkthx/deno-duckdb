@@ -141,7 +141,7 @@ Deno.bench("Execution-only: row count only", () => {
   const result = functional.executeSqlResult(connHandle, QUERY);
   if (!result) throw new Error("Query failed");
   const count = result.rowCount;
-  if (count !== ROW_COUNT) throw new Error("Count mismatch");
+  if (count !== BigInt(ROW_COUNT)) throw new Error("Count mismatch");
   result.close();
 });
 

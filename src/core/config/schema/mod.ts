@@ -74,6 +74,7 @@ type AllAliases = {
  * Type-safe database configuration derived from DuckDB config schema.
  *
  * Provides autocomplete for all known config options with proper TypeScript types.
+ * Also supports unknown keys for extensibility via index signature.
  */
 export type DatabaseConfig =
   & {
@@ -81,6 +82,9 @@ export type DatabaseConfig =
   }
   & {
     [K in AllAliases]?: SchemaValueType<(typeof configSchema)[AliasToPrimaryKey<K>]>;
+  }
+  & {
+    [key: string]: unknown;
   };
 
 /**

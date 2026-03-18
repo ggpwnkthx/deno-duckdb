@@ -350,7 +350,7 @@ export function executeQuery(
  * @param handle - A valid result handle
  */
 export function destroyResult(handle: ResultHandle): void {
-  if (strictValidation) validateResultHandle(handle);
+  validateResultHandle(handle);
   const library = getLibraryFast();
   library.symbols.duckdb_destroy_result(handle);
 }
@@ -644,7 +644,7 @@ export function destroyPreparedStatement(
  * ```
  */
 export function getResultRowCount(handle: ResultHandle): bigint {
-  if (strictValidation) validateResultHandle(handle);
+  validateResultHandle(handle);
   return getLibraryFast().symbols.duckdb_row_count(handle);
 }
 
@@ -661,7 +661,7 @@ export function getResultRowCount(handle: ResultHandle): bigint {
  * ```
  */
 export function getResultColumnCount(handle: ResultHandle): bigint {
-  if (strictValidation) validateResultHandle(handle);
+  validateResultHandle(handle);
   return getLibraryFast().symbols.duckdb_column_count(handle);
 }
 

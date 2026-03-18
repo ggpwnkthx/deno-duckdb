@@ -10,7 +10,7 @@ Type-safe DuckDB functional and object-oriented APIs.
 | Dependency           | Version    | Notes                                     |
 | -------------------- | ---------- | ----------------------------------------- |
 | DuckDB               | **1.5.0**  | ABI/layout assumptions in result decoding |
-| Deno                 | **1.43+**  | Requires FFI support                      |
+| Deno                 | **1.46+**  | Requires FFI support                      |
 | @ggpwnkthx/libduckdb | **1.0.15** | Pinned in `deno.json`                     |
 
 This library uses direct memory access for high-performance result decoding. It makes
@@ -99,7 +99,9 @@ The library uses a three-layer architecture:
 ### Lazy Iteration
 
 Both APIs support lazy row iteration that decodes rows on-demand from an in-memory
-result buffer:
+result buffer. Note that while row decoding is lazy (rows are decoded only when iterated),
+DuckDB itself materializes the full result set in memory when the query executes - this
+library does not provide streaming execution.
 
 **Functional API:**
 

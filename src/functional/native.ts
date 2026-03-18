@@ -14,7 +14,6 @@ import type { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
 import type {
   ColumnInfo,
   ConnectionHandle,
-  DatabaseConfig,
   DatabaseHandle,
   PreparedStatementHandle,
   ResultHandle,
@@ -43,8 +42,9 @@ import {
   assertNonEmptyString,
   assertSafeInteger,
 } from "../core/validate.ts";
-import { normalizeDatabaseConfig } from "../core/config/mod.ts";
+import { configToFFI, validateDatabaseConfig } from "../core/config/mod.ts";
 import { strictValidation } from "../core/runtime.ts";
+import type { DatabaseConfig } from "../core/config/schema/mod.ts";
 
 const encoder = new TextEncoder();
 
@@ -129,7 +129,8 @@ export type BindValue = boolean | number | bigint | string | Uint8Array | null;
 /**
  * Open a DuckDB database file or in-memory database.
  *
- * @param config - Optional database configuration including path and access mode
+ * @param path - Optional database path (default: ":memory:" for in-memory database)
+ * @param config - Optional database configuration including access mode
  * @returns A database handle for use in subsequent operations
  * @throws {DatabaseError} if the database cannot be opened
  *
@@ -139,15 +140,24 @@ export type BindValue = boolean | number | bigint | string | Uint8Array | null;
  * const db = await openDatabase();
  *
  * // File-based database
- * const db = await openDatabase({ path: "my.db" });
+ * const db = await openDatabase("my.db");
+ *
+ * // With config
+ * const db = await openDatabase("my.db", { accessMode: "read_only" });
  * ```
  */
 export async function openDatabase(
+  path?: string,
   config?: DatabaseConfig,
 ): Promise<DatabaseHandle> {
+  // Validate config before normalization
+  if (config) {
+    validateDatabaseConfig(config);
+  }
+
   const library = await getLibrary();
   const handle = createDatabaseHandle();
-  const normalized = normalizeDatabaseConfig(config);
+  const normalized = configToFFI(path, config);
   const pathPointer = stringToCStringPointer(normalized.path);
 
   if (normalized.options.length === 0) {
@@ -205,7 +215,7 @@ export async function openDatabase(
       const errorMessage = errorPointerValue === 0n
         ? "Failed to open database"
         : readOwnedCString(toDenoPointerValue(errorPointerValue))
-        ?? "Failed to open database";
+          ?? "Failed to open database";
 
       throw new DatabaseError(errorMessage, {
         path: normalized.path,
@@ -784,8 +794,8 @@ export function getResultColumnValidity(
   const library = getLibraryFast();
   const validityFn =
     (library.symbols as Record<string, unknown>)["duckdb_column_validity"] as
-    | ((handle: ResultHandle, col: bigint) => Deno.PointerValue<unknown>)
-    | undefined;
+      | ((handle: ResultHandle, col: bigint) => Deno.PointerValue<unknown>)
+      | undefined;
 
   if (!validityFn) {
     return null;

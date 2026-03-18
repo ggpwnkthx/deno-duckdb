@@ -5,7 +5,7 @@
  * matching the compile-time type safety from the config schema.
  */
 
-import { configSchema, type KnownConfigKey } from "./schema.ts";
+import { configSchema, type KnownConfigKey } from "./schema/mod.ts";
 import type { DatabaseConfig } from "../../types.ts";
 
 /**
@@ -83,7 +83,27 @@ export function validateConfigValue(
       return null;
     }
 
-    case "bigint":
+    case "bigint": {
+      if (
+        typeof value !== "string" && typeof value !== "number"
+        && typeof value !== "bigint"
+      ) {
+        return `Expected string, number, or bigint for '${key}', got ${typeof value}`;
+      }
+      const bigVal = typeof value === "bigint"
+        ? value
+        : typeof value === "number"
+        ? BigInt(value)
+        : BigInt(value);
+      if (definition.min !== undefined && bigVal < definition.min) {
+        return `Value ${bigVal} for '${key}' is below minimum ${definition.min}`;
+      }
+      if (definition.max !== undefined && bigVal > definition.max) {
+        return `Value ${bigVal} for '${key}' exceeds maximum ${definition.max}`;
+      }
+      return null;
+    }
+
     case "string": {
       if (typeof value !== "string" && typeof value !== "number") {
         return `Expected string for '${key}', got ${typeof value}`;
@@ -151,8 +171,8 @@ export function validateDatabaseConfig(
 
   // Validate all other keys
   for (const key of Object.keys(configObj)) {
-    if (key === "path" || key === "accessMode") {
-      continue; // These are handled specially
+    if (key === "accessMode") {
+      continue; // accessMode is handled specially
     }
 
     const error = validateConfigValue(key, configObj[key]);

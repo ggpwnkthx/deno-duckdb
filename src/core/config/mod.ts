@@ -1,100 +1,73 @@
 /**
- * Database config normalization.
+ * Database config utilities.
  *
- * Handles user-friendly config options (like `accessMode`) and normalizes
- * them to DuckDB's expected naming convention (`access_mode`).
- * Uses the config schema for validation and type information.
+ * Provides functions to convert type-safe database config to FFI format.
  */
 
 import type { DatabaseConfig } from "../../types.ts";
-import {
-  configSchema,
-  isKnownConfigKey,
-  type KnownConfigKey,
-} from "./schema.ts";
+import { configSchema, getConfigDefinition, isKnownConfigKey } from "./schema/mod.ts";
+import { validateDatabaseConfig as _validateDatabaseConfig } from "./validate.ts";
 
-/** A normalized configuration option for DuckDB. */
-export interface NormalizedOption {
+export { getConfigDefinition };
+export { _validateDatabaseConfig as validateDatabaseConfig };
+
+/** A configuration option for DuckDB FFI. */
+export interface ConfigOption {
   /** Option name as expected by DuckDB. */
   name: string;
-  /** Normalized option value. */
+  /** Option value as string. */
   value: string;
 }
 
-/** Fully normalized database configuration. */
-export interface NormalizedDatabaseConfig {
-  /** Database file path or ":memory:" for in-memory. */
-  path: string;
-  /** Sorted array of normalized options. */
-  options: readonly NormalizedOption[];
-}
-
 /**
- * Normalize a single config value based on its schema definition.
- */
-function normalizeValue(key: KnownConfigKey, value: string): string {
-  const definition = configSchema[key];
-  const type = definition.type;
-
-  if (type === "enum") {
-    // Normalize enum values to uppercase for DuckDB
-    const lower = value.toLowerCase();
-    const matchingValue = definition.values.find((v) => v.toLowerCase() === lower);
-    return matchingValue ? matchingValue.toUpperCase() : value.toUpperCase();
-  }
-
-  if (type === "boolean") {
-    // Normalize boolean strings
-    return value.toLowerCase() === "true" ? "true" : "false";
-  }
-
-  // For other types (integer, bigint, string, string[]), pass through as-is
-  return value;
-}
-
-/**
- * Normalize a user-provided database config for FFI calls.
+ * Convert a type-safe database config to FFI format.
  *
- * Converts ergonomic field names like `accessMode` to DuckDB's expected
- * names (`access_mode`). Also normalizes values (e.g., "read_only" -> "READ_ONLY").
+ * Since the config is now type-safe, this function handles:
+ * - Converting the accessMode alias to access_mode
+ * - Converting values to strings for FFI
+ * - Sorting options by name
  *
- * @param config - Optional user-provided database configuration
- * @returns Normalized config ready for FFI calls
+ * @param path - Optional database path (default: ":memory:")
+ * @param config - Optional type-safe database configuration
+ * @returns Path and array of config options for FFI
  *
  * @example
  * ```ts
- * const normalized = normalizeDatabaseConfig({ path: "mydb.db", accessMode: "read_only" });
+ * const { path, options } = configToFFI("mydb.db", { accessMode: "read_only" });
  * // Result: { path: "mydb.db", options: [{ name: "access_mode", value: "READ_ONLY" }] }
  * ```
  */
-export function normalizeDatabaseConfig(
+export function configToFFI(
+  path?: string,
   config?: DatabaseConfig,
-): NormalizedDatabaseConfig {
-  const trimmedPath = config?.path?.trim();
-  const path = trimmedPath && trimmedPath.length > 0 ? trimmedPath : ":memory:";
-  const options: NormalizedOption[] = [];
+): { path: string; options: readonly ConfigOption[] } {
+  // Handle path - default to :memory:
+  let dbPath = ":memory:";
+  if (path !== undefined && typeof path === "string") {
+    const trimmed = path.trim();
+    if (trimmed.length > 0) {
+      dbPath = trimmed;
+    }
+  }
+
+  const options: ConfigOption[] = [];
 
   if (!config) {
-    return { path, options };
+    return { path: dbPath, options };
   }
 
   for (const [key, rawValue] of Object.entries(config)) {
-    if (key === "path" || rawValue === undefined) {
-      continue;
-    }
-
-    const trimmedValue = String(rawValue).trim();
-    if (trimmedValue === "") {
+    if (rawValue === undefined) {
       continue;
     }
 
     let name = key;
-    let value = trimmedValue;
+    let value: string;
 
-    // Handle accessMode alias
+    // Handle accessMode alias - convert to access_mode and normalize value
     if (key === "accessMode") {
       name = "access_mode";
-      const normalized = trimmedValue.toLowerCase();
+      const normalized = String(rawValue).toLowerCase();
       if (normalized === "read_only") {
         value = "READ_ONLY";
       } else if (normalized === "read_write") {
@@ -102,15 +75,47 @@ export function normalizeDatabaseConfig(
       } else if (normalized === "automatic") {
         value = "AUTOMATIC";
       } else {
-        value = trimmedValue.toUpperCase();
+        value = String(rawValue).toUpperCase();
       }
       options.push({ name, value });
       continue;
     }
 
-    // Use schema for known config keys
-    if (isKnownConfigKey(key)) {
-      value = normalizeValue(key, trimmedValue);
+    // Convert value to string based on type
+    if (typeof rawValue === "boolean") {
+      value = rawValue ? "true" : "false";
+    } else if (typeof rawValue === "bigint") {
+      value = rawValue.toString();
+    } else if (typeof rawValue === "number") {
+      value = rawValue.toString();
+    } else if (Array.isArray(rawValue)) {
+      value = rawValue.join(",");
+    } else {
+      value = String(rawValue);
+    }
+
+    // Resolve alias keys to primary keys using getConfigDefinition
+    if (!isKnownConfigKey(key)) {
+      const configDef = getConfigDefinition(key);
+      if (configDef) {
+        // Find the primary key that has this alias
+        for (const [primaryKey, def] of Object.entries(configSchema)) {
+          if (def.aliases?.includes(key)) {
+            name = primaryKey;
+            break;
+          }
+        }
+      }
+    }
+
+    // Normalize known config values
+    if (isKnownConfigKey(name)) {
+      const definition = configSchema[name];
+      if (definition.type === "enum") {
+        const lower = value.toLowerCase();
+        const match = definition.values.find((v) => v.toLowerCase() === lower);
+        value = match ?? value.toUpperCase();
+      }
     }
 
     options.push({ name, value });
@@ -118,5 +123,5 @@ export function normalizeDatabaseConfig(
 
   options.sort((left, right) => left.name.localeCompare(right.name));
 
-  return { path, options };
+  return { path: dbPath, options };
 }

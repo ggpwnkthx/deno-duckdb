@@ -1,8 +1,5 @@
 import { assertEquals, assertThrows } from "@std/assert";
-import {
-  getConfigDefinition,
-  normalizeDatabaseConfig,
-} from "../../src/core/config/mod.ts";
+import { configToFFI, getConfigDefinition } from "../../src/core/config/mod.ts";
 import {
   getConfigEnumValues,
   getConfigOptionType,
@@ -11,14 +8,12 @@ import {
   validateDatabaseConfig,
 } from "../../src/core/config/validate.ts";
 
-// === normalizeDatabaseConfig Tests ===
+// === configToFFI Tests ===
 
-Deno.test("core: normalizeDatabaseConfig trims path and normalizes options", () => {
-  const normalized = normalizeDatabaseConfig({
-    path: "  app.db  ",
+Deno.test("core: configToFFI trims path and normalizes options", () => {
+  const normalized = configToFFI("  app.db  ", {
     accessMode: "read_only",
-    threads: "4",
-    empty: "   ",
+    threads: 4n,
   });
 
   assertEquals(normalized.path, "app.db");
@@ -28,10 +23,9 @@ Deno.test("core: normalizeDatabaseConfig trims path and normalizes options", () 
   ]);
 });
 
-Deno.test("core: normalizeDatabaseConfig normalizes access_mode key", () => {
-  const normalized = normalizeDatabaseConfig({
-    path: "app.db",
-    access_mode: "read_only",
+Deno.test("core: configToFFI normalizes access_mode key", () => {
+  const normalized = configToFFI("app.db", {
+    access_mode: "READ_ONLY",
   });
 
   assertEquals(normalized.path, "app.db");
@@ -40,8 +34,8 @@ Deno.test("core: normalizeDatabaseConfig normalizes access_mode key", () => {
   ]);
 });
 
-Deno.test("core: normalizeDatabaseConfig falls back to in-memory defaults", () => {
-  const normalized = normalizeDatabaseConfig();
+Deno.test("core: configToFFI falls back to in-memory defaults", () => {
+  const normalized = configToFFI();
 
   assertEquals(normalized.path, ":memory:");
   assertEquals(normalized.options, []);
@@ -101,12 +95,11 @@ Deno.test("core: validateConfigValue validates boolean values", () => {
 
 Deno.test("core: validateDatabaseConfig validates complete config", () => {
   const validConfig = {
-    path: "test.db",
     accessMode: "read_only",
-    threads: "4",
+    threads: 4n,
   };
   const result = validateDatabaseConfig(validConfig);
-  assertEquals(result.path, "test.db");
+  assertEquals(result.accessMode, "read_only");
 });
 
 Deno.test("core: validateDatabaseConfig rejects invalid accessMode", () => {
@@ -143,17 +136,16 @@ Deno.test("core: getConfigDefinition returns undefined for unknown keys", () => 
   assertEquals(getConfigDefinition("unknown_key"), undefined);
 });
 
-Deno.test("core: normalizeDatabaseConfig normalizes alias keys to primary keys", () => {
-  const normalized = normalizeDatabaseConfig({
-    path: "app.db",
+Deno.test("core: configToFFI normalizes alias keys to primary keys", () => {
+  const normalized = configToFFI("app.db", {
     memory_limit: "2GB",
-    worker_threads: "4",
+    worker_threads: 4n,
   });
 
   // memory_limit -> max_memory (alias resolution)
-  // worker_threads stays as worker_threads since it's a primary key
+  // worker_threads -> threads (alias resolution)
   assertEquals(normalized.options, [
     { name: "max_memory", value: "2GB" },
-    { name: "worker_threads", value: "4" },
+    { name: "threads", value: "4" },
   ]);
 });

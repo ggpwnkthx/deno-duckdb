@@ -7,7 +7,7 @@
  * @example
  * ```ts
  * // Using async factory
- * using db = await Database.open({ path: ":memory:" });
+ * using db = await Database.open(":memory:");
  * using conn = await db.connect();
  * const result = conn.execute("SELECT 1 as value");
  * console.log([...result.rows()]);
@@ -16,7 +16,7 @@
  * @example
  * ```ts
  * // Using constructor + open()
- * const db = new Database({ path: "mydb.db" });
+ * const db = new Database("mydb.db");
  * await db.open();
  * try {
  *   const conn = await db.connect();
@@ -27,7 +27,7 @@
  * ```
  */
 
-import type { DatabaseConfig, DatabaseHandle } from "../types.ts";
+import type { DatabaseHandle } from "../types.ts";
 import { DatabaseError } from "../errors.ts";
 import {
   closeDatabase,
@@ -36,25 +36,29 @@ import {
   openDatabase,
 } from "../functional/mod.ts";
 import { Connection } from "./connection.ts";
+import type { DatabaseConfig } from "../core/config/schema/mod.ts";
 
 export class Database {
+  #path?: string;
   #config?: DatabaseConfig;
   #handle: DatabaseHandle | null = null;
   #closed = false;
   #connections = new Set<Connection>();
 
-  constructor(config?: DatabaseConfig) {
+  constructor(path?: string, config?: DatabaseConfig) {
+    this.#path = path;
     this.#config = config;
   }
 
   /**
    * Create and open a new database instance.
    *
+   * @param path - Optional database path (default: ":memory:" for in-memory database)
    * @param config - Optional database configuration
    * @returns A new open Database instance
    */
-  static async open(config?: DatabaseConfig): Promise<Database> {
-    const database = new Database(config);
+  static async open(path?: string, config?: DatabaseConfig): Promise<Database> {
+    const database = new Database(path, config);
     await database.open();
     return database;
   }
@@ -70,7 +74,7 @@ export class Database {
     }
 
     if (!this.#handle) {
-      this.#handle = await openDatabase(this.#config);
+      this.#handle = await openDatabase(this.#path, this.#config);
     }
   }
 

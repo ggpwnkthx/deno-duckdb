@@ -17,9 +17,11 @@ export * from "./errors.ts";
 // Re-export config schema and utilities for advanced usage
 export {
   configSchema,
+  globalConfigSchema,
   isKnownConfigKey,
   type KnownConfigKey,
-} from "./core/config/schema.ts";
+  localConfigSchema,
+} from "./core/config/schema/mod.ts";
 export {
   getConfigDefault,
   getConfigEnumValues,
@@ -29,4 +31,4 @@ export {
   validateDatabaseConfig,
 } from "./core/config/validate.ts";
 export { type DatabaseConfig } from "./types.ts";
-export { type NormalizedDatabaseConfig, type NormalizedOption } from "./core/config/mod.ts";
+export { type ConfigOption } from "./core/config/mod.ts";

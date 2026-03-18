@@ -21,7 +21,7 @@
  * import { openDatabase, connectToDatabase, executeSqlResult, closeConnection, closeDatabase } from "@ggpwnkthx/duckdb/functional";
  *
  * // Open database
- * const db = await openDatabase({ path: ":memory:" });
+ * const db = await openDatabase(":memory:");
  *
  * // Create connection
  * const conn = await connectToDatabase(db);
@@ -125,7 +125,8 @@ export { setStrictValidation };
 /**
  * Open a DuckDB database file or in-memory database.
  *
- * @param config - Optional database configuration including path and access mode
+ * @param path - Optional database path (default: ":memory:" for in-memory database)
+ * @param config - Optional database configuration including access mode
  * @returns A database handle for use in subsequent operations
  * @throws {DatabaseError} if the database cannot be opened
  *
@@ -135,7 +136,10 @@ export { setStrictValidation };
  * const db = await openDatabase();
  *
  * // File-based database
- * const db = await openDatabase({ path: "my.db" });
+ * const db = await openDatabase("my.db");
+ *
+ * // With config
+ * const db = await openDatabase("my.db", { accessMode: "read_only" });
  * ```
  */
 export { openDatabase };

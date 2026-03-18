@@ -24,28 +24,69 @@ import type {
  * configuration options.
  */
 export const localConfigSchema = {
-  // === Search Paths ===
-  home_directory: {
+  // === Profiling ===
+  custom_profiling_settings: {
     type: "string",
-    default: "",
+    default: '{"metrics": "all"}',
   } as StringConfigOption,
+
+  enable_http_logging: {
+    type: "boolean",
+    default: false,
+  } as BooleanConfigOption,
+
+  enable_profiling: {
+    type: "enum",
+    values: ["json", "query_tree", "query_tree_optimizer"] as const,
+    default: null,
+  } as EnumConfigOption<"json" | "query_tree" | "query_tree_optimizer">,
+
+  enable_progress_bar_print: {
+    type: "boolean",
+    default: true,
+  } as BooleanConfigOption,
+
+  enable_progress_bar: {
+    type: "boolean",
+    default: true,
+  } as BooleanConfigOption,
+
+  errors_as_json: {
+    type: "boolean",
+    default: false,
+  } as BooleanConfigOption,
+
+  explain_output: {
+    type: "enum",
+    values: ["all", "optimized_only", "physical_only"] as const,
+    default: "physical_only",
+  } as EnumConfigOption<"all" | "optimized_only" | "physical_only">,
 
   file_search_path: {
     type: "string[]",
     default: [],
   } as StringArrayConfigOption,
 
-  search_path: {
-    type: "string[]",
-    default: [],
-  } as StringArrayConfigOption,
-
-  schema: {
+  home_directory: {
     type: "string",
-    default: "main",
+    default: "",
   } as StringConfigOption,
 
-  // === Expression Depth ===
+  http_logging_output: {
+    type: "string",
+    default: "",
+  } as StringConfigOption,
+
+  lambda_syntax: {
+    type: "string",
+    default: "DEFAULT",
+  } as StringConfigOption,
+
+  log_query_path: {
+    type: "string",
+    default: null,
+  } as StringConfigOption,
+
   max_expression_depth: {
     type: "bigint",
     min: 1n,
@@ -53,29 +94,10 @@ export const localConfigSchema = {
     default: 1000n,
   } as BigIntConfigOption,
 
-  // === Profiling ===
-  enable_profiling: {
-    type: "enum",
-    values: ["json", "query_tree", "query_tree_optimizer"] as const,
-    default: null,
-  }  as EnumConfigOption<"json" | "query_tree" | "query_tree_optimizer">,
-
-  custom_profiling_settings: {
+  profile_output: {
     type: "string",
     default: "",
   } as StringConfigOption,
-
-  profiling_output: {
-    type: "string",
-    default: "",
-    aliases: ["profile_output"],
-  } as StringConfigOption,
-
-  profiling_mode: {
-    type: "enum",
-    values: ["STANDARD", "DETAILED"] as const,
-    default: null,
-  }  as EnumConfigOption<"STANDARD" | "DETAILED">,
 
   profiling_coverage: {
     type: "enum",
@@ -83,16 +105,11 @@ export const localConfigSchema = {
     default: "SELECT",
   } as EnumConfigOption<"SELECT" | "ALL">,
 
-  // === Progress Bar ===
-  enable_progress_bar: {
-    type: "boolean",
-    default: true,
-  } as BooleanConfigOption,
-
-  enable_progress_bar_print: {
-    type: "boolean",
-    default: true,
-  } as BooleanConfigOption,
+  profiling_mode: {
+    type: "enum",
+    values: ["STANDARD", "DETAILED"] as const,
+    default: null,
+  } as EnumConfigOption<"STANDARD" | "DETAILED">,
 
   progress_bar_time: {
     type: "bigint",
@@ -100,65 +117,20 @@ export const localConfigSchema = {
     default: 2000n,
   } as BigIntConfigOption,
 
-  // === Explain Output ===
-  explain_output: {
-    type: "enum",
-    values: ["ALL", "OPTIMIZED_ONLY", "PHYSICAL_ONLY"] as const,
-    default: "PHYSICAL_ONLY",
-  } as EnumConfigOption<"ALL" | "OPTIMIZED_ONLY" | "PHYSICAL_ONLY">,
+  schema: {
+    type: "string",
+    default: "main",
+  } as StringConfigOption,
 
-  // === Error Handling ===
-  errors_as_json: {
-    type: "boolean",
-    default: false,
-  } as BooleanConfigOption,
+  search_path: {
+    type: "string[]",
+    default: [],
+  } as StringArrayConfigOption,
 
-  // === Streaming ===
   streaming_buffer_size: {
     type: "string",
     default: "976.5 KiB",
   } as StringConfigOption,
-
-  // === Lambda Syntax ===
-  lambda_syntax: {
-    type: "string",
-    default: "DEFAULT",
-  } as StringConfigOption,
-
-  // === Query Logging ===
-  log_query_path: {
-    type: "string",
-    default: "",
-  } as StringConfigOption,
-
-  // === HTTP Logging ===
-  enable_http_logging: {
-    type: "boolean",
-    default: true,
-  } as BooleanConfigOption,
-
-  http_logging_output: {
-    type: "string",
-    default: "",
-  } as StringConfigOption,
-
-  // === DuckDB API ===
-  duckdb_api: {
-    type: "string",
-    default: "cli",
-  } as StringConfigOption,
-
-  // === Authentication ===
-  password: {
-    type: "string",
-    default: null,
-  }  as StringConfigOption,
-
-  user: {
-    type: "string",
-    default: null,
-    aliases: ["username"],
-  }  as StringConfigOption,
 } as const;
 
 // Re-export types for external use

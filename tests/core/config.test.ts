@@ -130,8 +130,8 @@ Deno.test("core: getConfigDefinition returns undefined for unknown keys", () => 
 
 Deno.test("core: configToFFI normalizes alias keys to primary keys", () => {
   const normalized = configToFFI("app.db", {
-    memory_limit: "2GB",
-    worker_threads: 4n,
+    max_memory: "2GB",
+    threads: 4n,
   });
 
   // memory_limit -> max_memory (alias resolution)

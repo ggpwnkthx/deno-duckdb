@@ -5,7 +5,7 @@
 import * as functional from "@ggpwnkthx/duckdb/functional";
 import * as objective from "@ggpwnkthx/duckdb/objective";
 
-import { printTable } from "./shared/console.ts";
+import { printTable } from "../shared/console.ts";
 
 console.log("=== Functional API ===\n");
 

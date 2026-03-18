@@ -8,16 +8,35 @@
 import * as functional from "@ggpwnkthx/duckdb/functional";
 import * as objective from "@ggpwnkthx/duckdb/objective";
 import type { ConnectionHandle } from "@ggpwnkthx/duckdb";
-import {
-  AZURE_BLOB_URL,
-  INSTALL_AZURE,
-  LOAD_AZURE,
-  SAMPLE_QUERY,
-  SET_AZURE_CONNECTION_STRING,
-  SET_AZURE_TRANSPORT_TYPE,
-} from "./sql/azure.ts";
 
-import { printTable } from "./shared/console.ts";
+import { printTable } from "../shared/console.ts";
+
+// =============================================================================
+// SQL Statements
+// =============================================================================
+
+const AZURE_BLOB_URL =
+  "az://azureopendatastorage.blob.core.windows.net/nyctlc/yellow/puYear=*/puMonth=1/*.parquet";
+
+const INSTALL_AZURE = "INSTALL azure";
+
+const LOAD_AZURE = "LOAD azure";
+
+const SET_AZURE_CONNECTION_STRING = "SET azure_storage_connection_string = ''";
+
+const SET_AZURE_TRANSPORT_TYPE = "SET azure_transport_option_type = 'curl'";
+
+const SAMPLE_QUERY = `
+SELECT
+  vendorID AS vendor_id,
+  tpepPickupDateTime AS pickup_datetime,
+  tpepDropoffDateTime AS dropoff_datetime,
+  passengerCount AS passenger_count,
+  tripDistance AS trip_distance,
+  puLocationId AS pickup_location_id
+FROM read_parquet('${AZURE_BLOB_URL}')
+LIMIT 10
+`;
 
 function execFunctional(connection: ConnectionHandle, sql: string): void {
   // Use cached query - returns null on success for DDL, but side effects happen

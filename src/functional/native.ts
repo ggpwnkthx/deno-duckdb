@@ -43,7 +43,6 @@ import {
   assertSafeInteger,
 } from "../core/validate.ts";
 import { configToFFI, validateDatabaseConfig } from "../core/config/mod.ts";
-import { strictValidation } from "../core/runtime.ts";
 import type { DatabaseConfig } from "../core/config/schema/mod.ts";
 
 const encoder = new TextEncoder();
@@ -683,10 +682,8 @@ export function getResultColumnName(
   handle: ResultHandle,
   columnIndex: number,
 ): string {
-  if (strictValidation) {
-    const columnCount = Number(getResultColumnCount(handle));
-    assertIntegerIndex(columnIndex, "Column index", columnCount);
-  }
+  const columnCount = Number(getResultColumnCount(handle));
+  assertIntegerIndex(columnIndex, "Column index", columnCount);
 
   const pointer = getLibraryFast().symbols.duckdb_column_name(
     handle,
@@ -713,10 +710,8 @@ export function getResultColumnType(
   handle: ResultHandle,
   columnIndex: number,
 ): DUCKDB_TYPE {
-  if (strictValidation) {
-    const columnCount = Number(getResultColumnCount(handle));
-    assertIntegerIndex(columnIndex, "Column index", columnCount);
-  }
+  const columnCount = Number(getResultColumnCount(handle));
+  assertIntegerIndex(columnIndex, "Column index", columnCount);
 
   return getLibraryFast().symbols.duckdb_column_type(
     handle,
@@ -762,10 +757,8 @@ export function getResultColumnData(
   handle: ResultHandle,
   columnIndex: number,
 ): Deno.UnsafePointerView | null {
-  if (strictValidation) {
-    const columnCount = Number(getResultColumnCount(handle));
-    assertIntegerIndex(columnIndex, "Column index", columnCount);
-  }
+  const columnCount = Number(getResultColumnCount(handle));
+  assertIntegerIndex(columnIndex, "Column index", columnCount);
 
   return createPointerView(
     getLibraryFast().symbols.duckdb_column_data(handle, BigInt(columnIndex)),
@@ -786,10 +779,8 @@ export function getResultColumnValidity(
   handle: ResultHandle,
   columnIndex: number,
 ): Deno.UnsafePointerView | null {
-  if (strictValidation) {
-    const columnCount = Number(getResultColumnCount(handle));
-    assertIntegerIndex(columnIndex, "Column index", columnCount);
-  }
+  const columnCount = Number(getResultColumnCount(handle));
+  assertIntegerIndex(columnIndex, "Column index", columnCount);
 
   const library = getLibraryFast();
   const validityFn =
@@ -818,12 +809,10 @@ export function isResultValueNull(
   rowIndex: number,
   columnIndex: number,
 ): boolean {
-  if (strictValidation) {
-    const rowCount = Number(getResultRowCount(handle));
-    const columnCount = Number(getResultColumnCount(handle));
-    assertIntegerIndex(rowIndex, "Row index", rowCount);
-    assertIntegerIndex(columnIndex, "Column index", columnCount);
-  }
+  const rowCount = Number(getResultRowCount(handle));
+  const columnCount = Number(getResultColumnCount(handle));
+  assertIntegerIndex(rowIndex, "Row index", rowCount);
+  assertIntegerIndex(columnIndex, "Column index", columnCount);
 
   return Boolean(
     getLibraryFast().symbols.duckdb_value_is_null(
@@ -847,12 +836,10 @@ export function readResultValueAsText(
   rowIndex: number,
   columnIndex: number,
 ): string | null {
-  if (strictValidation) {
-    const rowCount = Number(getResultRowCount(handle));
-    const columnCount = Number(getResultColumnCount(handle));
-    assertIntegerIndex(rowIndex, "Row index", rowCount);
-    assertIntegerIndex(columnIndex, "Column index", columnCount);
-  }
+  const rowCount = Number(getResultRowCount(handle));
+  const columnCount = Number(getResultColumnCount(handle));
+  assertIntegerIndex(rowIndex, "Row index", rowCount);
+  assertIntegerIndex(columnIndex, "Column index", columnCount);
 
   if (isResultValueNull(handle, rowIndex, columnIndex)) {
     return null;

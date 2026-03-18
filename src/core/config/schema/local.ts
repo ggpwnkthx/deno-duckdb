@@ -15,6 +15,7 @@ import type {
   StringArrayConfigOption,
   StringConfigOption,
 } from "../types.ts";
+import type { ConfigOptionDefinition } from "./mod.ts";
 
 /**
  * Local (session) configuration options that apply to individual connections.
@@ -23,7 +24,7 @@ import type {
  * profiling, progress output, error formatting, and other per-connection
  * configuration options.
  */
-export const localConfigSchema = {
+export const localConfigSchema: { [key: string]: ConfigOptionDefinition } = {
   // === Profiling ===
   custom_profiling_settings: {
     type: "string",

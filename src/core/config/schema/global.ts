@@ -17,6 +17,7 @@ import type {
   StringArrayConfigOption,
   StringConfigOption,
 } from "../types.ts";
+import type { ConfigOptionDefinition } from "./mod.ts";
 
 /**
  * Global configuration options that apply to the entire DuckDB database.
@@ -25,7 +26,7 @@ import type {
  * storage, extensions, file systems, HTTP/S3 connectivity, and more.
  * Options are ordered to match DuckDB's official documentation.
  */
-export const globalConfigSchema = {
+export const globalConfigSchema: { [key: string]: ConfigOptionDefinition } = {
   // === Locale & Time ===
   Calendar: {
     type: "string",

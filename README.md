@@ -213,7 +213,7 @@ The library provides a custom error hierarchy:
 - `ValidationError` - Input validation errors
 
 ```ts
-import { query, executeSqlResult } from "jsr:@ggpwnkthx/duckdb/functional";
+import { executeSqlResult, query } from "jsr:@ggpwnkthx/duckdb/functional";
 import { QueryError } from "jsr:@ggpwnkthx/duckdb";
 
 // Convenience method - returns null on query failure

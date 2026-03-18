@@ -48,7 +48,3 @@ export { type DatabaseConfig } from "./core/config/schema/mod.ts";
 export { type ConfigOption } from "./core/config/mod.ts";
 
 // Runtime configuration
-export {
-  setStrictValidation,
-  strictValidation,
-} from "./core/runtime.ts";

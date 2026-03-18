@@ -36,7 +36,7 @@ const _exampleConfigs: DatabaseConfig[] = [
 
   // Enum options
   { access_mode: "READ_ONLY" },
-  { default_order: "DESC" },
+  { default_order: "DESCENDING" },
   { logging_level: "INFO" },
 
   // String array options

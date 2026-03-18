@@ -63,12 +63,12 @@ type AliasToPrimaryKey<A extends string> = {
     : never;
 }[ConfigKey];
 
-/** Extract all aliases as a union of strings */
-type AllAliases = {
-  [K in ConfigKey]: (typeof configSchema)[K] extends { aliases: readonly (infer A)[] }
-    ? A
-    : never;
-}[ConfigKey];
+/**
+ * Extract all aliases as a union of strings
+ */
+type AllAliases = (typeof configSchema)[keyof typeof configSchema] extends
+  { aliases: readonly (infer A)[] } ? A
+  : never;
 
 /**
  * Type-safe database configuration derived from DuckDB config schema.

@@ -25,7 +25,7 @@ import type {
  * storage, extensions, file systems, HTTP/S3 connectivity, and more.
  * Options are ordered to match DuckDB's official documentation.
  */
-export const globalConfigSchema: Record<string, GlobalConfigOptionDefinition> = {
+export const globalConfigSchema = {
   // === Locale & Time ===
   Calendar: {
     type: "string",

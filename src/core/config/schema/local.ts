@@ -23,7 +23,7 @@ import type {
  * profiling, progress output, error formatting, and other per-connection
  * configuration options.
  */
-export const localConfigSchema: Record<string, LocalConfigOptionDefinition> = {
+export const localConfigSchema = {
   // === Profiling ===
   custom_profiling_settings: {
     type: "string",

@@ -6,7 +6,7 @@
  *
  * @example
  * ```ts
- * using db = await Database.open({ path: ":memory:" });
+ * using db = await Database.open(":memory:");
  * using conn = await db.connect();
  *
  * const result = conn.execute("SELECT * FROM range(10)");

@@ -42,24 +42,46 @@ export const configSchema = {
  * Maps a schema definition to its TypeScript value type.
  */
 type SchemaValueType<T> = T extends { type: "boolean" } ? boolean
-  : T extends { type: "enum"; values: readonly (infer V)[] } ? V
+  : T extends { type: "enum"; values: readonly (infer V)[] } ? V | null
   : T extends { type: "integer" } ? number
   : T extends { type: "bigint" } ? bigint
   : T extends { type: "double" } ? number
-  : T extends { type: "string" } ? string
+  : T extends { type: "string" } ? string | null
   : T extends { type: "string[]" } ? readonly string[]
   : never;
+
+/**
+ * Maps an alias back to its primary config key
+ */
+type ConfigKey = keyof typeof configSchema & string;
+
+type AliasToPrimaryKey<A extends string> = {
+  [K in ConfigKey]: (typeof configSchema)[K] extends
+    { aliases: readonly (infer AArr)[] } ? AArr extends string ? A extends AArr ? K
+      : never
+    : never
+    : never;
+}[ConfigKey];
+
+/** Extract all aliases as a union of strings */
+type AllAliases = {
+  [K in ConfigKey]: (typeof configSchema)[K] extends { aliases: readonly (infer A)[] }
+    ? A
+    : never;
+}[ConfigKey];
 
 /**
  * Type-safe database configuration derived from DuckDB config schema.
  *
  * Provides autocomplete for all known config options with proper TypeScript types.
  */
-export type DatabaseConfig = {
-  [K in keyof typeof configSchema as K extends string ? K : never]?: SchemaValueType<
-    (typeof configSchema)[K]
-  >;
-};
+export type DatabaseConfig =
+  & {
+    [K in ConfigKey]?: SchemaValueType<(typeof configSchema)[K]>;
+  }
+  & {
+    [K in AllAliases]?: SchemaValueType<(typeof configSchema)[AliasToPrimaryKey<K>]>;
+  };
 
 /**
  * Type representing any configuration option definition from the schema.

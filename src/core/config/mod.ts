@@ -56,7 +56,7 @@ export function configToFFI(
   }
 
   for (const [key, rawValue] of Object.entries(config)) {
-    if (rawValue === undefined) {
+    if (rawValue === undefined || rawValue === null) {
       continue;
     }
 

@@ -7,7 +7,7 @@
  *
  * @example
  * ```ts
- * using db = await Database.open({ path: ":memory:" });
+ * using db = await Database.open(":memory:");
  * using conn = await db.connect();
  *
  * const stmt = conn.prepare("SELECT * FROM range($1) t(i) WHERE i > $2");

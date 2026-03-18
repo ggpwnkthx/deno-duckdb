@@ -33,7 +33,7 @@
  * ```ts
  * import { Database } from "@ggpwnkthx/duckdb";
  *
- * using db = await Database.open({ path: ":memory:" });
+ * using db = await Database.open(":memory:");
  * using conn = await db.connect();
  *
  * const result = conn.execute("SELECT * FROM range(10) t(i)");

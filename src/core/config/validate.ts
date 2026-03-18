@@ -86,6 +86,23 @@ export function validateConfigValue(
       return null;
     }
 
+    case "double": {
+      if (typeof value !== "number") {
+        return `Expected number for '${key}', got ${typeof value}`;
+      }
+      if (isNaN(value)) {
+        return `Invalid double value for '${key}': ${value}`;
+      }
+      const doubleDef = definition as { min?: number; max?: number };
+      if (doubleDef.min !== undefined && value < doubleDef.min) {
+        return `Value ${value} for '${key}' is below minimum ${doubleDef.min}`;
+      }
+      if (doubleDef.max !== undefined && value > doubleDef.max) {
+        return `Value ${value} for '${key}' exceeds maximum ${doubleDef.max}`;
+      }
+      return null;
+    }
+
     case "bigint": {
       if (
         typeof value !== "string" && typeof value !== "number"
@@ -93,11 +110,16 @@ export function validateConfigValue(
       ) {
         return `Expected string, number, or bigint for '${key}', got ${typeof value}`;
       }
-      const bigVal = typeof value === "bigint"
-        ? value
-        : typeof value === "number"
-        ? BigInt(value)
-        : BigInt(value);
+      let bigVal: bigint;
+      try {
+        bigVal = typeof value === "bigint"
+          ? value
+          : typeof value === "number"
+          ? BigInt(value)
+          : BigInt(value);
+      } catch {
+        return `Invalid bigint value for '${key}': ${value}`;
+      }
       const bigDef = definition as { min?: bigint; max?: bigint };
       if (bigDef.min !== undefined && bigVal < bigDef.min) {
         return `Value ${bigVal} for '${key}' is below minimum ${bigDef.min}`;

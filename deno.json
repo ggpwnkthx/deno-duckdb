@@ -20,12 +20,18 @@
     "ci": "deno fmt && deno lint && deno check && deno task test && deno task examples",
     "example:basic": "deno run -A ./examples/getting-started/basic.ts",
     "example:quickstart": "deno run -A ./examples/getting-started/quickstart.ts",
+    "example:config:memory": "deno run -A ./examples/configuration/memory-and-threads.ts",
+    "example:config:temp-dir": "deno run -A ./examples/configuration/temporary-directory.ts",
+    "example:config:functional": "deno run -A ./examples/configuration/functional-api.ts",
+    "example:config:file-based": "deno run -A ./examples/configuration/file-based.ts",
+    "example:config:types": "deno run -A ./examples/configuration/types-overview.ts",
+    "example:config": "deno task example:config:memory && deno task example:config:temp-dir && deno task example:config:functional && deno task example:config:file-based && deno task example:config:types",
     "example:window-functions": "deno run -A ./examples/analytics/window-functions.ts",
     "example:time-series": "deno run -A ./examples/analytics/time-series.ts",
     "example:parquet": "deno run -A ./examples/analytics/parquet.ts",
     "example:datatypes": "deno run -A ./examples/data-types/datatypes.ts",
     "example:azure": "deno run -A ./examples/cloud/azure.ts",
-    "examples": "deno task example:basic && deno task example:quickstart && deno task example:window-functions && deno task example:time-series && deno task example:parquet && deno task example:datatypes && deno task example:azure"
+    "examples": "deno task example:basic && deno task example:quickstart && deno task example:config && deno task example:window-functions && deno task example:time-series && deno task example:parquet && deno task example:datatypes && deno task example:azure"
   },
   "compilerOptions": {
     "strict": true

@@ -135,7 +135,7 @@ User-friendly config options are normalized to DuckDB's expected names:
 
 ```ts
 // Use the native DuckDB config option name:
-Database.open({ access_mode: "read_only" });
+Database.open(undefined, { access_mode: "read_only" });
 ```
 
 ### Type-Safe Configuration
@@ -147,10 +147,10 @@ and type safety for all known configuration options:
 import { Database } from "jsr:@ggpwnkthx/duckdb/objective";
 
 // TypeScript provides autocomplete for known config options:
-const db = await Database.create({
-  access_mode: "read_only", // Restricted to "automatic" | "read_only" | "read_write"
-  threads: 4, // integer
-  memory_limit: "8GB", // string
+const db = await Database.open(undefined, {
+  access_mode: "read_only", // Restricted to "AUTOMATIC" | "READ_ONLY" | "READ_WRITE"
+  threads: 4n, // bigint
+  max_memory: "8GB", // string
   enable_http_metadata_cache: true, // boolean
 });
 ```
@@ -211,14 +211,24 @@ The library provides a custom error hierarchy:
 - `ValidationError` - Input validation errors
 
 ```ts
-import { QueryError } from "jsr:@ggpwnkthx/duckdb/functional";
+import { query, executeSqlResult } from "jsr:@ggpwnkthx/duckdb/functional";
+import { QueryError } from "jsr:@ggpwnkthx/duckdb";
 
+// Convenience method - returns null on query failure
+const result = query(conn, "SELECT * FROM nonexistent");
+if (result === null) {
+  console.log("Query failed");
+} else {
+  console.log("Query succeeded with", result.length, "rows");
+}
+
+// Lower-level method - throws QueryError on failure
 try {
-  functional.query(conn, "INVALID SQL");
+  const result = executeSqlResult(conn, "INVALID SQL");
+  // ... use result
 } catch (e) {
   if (e instanceof QueryError) {
     console.log(`Query failed: ${e.message}`);
-    console.log(`Query: ${e.query}`);
   }
 }
 ```

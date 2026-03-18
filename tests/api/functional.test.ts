@@ -1,8 +1,8 @@
 import { assertEquals, assertThrows } from "@std/assert";
 import { DatabaseError, ValidationError } from "@ggpwnkthx/duckdb";
 import * as functional from "@ggpwnkthx/duckdb/functional";
-import { execFunctional, withFunctionalConnection } from "./utils.ts";
-import { getPointerValue } from "../src/core/handles.ts";
+import { execFunctional, withFunctionalConnection } from "../utils.ts";
+import { getPointerValue } from "../../src/core/handles.ts";
 
 Deno.test({
   name: "functional: database and connection lifecycle exposes valid handles",

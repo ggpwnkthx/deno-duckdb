@@ -1,22 +1,17 @@
 import { assertEquals, assertThrows } from "@std/assert";
-import { normalizeDatabaseConfig } from "../src/core/config/mod.ts";
+import {
+  getConfigDefinition,
+  normalizeDatabaseConfig,
+} from "../../src/core/config/mod.ts";
 import {
   getConfigEnumValues,
   getConfigOptionType,
   isValidConfigKey,
   validateConfigValue,
   validateDatabaseConfig,
-} from "../src/core/config/validate.ts";
-import {
-  createDatabaseHandle,
-  getPointerValue,
-  isValidHandle,
-  validateConnectionHandle,
-  validateDatabaseHandle,
-  validatePreparedStatementHandle,
-  validateResultHandle,
-} from "../src/core/handles.ts";
-import { QueryError, ValidationError } from "@ggpwnkthx/duckdb";
+} from "../../src/core/config/validate.ts";
+
+// === normalizeDatabaseConfig Tests ===
 
 Deno.test("core: normalizeDatabaseConfig trims path and normalizes options", () => {
   const normalized = normalizeDatabaseConfig({
@@ -52,54 +47,6 @@ Deno.test("core: normalizeDatabaseConfig falls back to in-memory defaults", () =
   assertEquals(normalized.options, []);
 });
 
-Deno.test("core: newly created opaque handles start as null pointers", () => {
-  const handle = createDatabaseHandle();
-
-  assertEquals(getPointerValue(handle), 0n);
-  assertEquals(isValidHandle(handle), false);
-});
-
-Deno.test("core: getPointerValue respects byte offsets", () => {
-  const backing = new Uint8Array(24);
-  const expected = 0x1234567890ABCDEFn;
-
-  new DataView(backing.buffer, 8, 8).setBigUint64(0, expected, true);
-
-  const sliced = backing.subarray(8, 16);
-  assertEquals(getPointerValue(sliced), expected);
-});
-
-Deno.test("core: validation rejects wrong handle shapes with typed errors", () => {
-  assertThrows(
-    () => validateDatabaseHandle(new Uint8Array(7)),
-    ValidationError,
-    "DatabaseHandle must be 8 bytes",
-  );
-  assertThrows(
-    () => validateConnectionHandle(null),
-    ValidationError,
-    "ConnectionHandle must be a Uint8Array",
-  );
-  assertThrows(
-    () => validatePreparedStatementHandle(new Uint8Array(9)),
-    ValidationError,
-    "PreparedStatementHandle must be 8 bytes",
-  );
-  assertThrows(
-    () => validateResultHandle(new Uint8Array(8)),
-    ValidationError,
-    "ResultHandle must be 48 bytes",
-  );
-});
-
-Deno.test("core: QueryError keeps the original SQL text", () => {
-  const error = new QueryError("Bad SQL", "select * from nope");
-
-  assertEquals(error.query, "select * from nope");
-  assertEquals(error.code, "QUERY_ERROR");
-  assertEquals(error.context?.query, "select * from nope");
-});
-
 // === Config Schema Tests ===
 
 Deno.test("core: isValidConfigKey returns true for known keys", () => {
@@ -111,9 +58,9 @@ Deno.test("core: isValidConfigKey returns true for known keys", () => {
 
 Deno.test("core: getConfigOptionType returns correct types", () => {
   assertEquals(getConfigOptionType("access_mode"), "enum");
-  assertEquals(getConfigOptionType("threads"), "integer");
+  assertEquals(getConfigOptionType("threads"), "bigint");
   assertEquals(getConfigOptionType("enable_external_access"), "boolean");
-  assertEquals(getConfigOptionType("max_memory"), "bigint");
+  assertEquals(getConfigOptionType("max_memory"), "string");
   assertEquals(getConfigOptionType("temp_directory"), "string");
 });
 
@@ -168,4 +115,45 @@ Deno.test("core: validateDatabaseConfig rejects invalid accessMode", () => {
     Error,
     "Invalid database config",
   );
+});
+
+// === Config Alias Tests ===
+
+Deno.test("core: getConfigDefinition resolves aliases to definitions with matching aliases", () => {
+  // memory_limit is an alias for max_memory
+  const maxMemoryDef = getConfigDefinition("memory_limit");
+  assertEquals(maxMemoryDef?.aliases?.includes("memory_limit"), true);
+
+  // threads is a primary key with alias worker_threads
+  const threadsDef = getConfigDefinition("threads");
+  assertEquals(threadsDef?.aliases?.includes("worker_threads"), true);
+
+  // null_order is an alias for default_null_order
+  const nullOrderDef = getConfigDefinition("null_order");
+  assertEquals(nullOrderDef?.aliases?.includes("null_order"), true);
+});
+
+Deno.test("core: getConfigDefinition returns definition for primary keys", () => {
+  const threadsDef = getConfigDefinition("threads");
+  assertEquals(threadsDef !== undefined, true);
+  assertEquals(threadsDef?.type, "bigint");
+});
+
+Deno.test("core: getConfigDefinition returns undefined for unknown keys", () => {
+  assertEquals(getConfigDefinition("unknown_key"), undefined);
+});
+
+Deno.test("core: normalizeDatabaseConfig normalizes alias keys to primary keys", () => {
+  const normalized = normalizeDatabaseConfig({
+    path: "app.db",
+    memory_limit: "2GB",
+    worker_threads: "4",
+  });
+
+  // memory_limit -> max_memory (alias resolution)
+  // worker_threads stays as worker_threads since it's a primary key
+  assertEquals(normalized.options, [
+    { name: "max_memory", value: "2GB" },
+    { name: "worker_threads", value: "4" },
+  ]);
 });

@@ -1,7 +1,7 @@
 import { assertEquals } from "@std/assert";
 import * as functional from "@ggpwnkthx/duckdb/functional";
 import * as objective from "@ggpwnkthx/duckdb/objective";
-import { materializeResultObjects, materializeResultRows } from "./utils.ts";
+import { materializeResultObjects, materializeResultRows } from "../utils.ts";
 
 Deno.test({
   name:

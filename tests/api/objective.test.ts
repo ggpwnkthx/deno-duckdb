@@ -1,7 +1,7 @@
 import { assertEquals, assertThrows } from "@std/assert";
 import { Database } from "@ggpwnkthx/duckdb/objective";
 import { DatabaseError, InvalidResourceError } from "@ggpwnkthx/duckdb";
-import { withObjectiveConnection } from "./utils.ts";
+import { withObjectiveConnection } from "../utils.ts";
 
 Deno.test({
   name: "objective: Database.connect opens lazily and returns working connections",

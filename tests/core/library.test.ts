@@ -1,5 +1,5 @@
 import { assertEquals, assertExists } from "@std/assert";
-import { getLibrary, getLibraryFast, getLibrarySync } from "../src/core/library.ts";
+import { getLibrary, getLibraryFast, getLibrarySync } from "../../src/core/library.ts";
 import * as functional from "@ggpwnkthx/duckdb/functional";
 
 Deno.test({

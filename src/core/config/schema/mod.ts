@@ -60,10 +60,6 @@ export type DatabaseConfig =
     [K in keyof typeof configSchema as K extends string ? K : never]?: SchemaValueType<
       (typeof configSchema)[K]
     >;
-  }
-  & {
-    /** Allow unknown keys for extensibility */
-    readonly [key: string]: unknown;
   };
 
 /**

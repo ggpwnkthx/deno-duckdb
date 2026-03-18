@@ -58,7 +58,7 @@ export const localConfigSchema = {
     type: "enum",
     values: ["json", "query_tree", "query_tree_optimizer"] as const,
     default: null,
-  } as unknown as EnumConfigOption<"json" | "query_tree" | "query_tree_optimizer">,
+  }  as EnumConfigOption<"json" | "query_tree" | "query_tree_optimizer">,
 
   custom_profiling_settings: {
     type: "string",
@@ -75,7 +75,7 @@ export const localConfigSchema = {
     type: "enum",
     values: ["STANDARD", "DETAILED"] as const,
     default: null,
-  } as unknown as EnumConfigOption<"STANDARD" | "DETAILED">,
+  }  as EnumConfigOption<"STANDARD" | "DETAILED">,
 
   profiling_coverage: {
     type: "enum",
@@ -152,13 +152,13 @@ export const localConfigSchema = {
   password: {
     type: "string",
     default: null,
-  } as unknown as StringConfigOption,
+  }  as StringConfigOption,
 
   user: {
     type: "string",
     default: null,
     aliases: ["username"],
-  } as unknown as StringConfigOption,
+  }  as StringConfigOption,
 } as const;
 
 // Re-export types for external use

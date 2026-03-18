@@ -32,8 +32,11 @@ import { DisposableResource } from "./base.ts";
 import { QueryResult } from "./query.ts";
 
 export class PreparedStatement extends DisposableResource<PreparedStatementHandle> {
-  constructor(handle: PreparedStatementHandle) {
+  #onClose?: () => void;
+
+  constructor(handle: PreparedStatementHandle, onClose?: () => void) {
     super(handle);
+    this.#onClose = onClose;
   }
 
   /**
@@ -85,5 +88,6 @@ export class PreparedStatement extends DisposableResource<PreparedStatementHandl
     }
 
     destroyPreparedStatement(handle);
+    this.#onClose?.();
   }
 }

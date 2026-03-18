@@ -61,7 +61,7 @@ Deno.test({
       const statement = functional.prepare(connection, "SELECT ?");
       try {
         const bindError = assertThrows(
-          () => functional.bind(statement, [{}] as unknown as never[]),
+          () => functional.bind(statement, [{}] as never[]),
           ValidationError,
           "Unsupported parameter type",
         );

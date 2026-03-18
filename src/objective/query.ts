@@ -37,9 +37,11 @@ import { DisposableResource } from "./base.ts";
 
 export class QueryResult extends DisposableResource<ResultHandle> {
   #reader: ResultReader | null = null;
+  #onClose?: () => void;
 
-  constructor(handle: ResultHandle) {
+  constructor(handle: ResultHandle, onClose?: () => void) {
     super(handle);
+    this.#onClose = onClose;
   }
 
   #getReader(): ResultReader {
@@ -114,5 +116,6 @@ export class QueryResult extends DisposableResource<ResultHandle> {
     }
 
     this.#reader = null;
+    this.#onClose?.();
   }
 }

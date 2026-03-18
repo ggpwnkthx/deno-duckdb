@@ -32,6 +32,8 @@ type ConnectionClosedCallback = () => void;
 
 export class Connection extends DisposableResource<ConnectionHandle> {
   #onClose: ConnectionClosedCallback;
+  #preparedStatements = new Set<PreparedStatement>();
+  #queryResults = new Set<QueryResult>();
 
   constructor(handle: ConnectionHandle, onClose: ConnectionClosedCallback) {
     super(handle);
@@ -112,7 +114,14 @@ export class Connection extends DisposableResource<ConnectionHandle> {
    */
   execute(sql: string): QueryResult {
     assertNonEmptyString(sql, "SQL query");
-    return new QueryResult(executeQuery(this.requireHandle("Connection"), sql));
+    const result = new QueryResult(
+      executeQuery(this.requireHandle("Connection"), sql),
+      () => {
+        this.#queryResults.delete(result);
+      },
+    );
+    this.#queryResults.add(result);
+    return result;
   }
 
   /**
@@ -124,13 +133,30 @@ export class Connection extends DisposableResource<ConnectionHandle> {
    */
   prepare(sql: string): PreparedStatement {
     assertNonEmptyString(sql, "SQL statement");
-    return new PreparedStatement(
+    const stmt = new PreparedStatement(
       prepareStatement(this.requireHandle("Connection"), sql),
+      () => {
+        this.#preparedStatements.delete(stmt);
+      },
     );
+    this.#preparedStatements.add(stmt);
+    return stmt;
   }
 
   /** Close the connection. */
   close(): void {
+    // Close all query results first
+    for (const result of [...this.#queryResults]) {
+      result.close();
+    }
+    this.#queryResults.clear();
+
+    // Close all prepared statements
+    for (const stmt of [...this.#preparedStatements]) {
+      stmt.close();
+    }
+    this.#preparedStatements.clear();
+
     const handle = this.releaseHandle();
     if (!handle) {
       return;

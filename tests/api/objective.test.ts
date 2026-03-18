@@ -296,3 +296,68 @@ Deno.test({
     });
   },
 });
+
+Deno.test({
+  name:
+    "objective: closing connection cascades to prepared statements and query results",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    const database = new Database();
+    const connection = await database.connect();
+
+    // Create a prepared statement and execute a query (leaving them open)
+    const statement = connection.prepare("SELECT 1 AS value");
+    const result = connection.execute("SELECT 2 AS value");
+
+    // Close the connection - should cascade to children
+    connection.close();
+    database.close();
+
+    // Verify children are closed
+    assertThrows(
+      () => statement.execute(),
+      InvalidResourceError,
+      "PreparedStatement is closed",
+    );
+    assertThrows(
+      () => result.row(0),
+      InvalidResourceError,
+      "QueryResult is closed",
+    );
+  },
+});
+
+Deno.test({
+  name: "objective: closing database cascades through connections to their children",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    const database = new Database();
+    const connection = await database.connect();
+
+    // Create children without explicitly closing connection
+    const statement = connection.prepare("SELECT 1 AS value");
+    const result = connection.execute("SELECT 2 AS value");
+
+    // Close database directly - should cascade all the way down
+    database.close();
+
+    // Verify all resources are closed
+    assertThrows(
+      () => connection.execute("SELECT 1"),
+      InvalidResourceError,
+      "Connection is closed",
+    );
+    assertThrows(
+      () => statement.execute(),
+      InvalidResourceError,
+      "PreparedStatement is closed",
+    );
+    assertThrows(
+      () => result.row(0),
+      InvalidResourceError,
+      "QueryResult is closed",
+    );
+  },
+});

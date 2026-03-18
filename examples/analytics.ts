@@ -95,7 +95,7 @@ function queryObjectiveObjects(
 printSection("DuckDB E-commerce Analytics Showcase");
 
 // First, show the basic example (from original data_analysis.ts)
-console.log("\n>>> PART 1: Basic Data Analysis (Original Example)");
+console.log("\n>>> PART 1: Basic Data Analysis");
 
 console.log("\n=== Functional API ===");
 

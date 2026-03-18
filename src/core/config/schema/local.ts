@@ -23,114 +23,114 @@ import type {
  * profiling, progress output, error formatting, and other per-connection
  * configuration options.
  */
-export const localConfigSchema = {
+export const localConfigSchema: Record<string, LocalConfigOptionDefinition> = {
   // === Profiling ===
   custom_profiling_settings: {
     type: "string",
     default: '{"metrics": "all"}',
-  } as StringConfigOption,
+  } satisfies StringConfigOption,
 
   enable_http_logging: {
     type: "boolean",
     default: false,
-  } as BooleanConfigOption,
+  } satisfies BooleanConfigOption,
 
   enable_profiling: {
     type: "enum",
     values: ["json", "query_tree", "query_tree_optimizer"] as const,
     default: null,
-  } as EnumConfigOption<"json" | "query_tree" | "query_tree_optimizer">,
+  } satisfies EnumConfigOption<"json" | "query_tree" | "query_tree_optimizer">,
 
   enable_progress_bar_print: {
     type: "boolean",
     default: true,
-  } as BooleanConfigOption,
+  } satisfies BooleanConfigOption,
 
   enable_progress_bar: {
     type: "boolean",
     default: true,
-  } as BooleanConfigOption,
+  } satisfies BooleanConfigOption,
 
   errors_as_json: {
     type: "boolean",
     default: false,
-  } as BooleanConfigOption,
+  } satisfies BooleanConfigOption,
 
   explain_output: {
     type: "enum",
     values: ["all", "optimized_only", "physical_only"] as const,
     default: "physical_only",
-  } as EnumConfigOption<"all" | "optimized_only" | "physical_only">,
+  } satisfies EnumConfigOption<"all" | "optimized_only" | "physical_only">,
 
   file_search_path: {
     type: "string[]",
     default: [],
-  } as StringArrayConfigOption,
+  } satisfies StringArrayConfigOption,
 
   home_directory: {
     type: "string",
     default: "",
-  } as StringConfigOption,
+  } satisfies StringConfigOption,
 
   http_logging_output: {
     type: "string",
     default: "",
-  } as StringConfigOption,
+  } satisfies StringConfigOption,
 
   lambda_syntax: {
     type: "string",
     default: "DEFAULT",
-  } as StringConfigOption,
+  } satisfies StringConfigOption,
 
   log_query_path: {
     type: "string",
     default: null,
-  } as StringConfigOption,
+  } satisfies StringConfigOption,
 
   max_expression_depth: {
     type: "bigint",
     min: 1n,
     max: 10000n,
     default: 1000n,
-  } as BigIntConfigOption,
+  } satisfies BigIntConfigOption,
 
   profile_output: {
     type: "string",
     default: "",
-  } as StringConfigOption,
+  } satisfies StringConfigOption,
 
   profiling_coverage: {
     type: "enum",
     values: ["SELECT", "ALL"] as const,
     default: "SELECT",
-  } as EnumConfigOption<"SELECT" | "ALL">,
+  } satisfies EnumConfigOption<"SELECT" | "ALL">,
 
   profiling_mode: {
     type: "enum",
     values: ["STANDARD", "DETAILED"] as const,
     default: null,
-  } as EnumConfigOption<"STANDARD" | "DETAILED">,
+  } satisfies EnumConfigOption<"STANDARD" | "DETAILED">,
 
   progress_bar_time: {
     type: "bigint",
     min: 0n,
     default: 2000n,
-  } as BigIntConfigOption,
+  } satisfies BigIntConfigOption,
 
   schema: {
     type: "string",
     default: "main",
-  } as StringConfigOption,
+  } satisfies StringConfigOption,
 
   search_path: {
     type: "string[]",
     default: [],
-  } as StringArrayConfigOption,
+  } satisfies StringArrayConfigOption,
 
   streaming_buffer_size: {
     type: "string",
     default: "976.5 KiB",
-  } as StringConfigOption,
+  } satisfies StringConfigOption,
 } as const;
 
 // Re-export types for external use

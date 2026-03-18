@@ -76,7 +76,7 @@ export type ConfigOptionDefinition =
 /**
  * Known configuration option names derived from the schema.
  */
-export type KnownConfigKey = keyof typeof configSchema;
+export type KnownConfigKey = keyof typeof configSchema & string;
 
 /**
  * Type guard to check if a string is a known config key.
@@ -100,8 +100,9 @@ export function getConfigDefinition(
 
   // Check if key is an alias for any primary key
   for (const [, definition] of Object.entries(configSchema)) {
-    if (definition.aliases?.includes(key)) {
-      return definition;
+    const def = definition as ConfigOptionDefinition;
+    if (def.aliases?.includes(key)) {
+      return def;
     }
   }
 

@@ -82,7 +82,8 @@ export function configToFFI(
       if (configDef) {
         // Find the primary key that has this alias
         for (const [primaryKey, def] of Object.entries(configSchema)) {
-          if (def.aliases?.includes(key)) {
+          const d = def as { aliases?: readonly string[] };
+          if (d.aliases?.includes(key)) {
             name = primaryKey;
             break;
           }

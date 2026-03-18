@@ -5,8 +5,11 @@
  * matching the compile-time type safety from the config schema.
  */
 
-import { configSchema, type KnownConfigKey } from "./schema/mod.ts";
-import type { DatabaseConfig } from "./schema/mod.ts";
+import {
+  configSchema,
+  type DatabaseConfig,
+  type KnownConfigKey,
+} from "./schema/mod.ts";
 
 /**
  * Type guard to check if a string is a known config key.
@@ -31,7 +34,7 @@ export function validateConfigValue(
     return null;
   }
 
-  const definition = configSchema[key];
+  const definition = configSchema[key as KnownConfigKey];
   const type = definition.type;
 
   if (value === undefined || value === null) {
@@ -95,11 +98,12 @@ export function validateConfigValue(
         : typeof value === "number"
         ? BigInt(value)
         : BigInt(value);
-      if (definition.min !== undefined && bigVal < definition.min) {
-        return `Value ${bigVal} for '${key}' is below minimum ${definition.min}`;
+      const bigDef = definition as { min?: bigint; max?: bigint };
+      if (bigDef.min !== undefined && bigVal < bigDef.min) {
+        return `Value ${bigVal} for '${key}' is below minimum ${bigDef.min}`;
       }
-      if (definition.max !== undefined && bigVal > definition.max) {
-        return `Value ${bigVal} for '${key}' exceeds maximum ${definition.max}`;
+      if (bigDef.max !== undefined && bigVal > bigDef.max) {
+        return `Value ${bigVal} for '${key}' exceeds maximum ${bigDef.max}`;
       }
       return null;
     }
@@ -193,4 +197,93 @@ export function getConfigEnumValues(
 export function getConfigDefault(key: string): unknown {
   const definition = configSchema[key as KnownConfigKey];
   return definition?.default;
+}
+
+/**
+ * Runtime validation for a config option object.
+ *
+ * Ensures that a config option has all required fields based on its type.
+ * This provides runtime safety alongside the compile-time type checking from `satisfies`.
+ *
+ * @param key - The config key name (for error messages)
+ * @param option - The config option to validate
+ * @throws Error if the option is missing required fields
+ */
+export function validateConfigOption(
+  key: string,
+  option: unknown,
+): asserts option is unknown {
+  if (option === null || option === undefined) {
+    throw new Error(`Config option '${key}' is null or undefined`);
+  }
+
+  const opt = option as Record<string, unknown>;
+  const type = opt.type;
+
+  switch (type) {
+    case "boolean":
+      if (typeof opt.default !== "boolean") {
+        throw new Error(
+          `Config option '${key}' (boolean) missing required 'default: boolean' field`,
+        );
+      }
+      break;
+
+    case "string":
+      if (opt.default !== null && typeof opt.default !== "string") {
+        throw new Error(
+          `Config option '${key}' (string) missing required 'default: string | null' field`,
+        );
+      }
+      break;
+
+    case "integer":
+      if (typeof opt.default !== "number") {
+        throw new Error(
+          `Config option '${key}' (integer) missing required 'default: number' field`,
+        );
+      }
+      break;
+
+    case "bigint":
+      if (typeof opt.default !== "bigint") {
+        throw new Error(
+          `Config option '${key}' (bigint) missing required 'default: bigint' field`,
+        );
+      }
+      break;
+
+    case "double":
+      if (typeof opt.default !== "number") {
+        throw new Error(
+          `Config option '${key}' (double) missing required 'default: number' field`,
+        );
+      }
+      break;
+
+    case "enum":
+      if (opt.values === undefined || !Array.isArray(opt.values)) {
+        throw new Error(
+          `Config option '${key}' (enum) missing required 'values' field`,
+        );
+      }
+      // default can be null or one of the enum values
+      if (opt.default !== null && !opt.values.includes(opt.default)) {
+        throw new Error(
+          `Config option '${key}' (enum) has invalid default value`,
+        );
+      }
+      break;
+
+    case "string[]":
+      if (!Array.isArray(opt.default)) {
+        throw new Error(
+          `Config option '${key}' (string[]) missing required 'default: readonly string[]' field`,
+        );
+      }
+      break;
+
+    default:
+      throw new Error(`Unknown config option type '${type}' for '${key}'`);
+  }
 }

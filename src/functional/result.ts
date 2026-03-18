@@ -20,7 +20,7 @@ import { createPointerView, validateResultHandle } from "../core/handles.ts";
  * Fixed-width byte sizes used by DuckDB's legacy result memory layout.
  *
  * These sizes match the libduckdb C ABI targeted by
- * `@ggpwnkthx/libduckdb@1.0.14` (DuckDB 1.4.4).
+ * `@ggpwnkthx/libduckdb@1.0.15` (DuckDB 1.5.0).
  * @internal
  */
 const BYTE_SIZE_8 = 1;

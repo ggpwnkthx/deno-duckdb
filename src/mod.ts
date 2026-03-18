@@ -1,6 +1,20 @@
 /**
  * Type-safe DuckDB FFI binding library for Deno.
  *
+ * ## Version Compatibility
+ *
+ * **This library is pinned to specific DuckDB and Deno versions.** It uses direct memory
+ * access for high-performance result decoding and makes assumptions about DuckDB's internal
+ * ABI/layout that are only guaranteed for:
+ *
+ * - DuckDB: **1.5.0** (via `@ggpwnkthx/libduckdb@1.0.15`)
+ * - Deno: **1.43+** (requires FFI support)
+ *
+ * Do NOT upgrade DuckDB or Deno without thorough testing. Even minor version upgrades may
+ * break result decoding due to changes in memory layout assumptions.
+ *
+ * ---
+ *
  * This is the main entry point for the `@ggpwnkthx/duckdb` package. It exports:
  *
  * - {@link types} - Shared types (DatabaseHandle, ConnectionHandle, etc.)

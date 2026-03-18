@@ -1,6 +1,30 @@
 # @ggpwnkthx/duckdb
 
-Type-safe DuckDB (v1.5.0) functional and object-oriented APIs.
+Type-safe DuckDB functional and object-oriented APIs.
+
+## Version Compatibility
+
+> **Important:** This library is tightly coupled to specific DuckDB and Deno versions.
+> It is **not guaranteed to work** with other versions.
+
+| Dependency           | Version    | Notes                                     |
+| -------------------- | ---------- | ----------------------------------------- |
+| DuckDB               | **1.5.0**  | ABI/layout assumptions in result decoding |
+| Deno                 | **1.43+**  | Requires FFI support                      |
+| @ggpwnkthx/libduckdb | **1.0.15** | Pinned in `deno.json`                     |
+
+This library uses direct memory access for high-performance result decoding. It makes
+assumptions about DuckDB's internal memory layout (pointer sizes, struct sizes, column
+vector formats). These assumptions are **only guaranteed for the versions above**.
+
+**Do not upgrade** DuckDB or Deno without testing thoroughly first. Even minor version
+upgrades may break result decoding due to changes in:
+
+- Result struct layout (`duckdb_result` is 48 bytes)
+- Column vector representation (string length + pointer format)
+- Pointer size (assumes 64-bit)
+
+---
 
 > **Note:** While this library is stable and production-ready, I haven't fully settled on a
 > consistent function naming pattern yet. This will be normalized in a future major version.
@@ -124,14 +148,15 @@ import { Database } from "jsr:@ggpwnkthx/duckdb/objective";
 
 // TypeScript provides autocomplete for known config options:
 const db = await Database.create({
-  access_mode: "read_only",  // Restricted to "automatic" | "read_only" | "read_write"
-  threads: 4,               // integer
-  memory_limit: "8GB",      // string
-  enable_http_metadata_cache: true,  // boolean
+  access_mode: "read_only", // Restricted to "automatic" | "read_only" | "read_write"
+  threads: 4, // integer
+  memory_limit: "8GB", // string
+  enable_http_metadata_cache: true, // boolean
 });
 ```
 
 Each config option has a proper TypeScript type based on the DuckDB schema:
+
 - **Boolean options** - `boolean` type
 - **Enum options** - Specific union type of valid values
 - **Integer/Double options** - `number` type

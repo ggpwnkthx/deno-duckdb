@@ -4,7 +4,7 @@
  * Provides functions to convert type-safe database config to FFI format.
  */
 
-import type { DatabaseConfig } from "../../types.ts";
+import type { DatabaseConfig } from "./schema/mod.ts";
 import { configSchema, getConfigDefinition, isKnownConfigKey } from "./schema/mod.ts";
 import { validateDatabaseConfig as _validateDatabaseConfig } from "./validate.ts";
 
@@ -23,7 +23,6 @@ export interface ConfigOption {
  * Convert a type-safe database config to FFI format.
  *
  * Since the config is now type-safe, this function handles:
- * - Converting the accessMode alias to access_mode
  * - Converting values to strings for FFI
  * - Sorting options by name
  *
@@ -33,7 +32,7 @@ export interface ConfigOption {
  *
  * @example
  * ```ts
- * const { path, options } = configToFFI("mydb.db", { accessMode: "read_only" });
+ * const { path, options } = configToFFI("mydb.db", { access_mode: "read_only" });
  * // Result: { path: "mydb.db", options: [{ name: "access_mode", value: "READ_ONLY" }] }
  * ```
  */
@@ -63,23 +62,6 @@ export function configToFFI(
 
     let name = key;
     let value: string;
-
-    // Handle accessMode alias - convert to access_mode and normalize value
-    if (key === "accessMode") {
-      name = "access_mode";
-      const normalized = String(rawValue).toLowerCase();
-      if (normalized === "read_only") {
-        value = "READ_ONLY";
-      } else if (normalized === "read_write") {
-        value = "READ_WRITE";
-      } else if (normalized === "automatic") {
-        value = "AUTOMATIC";
-      } else {
-        value = String(rawValue).toUpperCase();
-      }
-      options.push({ name, value });
-      continue;
-    }
 
     // Convert value to string based on type
     if (typeof rawValue === "boolean") {

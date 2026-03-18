@@ -54,13 +54,8 @@ type SchemaValueType<T> = T extends { type: "boolean" } ? boolean
  * Type-safe database configuration derived from DuckDB config schema.
  *
  * Provides autocomplete for all known config options with proper TypeScript types.
- * Also supports `accessMode` as an ergonomic alias for `access_mode`.
  */
 export type DatabaseConfig =
-  & {
-    /** Ergonomic alias for access_mode */
-    accessMode?: "automatic" | "read_only" | "read_write";
-  }
   & {
     [K in keyof typeof configSchema as K extends string ? K : never]?: SchemaValueType<
       (typeof configSchema)[K]

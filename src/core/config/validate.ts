@@ -6,7 +6,7 @@
  */
 
 import { configSchema, type KnownConfigKey } from "./schema/mod.ts";
-import type { DatabaseConfig } from "../../types.ts";
+import type { DatabaseConfig } from "./schema/mod.ts";
 
 /**
  * Type guard to check if a string is a known config key.
@@ -151,30 +151,8 @@ export function validateDatabaseConfig(
   const errors: string[] = [];
   const configObj = config as Record<string, unknown>;
 
-  // Validate accessMode specially (it's an alias)
-  if (configObj.accessMode !== undefined) {
-    const accessMode = configObj.accessMode;
-    if (typeof accessMode !== "string") {
-      errors.push("accessMode must be a string");
-    } else {
-      const normalized = accessMode.toLowerCase();
-      if (
-        normalized !== "automatic" && normalized !== "read_only"
-        && normalized !== "read_write"
-      ) {
-        errors.push(
-          `accessMode must be 'automatic', 'read_only', or 'read_write', got '${accessMode}'`,
-        );
-      }
-    }
-  }
-
-  // Validate all other keys
+  // Validate all keys
   for (const key of Object.keys(configObj)) {
-    if (key === "accessMode") {
-      continue; // accessMode is handled specially
-    }
-
     const error = validateConfigValue(key, configObj[key]);
     if (error) {
       errors.push(error);

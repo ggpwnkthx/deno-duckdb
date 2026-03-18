@@ -1,4 +1,4 @@
-import { assertEquals, assertThrows } from "@std/assert";
+import { assertEquals } from "@std/assert";
 import { configToFFI, getConfigDefinition } from "../../src/core/config/mod.ts";
 import {
   getConfigEnumValues,
@@ -12,7 +12,7 @@ import {
 
 Deno.test("core: configToFFI trims path and normalizes options", () => {
   const normalized = configToFFI("  app.db  ", {
-    accessMode: "read_only",
+    access_mode: "READ_ONLY",
     threads: 4n,
   });
 
@@ -95,19 +95,11 @@ Deno.test("core: validateConfigValue validates boolean values", () => {
 
 Deno.test("core: validateDatabaseConfig validates complete config", () => {
   const validConfig = {
-    accessMode: "read_only",
+    access_mode: "READ_ONLY",
     threads: 4n,
   };
   const result = validateDatabaseConfig(validConfig);
-  assertEquals(result.accessMode, "read_only");
-});
-
-Deno.test("core: validateDatabaseConfig rejects invalid accessMode", () => {
-  assertThrows(
-    () => validateDatabaseConfig({ accessMode: "invalid" }),
-    Error,
-    "Invalid database config",
-  );
+  assertEquals(result.access_mode, "READ_ONLY");
 });
 
 // === Config Alias Tests ===

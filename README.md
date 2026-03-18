@@ -103,18 +103,43 @@ for (const obj of result.objects()) {
 
 ### Result Caching
 
-The `ResultReader` class caches column metadata for efficient repeated access. Both APIs
-cache results when using methods like `fetchAll()` or `toArrayOfObjects()`.
+The `ResultReader` class caches column metadata for efficient repeated access.
 
 ### Config Normalization
 
 User-friendly config options are normalized to DuckDB's expected names:
 
 ```ts
-// These are equivalent:
-Database.open({ accessMode: "read_only" });
+// Use the native DuckDB config option name:
 Database.open({ access_mode: "read_only" });
 ```
+
+### Type-Safe Configuration
+
+The `DatabaseConfig` type is derived from DuckDB's config schema, providing autocomplete
+and type safety for all known configuration options:
+
+```ts
+import { Database } from "jsr:@ggpwnkthx/duckdb/objective";
+
+// TypeScript provides autocomplete for known config options:
+const db = await Database.create({
+  access_mode: "read_only",  // Restricted to "automatic" | "read_only" | "read_write"
+  threads: 4,               // integer
+  memory_limit: "8GB",      // string
+  enable_http_metadata_cache: true,  // boolean
+});
+```
+
+Each config option has a proper TypeScript type based on the DuckDB schema:
+- **Boolean options** - `boolean` type
+- **Enum options** - Specific union type of valid values
+- **Integer/Double options** - `number` type
+- **BigInt options** - `bigint` type
+- **String options** - `string` type
+- **String array options** - `readonly string[]` type
+
+The config also supports unknown keys for extensibility via `[key: string]: unknown`.
 
 ### Branded Handle Types
 

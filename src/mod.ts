@@ -30,5 +30,5 @@ export {
   validateConfigValue,
   validateDatabaseConfig,
 } from "./core/config/validate.ts";
-export { type DatabaseConfig } from "./types.ts";
+export { type DatabaseConfig } from "./core/config/schema/mod.ts";
 export { type ConfigOption } from "./core/config/mod.ts";

@@ -9,7 +9,7 @@
   "lock": false,
   "imports": {
     "@std/assert": "jsr:@std/assert@1.0.19",
-    "@ggpwnkthx/libduckdb": "jsr:@ggpwnkthx/libduckdb@1.0.14",
+    "@ggpwnkthx/libduckdb": "jsr:@ggpwnkthx/libduckdb@1.0.15",
     "@ggpwnkthx/duckdb": "./src/mod.ts",
     "@ggpwnkthx/duckdb/functional": "./src/functional/mod.ts",
     "@ggpwnkthx/duckdb/objective": "./src/objective/mod.ts"
@@ -36,6 +36,15 @@
     "proseWrap": "preserve",
     "trailingCommas": "onlyMultiLine",
     "operatorPosition": "nextLine",
-    "exclude": ["node_modules", ".git"]
+    "exclude": [
+      "libduckdb",
+      ".*"
+    ]
+  },
+  "check": {
+    "exclude": [
+      "libduckdb",
+      ".*"
+    ]
   }
 }

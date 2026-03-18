@@ -1,6 +1,6 @@
 # @ggpwnkthx/duckdb
 
-Type-safe DuckDB FFI bindings for Deno with both functional and object-oriented APIs.
+Type-safe DuckDB (v1.5.0) functional and object-oriented APIs.
 
 > **Note:** While this library is stable and production-ready, I haven't fully settled on a
 > consistent function naming pattern yet. This will be normalized in a future major version.

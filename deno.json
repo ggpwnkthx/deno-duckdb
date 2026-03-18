@@ -1,6 +1,6 @@
 {
   "name": "@ggpwnkthx/duckdb",
-  "version": "1.1.13",
+  "version": "1.1.14",
   "exports": {
     ".": "./src/mod.ts",
     "./functional": "./src/functional/mod.ts",
@@ -17,6 +17,7 @@
   "tasks": {
     "test": "deno test -A ./tests/*",
     "bench": "deno bench -A ./benchmarks/*",
+    "ci": "deno fmt && deno lint && deno check && deno task test && deno task examples",
     "example:basic": "deno run -A ./examples/getting-started/basic.ts",
     "example:quickstart": "deno run -A ./examples/getting-started/quickstart.ts",
     "example:window-functions": "deno run -A ./examples/analytics/window-functions.ts",
@@ -24,8 +25,7 @@
     "example:parquet": "deno run -A ./examples/analytics/parquet.ts",
     "example:datatypes": "deno run -A ./examples/data-types/datatypes.ts",
     "example:azure": "deno run -A ./examples/cloud/azure.ts",
-    "examples": "deno task example:basic && deno task example:quickstart && deno task example:window-functions && deno task example:time-series && deno task example:parquet && deno task example:datatypes && deno task example:azure",
-    "ci": "deno fmt && deno lint && deno check && deno task test"
+    "examples": "deno task example:basic && deno task example:quickstart && deno task example:window-functions && deno task example:time-series && deno task example:parquet && deno task example:datatypes && deno task example:azure"
   },
   "compilerOptions": {
     "strict": true

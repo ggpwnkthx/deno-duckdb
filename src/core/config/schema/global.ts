@@ -631,22 +631,22 @@ export const globalConfigSchema = {
   s3_access_key_id: {
     type: "string",
     default: null,
-  }  as StringConfigOption,
+  } as StringConfigOption,
 
   s3_endpoint: {
     type: "string",
     default: null,
-  }  as StringConfigOption,
+  } as StringConfigOption,
 
   s3_kms_key_id: {
     type: "string",
     default: null,
-  }  as StringConfigOption,
+  } as StringConfigOption,
 
   s3_region: {
     type: "string",
     default: null,
-  }  as StringConfigOption,
+  } as StringConfigOption,
 
   s3_requester_pays: {
     type: "boolean",
@@ -656,12 +656,12 @@ export const globalConfigSchema = {
   s3_secret_access_key: {
     type: "string",
     default: null,
-  }  as StringConfigOption,
+  } as StringConfigOption,
 
   s3_session_token: {
     type: "string",
     default: null,
-  }  as StringConfigOption,
+  } as StringConfigOption,
 
   s3_uploader_max_filesize: {
     type: "string",
@@ -760,7 +760,7 @@ export const globalConfigSchema = {
     type: "string",
     default: null,
     aliases: ["username"],
-  }  as StringConfigOption,
+  } as StringConfigOption,
 
   // === Variant ===
   variant_legacy_encoding: {

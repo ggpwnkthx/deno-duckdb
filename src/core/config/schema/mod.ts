@@ -55,12 +55,11 @@ type SchemaValueType<T> = T extends { type: "boolean" } ? boolean
  *
  * Provides autocomplete for all known config options with proper TypeScript types.
  */
-export type DatabaseConfig =
-  & {
-    [K in keyof typeof configSchema as K extends string ? K : never]?: SchemaValueType<
-      (typeof configSchema)[K]
-    >;
-  };
+export type DatabaseConfig = {
+  [K in keyof typeof configSchema as K extends string ? K : never]?: SchemaValueType<
+    (typeof configSchema)[K]
+  >;
+};
 
 /**
  * Type representing any configuration option definition from the schema.

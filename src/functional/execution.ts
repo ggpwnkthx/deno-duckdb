@@ -21,6 +21,7 @@ import {
   validatePreparedStatementHandle,
 } from "../core/handles.ts";
 import { assertNonEmptyString } from "../core/validate.ts";
+import type { MaterializationLimits } from "../core/config/limits.ts";
 
 /**
  * Request types for executing queries against DuckDB.
@@ -142,12 +143,12 @@ export class LazyResult {
     return this.rows();
   }
 
-  toArray(): RowData[] {
-    return Array.from(this.rows());
+  toArray(limits?: MaterializationLimits): RowData[] {
+    return this.reader().toArray(limits);
   }
 
-  toObjectArray(): ObjectRow[] {
-    return Array.from(this.objects());
+  toObjectArray(limits?: MaterializationLimits): ObjectRow[] {
+    return this.reader().toObjectArray(limits);
   }
 
   close(): void {

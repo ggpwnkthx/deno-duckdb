@@ -15,6 +15,14 @@ import { ValidationError } from "../errors.ts";
 
 /** Size of a pointer in bytes (8 bytes for 64-bit). */
 export const POINTER_SIZE = 8;
+
+// Pointer range validation constants
+// User-space addresses on 64-bit systems typically start at 0x1000 (page-aligned)
+// The maximum addressable space is far larger, but we use a conservative bound
+/** Minimum plausible non-null pointer value (page-aligned). */
+const MIN_VALID_POINTER = 0x1000n;
+/** Maximum plausible pointer value for user-space (256TB, conservative). */
+const MAX_VALID_POINTER = 1n << 48n;
 /** Size of a duckdb_result struct in bytes. */
 export const RESULT_SIZE = 48;
 
@@ -107,12 +115,21 @@ export function toDenoPointerValue(
     });
   }
 
+  // Validate pointer is in a plausible range to catch corrupted values
+  if (value < MIN_VALID_POINTER || value > MAX_VALID_POINTER) {
+    throw new ValidationError("Pointer value is out of valid range", {
+      value: value.toString(),
+      min: MIN_VALID_POINTER.toString(),
+      max: MAX_VALID_POINTER.toString(),
+    });
+  }
+
   // Deno's PointerObject is fundamentally a wrapper around a pointer address.
   // The cast is necessary because there's no safe way to construct a PointerObject
   // from a raw bigint - they're typically returned from FFI calls. This works
   // because the bigint represents a valid memory address from DuckDB.
   //
-  // Boundary semantics: We've validated value !== 0n, so this is a non-null pointer.
+  // Boundary semantics: We've validated value !== 0n and is in valid range.
   // The PointerValue type accepts non-null pointers (which become PointerObject at runtime).
   return value as unknown as Deno.PointerValue<unknown>;
 }

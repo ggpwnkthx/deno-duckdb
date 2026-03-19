@@ -89,6 +89,7 @@ import {
   ResultReader,
 } from "./value.ts";
 import { ValidationError } from "../errors.ts";
+import type { MaterializationLimits } from "../core/config/limits.ts";
 
 // Database
 
@@ -613,8 +614,9 @@ export const columnCount = getResultColumnCount;
  *
  * @param connectionHandle - An open connection handle
  * @param sql - SQL query string
+ * @param limits - Optional materialization limits to prevent unbounded allocation
  * @returns An array of rows, or null if the query fails
- * @throws {ValidationError} if the SQL is empty
+ * @throws {ValidationError} if the SQL is empty or row count exceeds limits
  *
  * @example
  * ```ts
@@ -629,12 +631,13 @@ export const columnCount = getResultColumnCount;
 export function query(
   connectionHandle: ConnectionHandle,
   sql: string,
+  limits?: MaterializationLimits,
 ): RowData[] | null {
   try {
     const result = executeSqlResult(connectionHandle, sql);
     if (!result) return null;
     try {
-      return [...result.rows()];
+      return result.toArray(limits);
     } finally {
       result.close();
     }
@@ -653,8 +656,9 @@ export function query(
  *
  * @param connectionHandle - An open connection handle
  * @param sql - SQL query string
+ * @param limits - Optional materialization limits to prevent unbounded allocation
  * @returns An array of object rows, or null if the query fails
- * @throws {ValidationError} if the SQL is empty
+ * @throws {ValidationError} if the SQL is empty or row count exceeds limits
  *
  * @example
  * ```ts
@@ -669,12 +673,13 @@ export function query(
 export function queryObjects(
   connectionHandle: ConnectionHandle,
   sql: string,
+  limits?: MaterializationLimits,
 ): ObjectRow[] | null {
   try {
     const result = executeSqlResult(connectionHandle, sql);
     if (!result) return null;
     try {
-      return [...result.objects()];
+      return result.toObjectArray(limits);
     } finally {
       result.close();
     }

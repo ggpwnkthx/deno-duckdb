@@ -15,6 +15,11 @@ import type {
   ValueType,
 } from "../types.ts";
 import { createPointerView, validateResultHandle } from "../core/handles.ts";
+import {
+  checkRowCountLimit,
+  getEffectiveLimits,
+  type MaterializationLimits,
+} from "../core/config/limits.ts";
 
 /**
  * Fixed-width byte sizes used by DuckDB's legacy result memory layout.
@@ -256,14 +261,79 @@ function decodeUnsignedHugeInt(
   return (upper << 64n) + lower;
 }
 
+/**
+ * Convert a day count (days since 1970-01-01) to an ISO date string.
+ *
+ * Uses pure arithmetic to avoid JavaScript Date precision/overflow limits.
+ * Follows the ISO 8601 format: YYYY-MM-DD
+ *
+ * @param days - Number of days since 1970-01-01 (can be negative)
+ * @returns ISO-formatted date string
+ */
 function daysToDateString(days: number): string {
-  const date = new Date(Date.UTC(1970, 0, 1));
-  date.setUTCDate(date.getUTCDate() + days);
+  // Pure arithmetic date calculation avoiding JS Date limits
+  // Uses the fact that 400-year cycles have exactly 146097 days
+  // (97 leap years * 366 + 303 normal years * 365 = 146097)
 
-  const year = date.getUTCFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(date.getUTCDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  const daysSince1970 = days;
+
+  // Calculate year using 400-year cycles
+  // Each 400-year cycle = 146097 days
+  const cycles400 = Math.floor(daysSince1970 / 146097);
+  const daysInCycles = cycles400 * 146097;
+  let remainingDays = daysSince1970 - daysInCycles;
+
+  // Handle negative years (before 1970)
+  let year = cycles400 * 400 + 1970;
+
+  // Each 100-year cycle (except the last in a 400-year cycle) = 36524 days
+  // The last 100-year cycle in a 400-year cycle has 36525 days (1 leap year)
+  const cycles100 = remainingDays >= 36525 ? 3 : Math.floor(remainingDays / 36524);
+  year += cycles100 * 100;
+  remainingDays -= cycles100 * (cycles100 === 3 ? 36525 : 36524);
+
+  // Each 4-year cycle (except the last in a 100-year cycle) = 1461 days
+  // The last 4-year cycle in a 100-year cycle has 1460 days (no leap years)
+  const cycles4 = remainingDays >= 1461
+    ? Math.floor((remainingDays - 1) / 1461)
+    : Math.floor(remainingDays / 1461);
+  year += cycles4 * 4;
+  remainingDays -= cycles4 * (cycles4 === 24 ? 1460 : 1461);
+
+  // Each year is either 365 or 366 days
+  // A year is a leap year if divisible by 4, except if divisible by 100 unless divisible by 400
+  const isLeapYear = (y: number) => (y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0));
+  let yearDays = isLeapYear(year) ? 366 : 365;
+
+  while (remainingDays < 0) {
+    year--;
+    yearDays = isLeapYear(year) ? 366 : 365;
+    remainingDays += yearDays;
+  }
+
+  while (remainingDays >= yearDays) {
+    remainingDays -= yearDays;
+    year++;
+    yearDays = isLeapYear(year) ? 366 : 365;
+  }
+
+  // Now remainingDays is the day of the year (0-indexed)
+  // Calculate month and day
+  const daysInMonths = isLeapYear(year)
+    ? [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    : [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+  let month = 1;
+  for (let i = 0; i < daysInMonths.length; i++) {
+    if (remainingDays < daysInMonths[i]) {
+      break;
+    }
+    remainingDays -= daysInMonths[i];
+    month++;
+  }
+  const day = remainingDays + 1;
+
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 function microsecondsToTimeString(value: bigint): string {
@@ -279,20 +349,52 @@ function microsecondsToTimeString(value: bigint): string {
   return micros === 0n ? prefix : `${prefix}.${String(micros).padStart(6, "0")}`;
 }
 
+/**
+ * Convert microseconds since 1970-01-01 00:00:00 to an ISO timestamp string.
+ *
+ * Uses pure bigint arithmetic to avoid JavaScript Number precision loss.
+ * JavaScript Number loses precision beyond 2^53 (approximately 225,179,981,368,5248)
+ * which is only about 285,616 years in microseconds.
+ *
+ * @param value - Microseconds since 1970-01-01 00:00:00 (can be negative)
+ * @returns ISO-formatted timestamp string with microseconds precision
+ */
 function microsecondsToTimestampString(value: bigint): string {
-  const millis = Number(value / 1_000n);
-  const micros = value % 1_000_000n;
-  const date = new Date(millis);
+  // Constants for time calculations (all in microseconds)
+  const MICROS_PER_DAY = 86_400_000_000_000n; // 86400 * 1_000_000_000
+  const MICROS_PER_HOUR = 3_600_000_000_000n; // 3600 * 1_000_000_000
+  const MICROS_PER_MINUTE = 60_000_000_000n; // 60 * 1_000_000_000
+  const MICROS_PER_SECOND = 1_000_000n;
 
-  const year = date.getUTCFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(date.getUTCDate()).padStart(2, "0");
-  const hours = String(date.getUTCHours()).padStart(2, "0");
-  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
-  const seconds = String(date.getUTCSeconds()).padStart(2, "0");
+  // Handle negative values
+  const negative = value < 0n;
+  const absValue = value < 0n ? -value : value;
 
-  const prefix = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-  return micros === 0n ? prefix : `${prefix}.${String(micros).padStart(6, "0")}`;
+  // Calculate total days
+  const totalDays = absValue / MICROS_PER_DAY;
+  const remainingMicros = absValue % MICROS_PER_DAY;
+
+  // Calculate time components
+  const hours = remainingMicros / MICROS_PER_HOUR;
+  const mins = (remainingMicros % MICROS_PER_HOUR) / MICROS_PER_MINUTE;
+  const secs = (remainingMicros % MICROS_PER_MINUTE) / MICROS_PER_SECOND;
+  const micros = remainingMicros % MICROS_PER_SECOND;
+
+  // Convert days to date string (daysSince1970 can be negative)
+  const daysSince1970 = totalDays < 0n ? -Number(totalDays) : Number(totalDays);
+
+  const dateStr = daysToDateString(daysSince1970);
+
+  // Format time with microseconds
+  const timeStr = negative
+    ? `-${dateStr} ${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${
+      String(secs).padStart(2, "0")
+    }`
+    : `${dateStr} ${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${
+      String(secs).padStart(2, "0")
+    }`;
+
+  return micros === 0n ? timeStr : `${timeStr}.${String(micros).padStart(6, "0")}`;
 }
 
 function decodeLegacyTextFallback(
@@ -434,11 +536,35 @@ function decodeValueByType(
       }
 
       const offset = rowIndex * BYTE_SIZE_128;
-      return {
-        months: dataView.getInt32(offset),
-        days: dataView.getInt32(offset + BYTE_SIZE_32),
-        micros: dataView.getBigInt64(offset + BYTE_SIZE_64),
-      };
+      const months = dataView.getInt32(offset);
+      const days = dataView.getInt32(offset + BYTE_SIZE_32);
+      const micros = dataView.getBigInt64(offset + BYTE_SIZE_64);
+
+      // Validate months and days are within int32 bounds (they should be since we read them as int32)
+      // but sanity check anyway
+      if (
+        months < -2147483648 || months > 2147483647
+        || days < -2147483648 || days > 2147483647
+      ) {
+        return decodeLegacyTextFallback(handle, rowIndex, columnIndex) ?? {
+          months: 0,
+          days: 0,
+          micros: 0n,
+        };
+      }
+
+      // Validate micros is reasonable (less than ~10^15 micros = ~11,574 days = ~31 years)
+      // If impossibly large, treat as corrupted data
+      const MAX_REASONABLE_MICROS = 1_000_000_000_000_000n; // 10^15
+      if (micros > MAX_REASONABLE_MICROS || micros < -MAX_REASONABLE_MICROS) {
+        return decodeLegacyTextFallback(handle, rowIndex, columnIndex) ?? {
+          months: 0,
+          days: 0,
+          micros: 0n,
+        };
+      }
+
+      return { months, days, micros };
     }
     default:
       return decodeLegacyTextFallback(handle, rowIndex, columnIndex);
@@ -601,8 +727,18 @@ export class ResultReader {
     }
   }
 
-  toArray(): RowData[] {
+  /**
+   * Materialize all rows as arrays.
+   *
+   * @param limits - Optional materialization limits to prevent unbounded allocation
+   * @returns Array of row arrays
+   * @throws {ValidationError} if row count exceeds limits
+   */
+  toArray(limits?: MaterializationLimits): RowData[] {
     const rowCount = Number(this.#view.rowCount);
+    const effectiveLimits = getEffectiveLimits(limits);
+    checkRowCountLimit(rowCount, effectiveLimits.maxRows);
+
     const columnCount = this.#view.columnCount;
     const columns = this.#view.columns;
     const result = new Array(rowCount);
@@ -617,8 +753,18 @@ export class ResultReader {
     return result;
   }
 
-  toObjectArray(): ObjectRow[] {
+  /**
+   * Materialize all rows as objects.
+   *
+   * @param limits - Optional materialization limits to prevent unbounded allocation
+   * @returns Array of row objects
+   * @throws {ValidationError} if row count exceeds limits
+   */
+  toObjectArray(limits?: MaterializationLimits): ObjectRow[] {
     const rowCount = Number(this.#view.rowCount);
+    const effectiveLimits = getEffectiveLimits(limits);
+    checkRowCountLimit(rowCount, effectiveLimits.maxRows);
+
     const columns = this.#view.columns;
     const result = new Array(rowCount);
     for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {

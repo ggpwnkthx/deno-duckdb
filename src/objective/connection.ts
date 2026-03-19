@@ -24,6 +24,7 @@ import {
 } from "../functional/native.ts";
 import { assertNonEmptyString } from "../core/validate.ts";
 import { InvalidResourceError, ValidationError } from "../errors.ts";
+import type { MaterializationLimits } from "../core/config/limits.ts";
 import { DisposableResource } from "./base.ts";
 import { PreparedStatement } from "./prepared.ts";
 import { QueryResult } from "./query.ts";
@@ -44,6 +45,7 @@ export class Connection extends DisposableResource<ConnectionHandle> {
    * Execute a query and return all rows as arrays.
    *
    * @param sql - SQL query string
+   * @param limits - Optional materialization limits to prevent unbounded allocation
    * @returns Array of rows, or null if the query fails
    *
    * @example
@@ -54,11 +56,11 @@ export class Connection extends DisposableResource<ConnectionHandle> {
    * }
    * ```
    */
-  query(sql: string): RowData[] | null {
+  query(sql: string, limits?: MaterializationLimits): RowData[] | null {
     try {
       const result = this.execute(sql);
       try {
-        return [...result.rows()];
+        return result.toArray(limits);
       } finally {
         result.close();
       }
@@ -76,6 +78,7 @@ export class Connection extends DisposableResource<ConnectionHandle> {
    * Execute a query and return all rows as objects.
    *
    * @param sql - SQL query string
+   * @param limits - Optional materialization limits to prevent unbounded allocation
    * @returns Array of object rows, or null if the query fails
    *
    * @example
@@ -86,12 +89,12 @@ export class Connection extends DisposableResource<ConnectionHandle> {
    * }
    * ```
    */
-  queryObjects(sql: string): ObjectRow[] | null {
+  queryObjects(sql: string, limits?: MaterializationLimits): ObjectRow[] | null {
     try {
       const result = this.execute(sql);
 
       try {
-        return [...result.objects()];
+        return result.toObjectArray(limits);
       } finally {
         result.close();
       }

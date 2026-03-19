@@ -34,6 +34,7 @@ import {
   type ResultReader,
 } from "../functional/mod.ts";
 import { DisposableResource } from "./base.ts";
+import type { MaterializationLimits } from "../core/config/limits.ts";
 
 export class QueryResult extends DisposableResource<ResultHandle> {
   #reader: ResultReader | null = null;
@@ -106,6 +107,26 @@ export class QueryResult extends DisposableResource<ResultHandle> {
    */
   *objects(): IterableIterator<ObjectRow> {
     yield* this.#getReader().objects();
+  }
+
+  /**
+   * Materialize all rows as arrays.
+   *
+   * @param limits - Optional materialization limits to prevent unbounded allocation
+   * @returns Array of row arrays
+   */
+  toArray(limits?: MaterializationLimits): RowData[] {
+    return this.#getReader().toArray(limits);
+  }
+
+  /**
+   * Materialize all rows as objects.
+   *
+   * @param limits - Optional materialization limits to prevent unbounded allocation
+   * @returns Array of row objects
+   */
+  toObjectArray(limits?: MaterializationLimits): ObjectRow[] {
+    return this.#getReader().toObjectArray(limits);
   }
 
   /** Close the result and release resources. */

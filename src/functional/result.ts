@@ -144,11 +144,17 @@ function readBytes(
     return result;
   }
 
-  // For larger strings, use bulk copy via typed array
-  // Access underlying ArrayBuffer via type assertion (Deno's types don't expose buffer)
-  const buffer = (view as unknown as { buffer: ArrayBuffer }).buffer;
-  const uint8View = new Uint8Array(buffer, offset, length);
-  return uint8View.slice(0); // Returns a copy
+  // For larger strings, use bulk copy via typed array using documented getArrayBuffer
+  const buffer = view.getArrayBuffer(length, offset);
+  if (buffer) {
+    return new Uint8Array(buffer);
+  }
+  // Fallback to byte-by-byte if getArrayBuffer returns null
+  const result = new Uint8Array(length);
+  for (let i = 0; i < length; i++) {
+    result[i] = view.getUint8(offset + i);
+  }
+  return result;
 }
 
 function parseHexToBytes(hex: string): Uint8Array | null {

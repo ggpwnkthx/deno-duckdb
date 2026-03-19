@@ -12,6 +12,26 @@ import {
 } from "./schema/mod.ts";
 
 /**
+ * Input type for database configuration that allows string coercion.
+ *
+ * Numeric options accept both number and string forms (e.g., "42" for integers).
+ * Boolean options accept "true"/"false" strings.
+ */
+export type DatabaseConfigInput =
+  & {
+    [K in keyof DatabaseConfig]?: DatabaseConfig[K] extends string | null
+      ? string | null
+      : DatabaseConfig[K] extends number ? number | string
+      : DatabaseConfig[K] extends bigint ? bigint | number | string
+      : DatabaseConfig[K] extends boolean ? boolean | string
+      : DatabaseConfig[K] extends readonly string[] ? readonly string[] | string
+      : DatabaseConfig[K];
+  }
+  & {
+    [key: string]: unknown;
+  };
+
+/**
  * Type guard to check if a string is a known config key.
  */
 export function isValidConfigKey(key: string): key is KnownConfigKey {
@@ -159,8 +179,11 @@ export function validateConfigValue(
 /**
  * Validate a complete database configuration.
  *
- * @param config - The configuration to validate
- * @returns The validated config (or throws on invalid)
+ * Accepts DatabaseConfigInput (with string coercion for numeric/boolean values),
+ * validates all values, coerces them to proper types, and returns DatabaseConfig.
+ *
+ * @param config - The configuration to validate (may contain string forms)
+ * @returns The validated and coerced config
  * @throws Error if any config value is invalid
  */
 export function validateDatabaseConfig(
@@ -176,20 +199,77 @@ export function validateDatabaseConfig(
 
   const errors: string[] = [];
   const configObj = config as Record<string, unknown>;
+  const result: Record<string, unknown> = {};
 
-  // Validate all keys
+  // Validate and coerce all keys
   for (const key of Object.keys(configObj)) {
-    const error = validateConfigValue(key, configObj[key]);
+    const value = configObj[key];
+    const error = validateConfigValue(key, value);
     if (error) {
       errors.push(error);
+      continue;
     }
+
+    // Coerce value to proper type
+    if (!isValidConfigKey(key)) {
+      result[key] = value;
+      continue;
+    }
+
+    const definition = configSchema[key as KnownConfigKey];
+    result[key] = coerceConfigValue(key, definition.type, value);
   }
 
   if (errors.length > 0) {
     throw new Error(`Invalid database config: ${errors.join("; ")}`);
   }
 
-  return configObj as DatabaseConfig;
+  return result as DatabaseConfig;
+}
+
+/**
+ * Coerce a config value to its proper type based on the config key's type definition.
+ */
+function coerceConfigValue(
+  _key: string,
+  type: string,
+  value: unknown,
+): unknown {
+  if (value === undefined || value === null) {
+    return value;
+  }
+
+  switch (type) {
+    case "boolean":
+      if (typeof value === "string") {
+        return value.toLowerCase() === "true";
+      }
+      return value;
+
+    case "integer":
+      if (typeof value === "string") {
+        return parseInt(value, 10);
+      }
+      return value;
+
+    case "double":
+      return value;
+
+    case "bigint":
+      if (typeof value === "string") {
+        return BigInt(value);
+      }
+      if (typeof value === "number") {
+        return BigInt(value);
+      }
+      return value;
+
+    case "string":
+    case "string[]":
+    case "enum":
+    default:
+      return value;
+  }
 }
 
 /**

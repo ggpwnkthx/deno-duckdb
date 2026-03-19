@@ -138,6 +138,9 @@ export class Connection extends DisposableResource<ConnectionHandle> {
       () => {
         this.#preparedStatements.delete(stmt);
       },
+      (result) => {
+        this.#queryResults.add(result);
+      },
     );
     this.#preparedStatements.add(stmt);
     return stmt;

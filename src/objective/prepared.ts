@@ -33,10 +33,16 @@ import { QueryResult } from "./query.ts";
 
 export class PreparedStatement extends DisposableResource<PreparedStatementHandle> {
   #onClose?: () => void;
+  #onQueryResultCreated?: (result: QueryResult) => void;
 
-  constructor(handle: PreparedStatementHandle, onClose?: () => void) {
+  constructor(
+    handle: PreparedStatementHandle,
+    onClose?: () => void,
+    onQueryResultCreated?: (result: QueryResult) => void,
+  ) {
     super(handle);
     this.#onClose = onClose;
+    this.#onQueryResultCreated = onQueryResultCreated;
   }
 
   /**
@@ -66,9 +72,11 @@ export class PreparedStatement extends DisposableResource<PreparedStatementHandl
    * @returns QueryResult for iterating over rows
    */
   execute(): QueryResult {
-    return new QueryResult(
+    const result = new QueryResult(
       executePreparedStatement(this.requireHandle("PreparedStatement")),
     );
+    this.#onQueryResultCreated?.(result);
+    return result;
   }
 
   /**

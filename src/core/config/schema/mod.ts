@@ -74,7 +74,10 @@ type AllAliases = (typeof configSchema)[keyof typeof configSchema] extends
  * Type-safe database configuration derived from DuckDB config schema.
  *
  * Provides autocomplete for all known config options with proper TypeScript types.
- * Also supports unknown keys for extensibility via index signature.
+ * Only known configuration keys are allowed - typos will cause type errors.
+ *
+ * For database-open-time config, use DatabaseOpenConfig.
+ * For session/connection-time config, use SessionConfig.
  */
 export type DatabaseConfig =
   & {
@@ -82,10 +85,88 @@ export type DatabaseConfig =
   }
   & {
     [K in AllAliases]?: SchemaValueType<(typeof configSchema)[AliasToPrimaryKey<K>]>;
+  };
+
+/**
+ * Type-safe configuration for database-open-time options (global config).
+ *
+ * These options are set when calling `duckdb_open_ext()` and affect the entire
+ * database instance. Examples: access_mode, threads, max_memory, etc.
+ *
+ * Use this type for Database.open() and openDatabase() calls.
+ */
+type GlobalConfigKey = keyof typeof globalConfigSchema & string;
+
+type GlobalAliasToPrimaryKey<A extends string> = {
+  [K in GlobalConfigKey]: (typeof globalConfigSchema)[K] extends
+    { aliases: readonly (infer AArr)[] } ? AArr extends string ? A extends AArr ? K
+      : never
+    : never
+    : never;
+}[GlobalConfigKey];
+
+type GlobalAllAliases =
+  (typeof globalConfigSchema)[keyof typeof globalConfigSchema] extends
+    { aliases: readonly (infer A)[] } ? A
+    : never;
+
+export type DatabaseOpenConfig =
+  & {
+    [K in GlobalConfigKey]?: SchemaValueType<(typeof globalConfigSchema)[K]>;
   }
   & {
-    [key: string]: unknown;
+    [K in GlobalAllAliases]?: SchemaValueType<
+      (typeof globalConfigSchema)[GlobalAliasToPrimaryKey<K>]
+    >;
   };
+
+/**
+ * Type-safe configuration for session/connection-time options (local config).
+ *
+ * These options are set per-connection after the database is opened.
+ * Examples: search_path, schema, enable_progress_bar, etc.
+ *
+ * Use this type for Connection.setConfig() calls.
+ */
+type LocalConfigKey = keyof typeof localConfigSchema & string;
+
+export type SessionConfig = {
+  [K in LocalConfigKey]?: SchemaValueType<(typeof localConfigSchema)[K]>;
+};
+
+/**
+ * Type guard to check if a string is a known global config key.
+ */
+export function isKnownGlobalConfigKey(
+  key: string,
+): key is GlobalConfigKey {
+  return key in globalConfigSchema;
+}
+
+/**
+ * Type guard to check if a string is a known local (session) config key.
+ */
+export function isKnownLocalConfigKey(key: string): key is LocalConfigKey {
+  return key in localConfigSchema;
+}
+
+/**
+ * Get the definition for a global config key.
+ */
+export function getGlobalConfigDefinition(
+  key: string,
+): (typeof globalConfigSchema)[keyof typeof globalConfigSchema] | undefined {
+  return globalConfigSchema[key as GlobalConfigKey];
+}
+
+/**
+ * Get the definition for a local (session) config key.
+ */
+export function getLocalConfigDefinition(
+  key: string,
+): (typeof localConfigSchema)[keyof typeof localConfigSchema] | undefined {
+  return localConfigSchema[key as LocalConfigKey];
+}
 
 /**
  * Type representing any configuration option definition from the schema.

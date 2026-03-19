@@ -18,6 +18,7 @@
   },
   "features": {
     "ghcr.io/devcontainers/features/git:1": {},
-    "ghcr.io/stu-bell/devcontainer-features/claude-code:0": {}
+    "ghcr.io/stu-bell/devcontainer-features/claude-code:0": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
   }
 }

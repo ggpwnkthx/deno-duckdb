@@ -483,7 +483,7 @@ function decodeValueByType(
       }
 
       if (dataView) {
-        const headerOffset = rowIndex * BYTE_SIZE_64;
+        const headerOffset = rowIndex * BYTE_SIZE_128;
         const length = Number(dataView.getBigUint64(headerOffset));
         if (length > 0 && length < 1024 * 1024) {
           const innerPtr = dataView.getPointer(headerOffset + BYTE_SIZE_64);

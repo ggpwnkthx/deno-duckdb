@@ -281,6 +281,48 @@ Deno.test({
 });
 
 Deno.test({
+  name: "objective: all integer and temporal types decode correctly",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    await withObjectiveConnection((_database, connection) => {
+      const result = connection.execute(`
+        SELECT
+          42::TINYINT AS tiny,
+          1000::SMALLINT AS small,
+          42::INTEGER AS int,
+          42::BIGINT AS big,
+          42::UTINYINT AS utiny,
+          1000::USMALLINT AS usmall,
+          42::UINTEGER AS uint,
+          42::UBIGINT AS ubig,
+          3.14::FLOAT AS flt,
+          3.14159::DOUBLE AS dbl,
+          '12:34:56'::TIME AS t,
+          '2024-01-15 12:34:56.123456'::TIMESTAMP AS ts,
+          INTERVAL '1 year 2 days 3 hours' AS span
+      `);
+
+      const rows = [...result.rows()];
+      assertEquals(rows[0][0], 42); // TINYINT
+      assertEquals(rows[0][1], 1000); // SMALLINT
+      assertEquals(rows[0][2], 42); // INTEGER
+      assertEquals(rows[0][3], 42n); // BIGINT
+      assertEquals(rows[0][4], 42); // UTINYINT
+      assertEquals(rows[0][5], 1000); // USMALLINT
+      assertEquals(rows[0][6], 42); // UINTEGER
+      assertEquals(rows[0][7], 42n); // UBIGINT
+      assertEquals(rows[0][8], 3.140000104904175); // FLOAT
+      assertEquals(rows[0][9], 3.14159); // DOUBLE
+      assertEquals(rows[0][10], "12:34:56"); // TIME
+      assertEquals(rows[0][11], "2024-01-15 12:34:56.123456"); // TIMESTAMP
+      assertEquals(rows[0][12], { months: 12, days: 2, micros: 10800000000n }); // INTERVAL
+      result.close();
+    });
+  },
+});
+
+Deno.test({
   name: "objective: cached query returns rows directly",
   sanitizeResources: false,
   sanitizeOps: false,

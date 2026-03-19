@@ -12,30 +12,54 @@ Deno.test({
     const sql = `
       SELECT
         1::INTEGER AS id,
+        42::UTINYINT AS tiny_uint,
+        1000::USMALLINT AS small_uint,
+        42::UINTEGER AS uint,
         9223372036854775807::BIGINT AS big_value,
+        42::UBIGINT AS ubig,
         'hello'::TEXT AS text_value,
         true AS flag,
         NULL::TEXT AS note,
+        3.14::FLOAT AS flt,
+        3.14159::DOUBLE AS dbl,
+        '12:34:56'::TIME AS t,
         '2024-01-15'::DATE AS created,
+        '2024-01-15 12:34:56.123456'::TIMESTAMP AS ts,
         INTERVAL '1 year 2 days' AS span
     `;
 
     const expectedRows = [[
       1,
+      42,
+      1000,
+      42,
       9223372036854775807n,
+      42n,
       "hello",
       true,
       null,
+      3.140000104904175,
+      3.14159,
+      "12:34:56",
       "2024-01-15",
+      "2024-01-15 12:34:56.123456",
       { months: 12, days: 2, micros: 0n },
     ]];
     const expectedObjects = [{
       id: 1,
+      tiny_uint: 42,
+      small_uint: 1000,
+      uint: 42,
       big_value: 9223372036854775807n,
+      ubig: 42n,
       text_value: "hello",
       flag: true,
       note: null,
+      flt: 3.140000104904175,
+      dbl: 3.14159,
+      t: "12:34:56",
       created: "2024-01-15",
+      ts: "2024-01-15 12:34:56.123456",
       span: { months: 12, days: 2, micros: 0n },
     }];
 

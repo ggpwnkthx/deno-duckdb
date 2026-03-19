@@ -4,4 +4,6 @@ FROM denoland/deno:bin AS deno
 FROM mcr.microsoft.com/devcontainers/base:debian
 # Copy Deno binary from Stage 1
 COPY --from=deno /deno /usr/local/bin/deno
+
+USER vscode
 RUN curl -fsSL https://opencode.ai/install | bash

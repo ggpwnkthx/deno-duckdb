@@ -1,0 +1,42 @@
+{
+  "version": "5",
+  "specifiers": {
+    "jsr:@ggpwnkthx/libclang@1": "1.0.24",
+    "jsr:@ggpwnkthx/libduckdb@1.0.15": "1.0.15",
+    "jsr:@std/assert@1.0.19": "1.0.19",
+    "jsr:@std/internal@^1.0.12": "1.0.12",
+    "npm:pako@^2.1.0": "2.1.0"
+  },
+  "jsr": {
+    "@ggpwnkthx/libclang@1.0.24": {
+      "integrity": "5eda56efcddc14c3ea68bb9a87668bca4ead09e61eb9862b68b72c93e2fcd901"
+    },
+    "@ggpwnkthx/libduckdb@1.0.15": {
+      "integrity": "5d84c86c6c30d2f4f90ab15864f53fe2bf7139f816540c11fbbeb50fdddc2d3b",
+      "dependencies": [
+        "jsr:@ggpwnkthx/libclang",
+        "npm:pako"
+      ]
+    },
+    "@std/assert@1.0.19": {
+      "integrity": "eaada96ee120cb980bc47e040f82814d786fe8162ecc53c91d8df60b8755991e",
+      "dependencies": [
+        "jsr:@std/internal"
+      ]
+    },
+    "@std/internal@1.0.12": {
+      "integrity": "972a634fd5bc34b242024402972cd5143eac68d8dffaca5eaa4dba30ce17b027"
+    }
+  },
+  "npm": {
+    "pako@2.1.0": {
+      "integrity": "sha512-w+eufiZ1WuJYgPXbV/PO3NCMEc3xqylkKHzp8bxp1uW4qaSNQUkwmLLEc3kKsfz8lpV1F8Ht3U1Cm+9Srog2ug=="
+    }
+  },
+  "workspace": {
+    "dependencies": [
+      "jsr:@ggpwnkthx/libduckdb@1.0.15",
+      "jsr:@std/assert@1.0.19"
+    ]
+  }
+}

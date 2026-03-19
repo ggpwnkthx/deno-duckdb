@@ -1,0 +1,70 @@
+name: Bug Report
+description: Report a bug in the library
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug!
+
+  - type: input
+    id: version
+    attributes:
+      label: Library Version
+      description: Run `deno run -A https://jsr.io/@ggpwnkthx/duckdb/1.1.15/src/mod.ts --version` to get the version
+      placeholder: "1.1.15"
+    validations:
+      required: true
+
+  - type: input
+    id: deno-version
+    attributes:
+      label: Deno Version
+      description: Run `deno --version` to get the version
+      placeholder: "Deno 2.x.x"
+    validations:
+      required: true
+
+  - type: input
+    id: libduckdb-version
+    attributes:
+      label: libduckdb Version
+      description: Check in deno.json or run the query `SELECT duckdb_version()`
+      placeholder: "1.0.15"
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction Steps
+      description: Steps to reproduce the bug (include minimal code sample if possible)
+      placeholder: |
+        1. Run `...`
+        2. Execute query `...`
+        3. See error
+
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What you expected to happen
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened (include error message if applicable)
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other context about the problem (OS, database file location, etc.)

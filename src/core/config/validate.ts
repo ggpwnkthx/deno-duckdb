@@ -9,7 +9,7 @@ import {
   configSchema,
   type DatabaseConfig,
   type DatabaseOpenConfig,
-  type GlobalConfigKey,
+  getGlobalConfigDefinition,
   globalConfigSchema,
   type KnownConfigKey,
   type LocalConfigKey,
@@ -52,7 +52,11 @@ function isValidGlobalKey(key: string): boolean {
  * Type guard to check if a string is a known config key.
  */
 export function isValidConfigKey(key: string): key is KnownConfigKey {
-  return key in configSchema;
+  if (key in configSchema) return true;
+  for (const def of Object.values(configSchema)) {
+    if (def.aliases?.includes(key)) return true;
+  }
+  return false;
 }
 
 /**
@@ -282,7 +286,11 @@ export function validateDatabaseOpenConfig(
       continue;
     }
 
-    const definition = globalConfigSchema[key as GlobalConfigKey];
+    const definition = getGlobalConfigDefinition(key);
+    if (!definition) {
+      errors.push(`Unknown config key '${key}'`);
+      continue;
+    }
     result[key] = coerceConfigValue(key, definition.type, value);
   }
 

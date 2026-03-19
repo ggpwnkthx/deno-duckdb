@@ -15,7 +15,7 @@ import type {
   StringConfigOption,
 } from "../types.ts";
 
-import { globalConfigSchema } from "./global.ts";
+import { type GlobalConfigOptionDefinition, globalConfigSchema } from "./global.ts";
 import { localConfigSchema } from "./local.ts";
 
 // Re-export global schema and types
@@ -166,11 +166,26 @@ export function isKnownLocalConfigKey(key: string): key is LocalConfigKey {
 
 /**
  * Get the definition for a global config key.
+ *
+ * Resolves both primary keys and aliases to their definitions.
  */
 export function getGlobalConfigDefinition(
   key: string,
 ): (typeof globalConfigSchema)[keyof typeof globalConfigSchema] | undefined {
-  return globalConfigSchema[key as GlobalConfigKey];
+  // Check primary key first
+  if (key in globalConfigSchema) {
+    return globalConfigSchema[key as GlobalConfigKey];
+  }
+
+  // Check if key is an alias for any primary key
+  for (const [, definition] of Object.entries(globalConfigSchema)) {
+    const def = definition as GlobalConfigOptionDefinition;
+    if (def.aliases?.includes(key)) {
+      return def;
+    }
+  }
+
+  return undefined;
 }
 
 /**

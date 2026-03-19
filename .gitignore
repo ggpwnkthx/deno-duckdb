@@ -3,3 +3,4 @@
 .env
 CLAUDE.md
 /core
+/coverage

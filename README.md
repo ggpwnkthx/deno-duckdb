@@ -26,9 +26,6 @@ upgrades may break result decoding due to changes in:
 
 ---
 
-> **Note:** While this library is stable and production-ready, I haven't fully settled on a
-> consistent function naming pattern yet. This will be normalized in a future major version.
->
 > Starting with version 1.2.0, this project will adhere to **semantic versioning**:
 >
 > - **MAJOR** (x.0.0) - Breaking changes to the public API

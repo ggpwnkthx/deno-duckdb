@@ -16,8 +16,11 @@
   },
   "tasks": {
     "test": "deno test -A ./tests/*",
+    "test:coverage": "deno test -A --coverage=coverage ./tests/* && deno coverage --output=coverage/coverage.html --html",
+    "coverage": "deno test -A --coverage=coverage ./tests/* && deno coverage --output=coverage/coverage.txt --lcov",
+    "coverage:check": "deno task coverage && deno run -A scripts/check_coverage.ts coverage/coverage.txt",
     "bench": "deno bench -A ./benchmarks/*",
-    "ci": "deno fmt && deno lint && deno check && deno task test && deno task examples",
+    "ci": "deno fmt && deno lint && deno check && deno task coverage:check && deno task test && deno task examples",
     "example:basic": "deno run -A ./examples/getting-started/basic.ts",
     "example:quickstart": "deno run -A ./examples/getting-started/quickstart.ts",
     "example:config:memory": "deno run -A ./examples/configuration/memory-and-threads.ts",

@@ -293,12 +293,13 @@ export type { BindValue };
  * Destroy a result handle and free associated memory.
  *
  * @param handle - A valid result handle
+ * @deprecated Use {@link destroy} instead - this function will be removed in a future version
  *
  * @example
  * ```ts
  * const result = executeSqlResult(conn, "SELECT 1");
  * // ... use result
- * destroyResult(result);
+ * destroy(result);
  * ```
  */
 export { destroyResult };
@@ -308,11 +309,12 @@ export { destroyResult };
  *
  * @param handle - A valid result handle
  * @returns Number of rows
+ * @deprecated Use {@link rowCount} instead - this function will be removed in a future version
  *
  * @example
  * ```ts
  * const result = executeSqlResult(conn, "SELECT * FROM table");
- * console.log(getResultRowCount(result));
+ * console.log(rowCount(result));
  * ```
  */
 export { getResultRowCount };
@@ -322,11 +324,12 @@ export { getResultRowCount };
  *
  * @param handle - A valid result handle
  * @returns Number of columns
+ * @deprecated Use {@link columnCount} instead - this function will be removed in a future version
  *
  * @example
  * ```ts
  * const result = executeSqlResult(conn, "SELECT a, b, c FROM table");
- * console.log(getResultColumnCount(result)); // 3n
+ * console.log(columnCount(result)); // 3n
  * ```
  */
 export { getResultColumnCount };
@@ -336,11 +339,12 @@ export { getResultColumnCount };
  *
  * @param handle - A valid result handle
  * @returns Array of column information
+ * @deprecated Use {@link columnInfos} instead - this function will be removed in a future version
  *
  * @example
  * ```ts
  * const result = executeSqlResult(conn, "SELECT id, name FROM users");
- * const columns = getResultColumnInfos(result);
+ * const columns = columnInfos(result);
  * console.log(columns[0].name); // "id"
  * ```
  */
@@ -352,12 +356,13 @@ export { getResultColumnInfos };
  * @param handle - A valid result handle
  * @param columnIndex - Column index (0-based)
  * @returns Column name
+ * @deprecated Use {@link columnName} instead - this function will be removed in a future version
  *
  * @example
  * ```ts
  * const result = executeSqlResult(conn, "SELECT id, name FROM users");
- * console.log(getResultColumnName(result, 0)); // "id"
- * console.log(getResultColumnName(result, 1)); // "name"
+ * console.log(columnName(result, 0)); // "id"
+ * console.log(columnName(result, 1)); // "name"
  * ```
  */
 export { getResultColumnName };
@@ -368,11 +373,12 @@ export { getResultColumnName };
  * @param handle - A valid result handle
  * @param columnIndex - Column index (0-based)
  * @returns Column type enum value
+ * @deprecated Use {@link columnType} instead - this function will be removed in a future version
  *
  * @example
  * ```ts
  * const result = executeSqlResult(conn, "SELECT id FROM users");
- * console.log(getResultColumnType(result, 0)); // DUCKDB_TYPE.DUCKDB_TYPE_BIGINT
+ * console.log(columnType(result, 0)); // DUCKDB_TYPE.DUCKDB_TYPE_BIGINT
  * ```
  */
 export { getResultColumnType };
@@ -608,6 +614,14 @@ export const destroyPrepared = destroyPreparedStatement;
 export const rowCount = getResultRowCount;
 /** Alias for {@link getResultColumnCount}. */
 export const columnCount = getResultColumnCount;
+/** Alias for {@link destroyResult}. */
+export const destroy = destroyResult;
+/** Alias for {@link getResultColumnInfos}. */
+export const columnInfos = getResultColumnInfos;
+/** Alias for {@link getResultColumnName}. */
+export const columnName = getResultColumnName;
+/** Alias for {@link getResultColumnType}. */
+export const columnType = getResultColumnType;
 
 /**
  * Execute a query and return an array of rows.

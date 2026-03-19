@@ -135,7 +135,7 @@ export function toDenoPointerValue(
 }
 
 /**
- * @deprecated Use toDenoPointerValue instead. Kept for backward compatibility.
+ * @deprecated Use {@link toDenoPointerValue} instead. This function will be removed in a future version.
  * @see toDenoPointerValue
  */
 export function toPointerValue(

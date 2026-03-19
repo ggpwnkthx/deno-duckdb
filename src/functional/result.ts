@@ -15,8 +15,10 @@ import type {
   ValueType,
 } from "../types.ts";
 import { createPointerView, validateResultHandle } from "../core/handles.ts";
+import { ValidationError } from "../errors.ts";
 import {
   checkRowCountLimit,
+  checkStringLengthLimit,
   getEffectiveLimits,
   type MaterializationLimits,
 } from "../core/config/limits.ts";
@@ -48,6 +50,42 @@ import {
 import { assertIntegerIndex } from "../core/validate.ts";
 
 const textDecoder = new TextDecoder();
+
+/**
+ * Estimate the byte size of a decoded value for materialization limit checking.
+ *
+ * @internal
+ * @param value - A decoded value from the result set
+ * @returns Estimated byte size
+ */
+function estimateValueByteSize(value: ValueType): number {
+  if (value === null || value === undefined) {
+    return 8; // pointer-sized
+  }
+  if (typeof value === "boolean") {
+    return 1;
+  }
+  if (typeof value === "number") {
+    return 8;
+  }
+  if (typeof value === "bigint") {
+    return 16; // 128-bit
+  }
+  if (typeof value === "string") {
+    return value.length * 2; // UTF-16 in JS strings
+  }
+  if (value instanceof Uint8Array) {
+    return value.byteLength;
+  }
+  if (Array.isArray(value)) {
+    return value.reduce((sum, item) => sum + estimateValueByteSize(item), 0);
+  }
+  if (typeof value === "object") {
+    // Interval or other object
+    return 24; // 3 x int64
+  }
+  return 16;
+}
 
 interface ColumnVector {
   readonly name: string;
@@ -193,7 +231,10 @@ function getStringLikeValue(
   const headerOffset = row * BYTE_SIZE_64;
   const length = Number(dataView.getBigUint64(headerOffset));
 
-  if (length > 10 * 1024 * 1024) {
+  // Validate length - if exceeds reasonable limit, use fallback for text types
+  try {
+    checkStringLengthLimit(BigInt(length));
+  } catch {
     if (handle !== undefined && columnIndex !== undefined) {
       const fallback = readResultValueAsText(handle, row, columnIndex);
       if (fallback !== null) {
@@ -759,6 +800,15 @@ export class ResultReader {
       for (let i = 0; i < columnCount; i++) {
         row[i] = this.decodeValueFast(rowIndex, i, columns[i]);
       }
+      const rowByteSize = row.reduce(
+        (sum, val) => sum + estimateValueByteSize(val),
+        0,
+      );
+      if (rowByteSize > effectiveLimits.maxBytesPerRow) {
+        throw new ValidationError(
+          `Row ${rowIndex} byte size ${rowByteSize} exceeds limit ${effectiveLimits.maxBytesPerRow}`,
+        );
+      }
       result[rowIndex] = row;
     }
     return result;
@@ -782,6 +832,15 @@ export class ResultReader {
       const row: ObjectRow = {};
       for (let i = 0; i < columns.length; i++) {
         row[columns[i].name] = this.decodeValueFast(rowIndex, i, columns[i]);
+      }
+      const rowByteSize = (Object.values(row) as ValueType[]).reduce(
+        (sum: number, val: ValueType) => sum + estimateValueByteSize(val),
+        0,
+      );
+      if (rowByteSize > effectiveLimits.maxBytesPerRow) {
+        throw new ValidationError(
+          `Row ${rowIndex} byte size ${rowByteSize} exceeds limit ${effectiveLimits.maxBytesPerRow}`,
+        );
       }
       result[rowIndex] = row;
     }

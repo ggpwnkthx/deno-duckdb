@@ -142,7 +142,7 @@ export type BindValue = boolean | number | bigint | string | Uint8Array | null;
  * const db = await openDatabase("my.db");
  *
  * // With config
- * const db = await openDatabase("my.db", { access_mode: "read_only" });
+ * const db = await openDatabase("my.db", { access_mode: "READ_ONLY" });
  * ```
  */
 export async function openDatabase(

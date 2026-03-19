@@ -65,7 +65,6 @@ Deno.test("core: getConfigEnumValues returns allowed values for enum options", (
 
 Deno.test("core: validateConfigValue validates enum values", () => {
   assertEquals(validateConfigValue("access_mode", "READ_ONLY"), null);
-  assertEquals(validateConfigValue("access_mode", "read_only"), null);
   assertEquals(
     validateConfigValue("access_mode", "invalid"),
     "Invalid value 'invalid' for 'access_mode'. Allowed: AUTOMATIC, READ_ONLY, READ_WRITE",

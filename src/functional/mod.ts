@@ -109,7 +109,7 @@ import { ValidationError } from "../errors.ts";
  * const db = await openDatabase("my.db");
  *
  * // With config
- * const db = await openDatabase("my.db", { access_mode: "read_only" });
+ * const db = await openDatabase("my.db", { access_mode: "READ_ONLY" });
  * ```
  */
 export { openDatabase };

@@ -137,7 +137,7 @@ User-friendly config options are normalized to DuckDB's expected names:
 
 ```ts
 // Use the native DuckDB config option name:
-Database.open(undefined, { access_mode: "read_only" });
+Database.open(undefined, { access_mode: "READ_ONLY" });
 ```
 
 ### Type-Safe Configuration
@@ -150,7 +150,7 @@ import { Database } from "jsr:@ggpwnkthx/duckdb/objective";
 
 // TypeScript provides autocomplete for known config options:
 const db = await Database.open(undefined, {
-  access_mode: "read_only", // Restricted to "AUTOMATIC" | "READ_ONLY" | "READ_WRITE"
+  access_mode: "READ_ONLY", // Restricted to "AUTOMATIC" | "READ_ONLY" | "READ_WRITE"
   threads: 4n, // bigint
   max_memory: "8GB", // string
   enable_http_metadata_cache: true, // boolean

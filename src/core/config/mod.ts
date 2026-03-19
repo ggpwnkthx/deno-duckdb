@@ -44,7 +44,7 @@ export interface ConfigOption {
  *
  * @example
  * ```ts
- * const { path, options } = configToFFI("mydb.db", { access_mode: "read_only" });
+ * const { path, options } = configToFFI("mydb.db", { access_mode: "READ_ONLY" });
  * // Result: { path: "mydb.db", options: [{ name: "access_mode", value: "READ_ONLY" }] }
  * ```
  */

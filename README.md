@@ -10,7 +10,7 @@ Type-safe DuckDB functional and object-oriented APIs.
 | Dependency           | Version    | Notes                                     |
 | -------------------- | ---------- | ----------------------------------------- |
 | DuckDB               | **1.5.0**  | ABI/layout assumptions in result decoding |
-| Deno                 | **1.46+**  | Requires FFI support                      |
+| Deno                 | **2.0+**   | Requires FFI support                      |
 | @ggpwnkthx/libduckdb | **1.0.15** | Pinned in `deno.json`                     |
 
 This library uses direct memory access for high-performance result decoding. It makes
@@ -165,8 +165,6 @@ Each config option has a proper TypeScript type based on the DuckDB schema:
 - **BigInt options** - `bigint` type
 - **String options** - `string` type
 - **String array options** - `readonly string[]` type
-
-The config also supports unknown keys for extensibility via `[key: string]: unknown`.
 
 ### Branded Handle Types
 

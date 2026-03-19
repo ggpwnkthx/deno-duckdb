@@ -32,7 +32,7 @@ const _exampleConfigs: DatabaseConfig[] = [
   // String options
   { temp_directory: "/tmp/duckdb" },
   { checkpoint_threshold: "256.0 MiB" },
-  { timezone: "UTC" },
+  { TimeZone: "UTC" },
 
   // Enum options
   { access_mode: "READ_ONLY" },
@@ -65,11 +65,11 @@ console.log("  http_retry_backoff: 4 (default: 4)");
 console.log("\n=== String Options ===");
 console.log("  temp_directory: '/tmp/duckdb'");
 console.log("  checkpoint_threshold: '256.0 MiB'");
-console.log("  timezone: 'UTC'");
+console.log("  TimeZone: 'UTC'");
 
 console.log("\n=== Enum Options ===");
 console.log("  access_mode: 'READ_ONLY' (AUTOMATIC, READ_ONLY, READ_WRITE)");
-console.log("  default_order: 'DESC' (ASCENDING, DESCENDING)");
+console.log("  default_order: 'DESCENDING' (ASCENDING, DESCENDING)");
 console.log("  logging_level: 'INFO' (DEBUG, INFO, WARNING, ERROR)");
 console.log("  Note: Enum values are case-insensitive");
 

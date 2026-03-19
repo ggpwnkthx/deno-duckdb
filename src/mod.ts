@@ -8,7 +8,7 @@
  * ABI/layout that are only guaranteed for:
  *
  * - DuckDB: **1.5.0** (via `@ggpwnkthx/libduckdb@1.0.15`)
- * - Deno: **1.46+** (requires FFI support)
+ * - Deno: **2.0+** (requires FFI support)
  *
  * Do NOT upgrade DuckDB or Deno without thorough testing. Even minor version upgrades may
  * break result decoding due to changes in memory layout assumptions.

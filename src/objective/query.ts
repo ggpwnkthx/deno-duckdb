@@ -28,11 +28,7 @@
  */
 
 import type { ColumnInfo, ObjectRow, ResultHandle, RowData } from "../types.ts";
-import {
-  createResultReader,
-  destroyResult,
-  type ResultReader,
-} from "../functional/mod.ts";
+import { createResultReader, destroy, type ResultReader } from "../functional/mod.ts";
 import { DisposableResource } from "./base.ts";
 import type { MaterializationLimits } from "../core/config/limits.ts";
 
@@ -133,7 +129,7 @@ export class QueryResult extends DisposableResource<ResultHandle> {
   close(): void {
     const handle = this.releaseHandle();
     if (handle) {
-      destroyResult(handle);
+      destroy(handle);
     }
 
     this.#reader = null;

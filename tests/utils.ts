@@ -59,7 +59,7 @@ export function execFunctional(
   try {
     // DDL side effects happen during execution
   } finally {
-    functional.destroyResult(result);
+    functional.destroy(result);
     functional.destroyPrepared(stmt);
   }
 }

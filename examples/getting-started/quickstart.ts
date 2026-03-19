@@ -246,7 +246,7 @@ try {
           );
         }
       } finally {
-        functional.destroyResult(result);
+        functional.destroy(result);
       }
     } finally {
       functional.destroyPrepared(rangeStatement);

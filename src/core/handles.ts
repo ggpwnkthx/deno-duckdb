@@ -135,16 +135,6 @@ export function toDenoPointerValue(
 }
 
 /**
- * @deprecated Use {@link toDenoPointerValue} instead. This function will be removed in a future version.
- * @see toDenoPointerValue
- */
-export function toPointerValue(
-  value: bigint,
-): Deno.PointerObject<unknown> {
-  return toDenoPointerValue(value) as Deno.PointerObject<unknown>;
-}
-
-/**
  * Require a valid (non-null) opaque pointer value from a handle.
  *
  * @param handle - Handle buffer to extract pointer from

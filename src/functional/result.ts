@@ -40,12 +40,12 @@ const BYTE_SIZE_64 = 8;
 /** @internal */
 const BYTE_SIZE_128 = 16;
 import {
+  columnInfos,
   getResultColumnData,
-  getResultColumnInfos,
   getResultColumnValidity,
-  getResultRowCount,
   isResultValueNull,
   readResultValueAsText,
+  rowCount,
 } from "./native.ts";
 import { assertIntegerIndex } from "../core/validate.ts";
 
@@ -632,10 +632,9 @@ function decodeValueByType(
  */
 function buildResultView(handle: ResultHandle): ResultView {
   validateResultHandle(handle);
-  const columnInfos = getResultColumnInfos(handle);
-  const rowCount = getResultRowCount(handle);
+  const info = columnInfos(handle);
 
-  const columns: ColumnVector[] = columnInfos.map((column, index) => ({
+  const columns: ColumnVector[] = info.map((column, index) => ({
     name: column.name,
     type: column.type,
     dataView: getResultColumnData(handle, index),
@@ -644,10 +643,10 @@ function buildResultView(handle: ResultHandle): ResultView {
 
   return {
     handle,
-    rowCount,
-    columnCount: columnInfos.length,
+    rowCount: rowCount(handle),
+    columnCount: info.length,
     columns,
-    columnInfos,
+    columnInfos: info,
   };
 }
 

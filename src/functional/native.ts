@@ -348,7 +348,7 @@ export function executeQueryResult(
  *
  * @param handle - A valid result handle
  */
-export function destroyResult(handle: ResultHandle): void {
+export function destroy(handle: ResultHandle): void {
   validateResultHandle(handle);
   const library = getLibraryFast();
   library.symbols.duckdb_destroy_result(handle);
@@ -639,10 +639,10 @@ export function destroyPreparedStatement(
  * @example
  * ```ts
  * const result = executeSqlResult(conn, "SELECT * FROM table");
- * console.log(getResultRowCount(result));
+ * console.log(rowCount(result));
  * ```
  */
-export function getResultRowCount(handle: ResultHandle): bigint {
+export function rowCount(handle: ResultHandle): bigint {
   validateResultHandle(handle);
   return getLibraryFast().symbols.duckdb_row_count(handle);
 }
@@ -656,10 +656,10 @@ export function getResultRowCount(handle: ResultHandle): bigint {
  * @example
  * ```ts
  * const result = executeSqlResult(conn, "SELECT a, b, c FROM table");
- * console.log(getResultColumnCount(result)); // 3n
+ * console.log(columnCount(result)); // 3n
  * ```
  */
-export function getResultColumnCount(handle: ResultHandle): bigint {
+export function columnCount(handle: ResultHandle): bigint {
   validateResultHandle(handle);
   return getLibraryFast().symbols.duckdb_column_count(handle);
 }
@@ -674,16 +674,15 @@ export function getResultColumnCount(handle: ResultHandle): bigint {
  * @example
  * ```ts
  * const result = executeSqlResult(conn, "SELECT id, name FROM users");
- * console.log(getResultColumnName(result, 0)); // "id"
- * console.log(getResultColumnName(result, 1)); // "name"
+ * console.log(columnName(result, 0)); // "id"
+ * console.log(columnName(result, 1)); // "name"
  * ```
  */
-export function getResultColumnName(
+export function columnName(
   handle: ResultHandle,
   columnIndex: number,
 ): string {
-  const columnCount = Number(getResultColumnCount(handle));
-  assertIntegerIndex(columnIndex, "Column index", columnCount);
+  assertIntegerIndex(columnIndex, "Column index", Number(columnCount(handle)));
 
   const pointer = getLibraryFast().symbols.duckdb_column_name(
     handle,
@@ -703,15 +702,14 @@ export function getResultColumnName(
  * @example
  * ```ts
  * const result = executeSqlResult(conn, "SELECT id FROM users");
- * console.log(getResultColumnType(result, 0)); // DUCKDB_TYPE.DUCKDB_TYPE_BIGINT
+ * console.log(columnType(result, 0)); // DUCKDB_TYPE.DUCKDB_TYPE_BIGINT
  * ```
  */
-export function getResultColumnType(
+export function columnType(
   handle: ResultHandle,
   columnIndex: number,
 ): DUCKDB_TYPE {
-  const columnCount = Number(getResultColumnCount(handle));
-  assertIntegerIndex(columnIndex, "Column index", columnCount);
+  assertIntegerIndex(columnIndex, "Column index", Number(columnCount(handle)));
 
   return getLibraryFast().symbols.duckdb_column_type(
     handle,
@@ -728,18 +726,18 @@ export function getResultColumnType(
  * @example
  * ```ts
  * const result = executeSqlResult(conn, "SELECT id, name FROM users");
- * const columns = getResultColumnInfos(result);
+ * const columns = columnInfos(result);
  * console.log(columns[0].name); // "id"
  * ```
  */
-export function getResultColumnInfos(handle: ResultHandle): ColumnInfo[] {
-  const count = Number(getResultColumnCount(handle));
+export function columnInfos(handle: ResultHandle): ColumnInfo[] {
+  const count = Number(columnCount(handle));
   const columns: ColumnInfo[] = [];
 
   for (let index = 0; index < count; index += 1) {
     columns.push({
-      name: getResultColumnName(handle, index),
-      type: getResultColumnType(handle, index),
+      name: columnName(handle, index),
+      type: columnType(handle, index),
     });
   }
 
@@ -757,8 +755,7 @@ export function getResultColumnData(
   handle: ResultHandle,
   columnIndex: number,
 ): Deno.UnsafePointerView | null {
-  const columnCount = Number(getResultColumnCount(handle));
-  assertIntegerIndex(columnIndex, "Column index", columnCount);
+  assertIntegerIndex(columnIndex, "Column index", Number(columnCount(handle)));
 
   return createPointerView(
     getLibraryFast().symbols.duckdb_column_data(handle, BigInt(columnIndex)),
@@ -779,8 +776,7 @@ export function getResultColumnValidity(
   handle: ResultHandle,
   columnIndex: number,
 ): Deno.UnsafePointerView | null {
-  const columnCount = Number(getResultColumnCount(handle));
-  assertIntegerIndex(columnIndex, "Column index", columnCount);
+  assertIntegerIndex(columnIndex, "Column index", Number(columnCount(handle)));
 
   const library = getLibraryFast();
   const validityFn =
@@ -809,10 +805,8 @@ export function isResultValueNull(
   rowIndex: number,
   columnIndex: number,
 ): boolean {
-  const rowCount = Number(getResultRowCount(handle));
-  const columnCount = Number(getResultColumnCount(handle));
-  assertIntegerIndex(rowIndex, "Row index", rowCount);
-  assertIntegerIndex(columnIndex, "Column index", columnCount);
+  assertIntegerIndex(rowIndex, "Row index", Number(rowCount(handle)));
+  assertIntegerIndex(columnIndex, "Column index", Number(columnCount(handle)));
 
   return Boolean(
     getLibraryFast().symbols.duckdb_value_is_null(
@@ -836,10 +830,8 @@ export function readResultValueAsText(
   rowIndex: number,
   columnIndex: number,
 ): string | null {
-  const rowCount = Number(getResultRowCount(handle));
-  const columnCount = Number(getResultColumnCount(handle));
-  assertIntegerIndex(rowIndex, "Row index", rowCount);
-  assertIntegerIndex(columnIndex, "Column index", columnCount);
+  assertIntegerIndex(rowIndex, "Row index", Number(rowCount(handle)));
+  assertIntegerIndex(columnIndex, "Column index", Number(columnCount(handle)));
 
   if (isResultValueNull(handle, rowIndex, columnIndex)) {
     return null;

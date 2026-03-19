@@ -215,7 +215,7 @@ Deno.test({
           assertEquals(functional.rowCount(resultHandle), 1n);
           assertEquals([...functional.iterateRows(reader)], [[1, "one"]]);
         } finally {
-          functional.destroyResult(resultHandle);
+          functional.destroy(resultHandle);
         }
 
         functional.resetPrepared(stmt2);
@@ -226,7 +226,7 @@ Deno.test({
           const rows = [...functional.iterateRows(reader)];
           assertEquals(rows, [[2, "two"]]);
         } finally {
-          functional.destroyResult(resultHandle);
+          functional.destroy(resultHandle);
         }
       } finally {
         functional.destroyPrepared(stmt1);

@@ -14,11 +14,7 @@ import type {
   RowData,
 } from "../types.ts";
 import { InvalidResourceError } from "../errors.ts";
-import {
-  destroyResult,
-  executePreparedStatement,
-  executeQueryResult,
-} from "./native.ts";
+import { destroy, executePreparedStatement, executeQueryResult } from "./native.ts";
 import { createResultReader, type ResultReader } from "./result.ts";
 import {
   validateConnectionHandle,
@@ -163,7 +159,7 @@ export class LazyResult {
 
     this.#handle = null;
     this.#reader = null;
-    destroyResult(handle);
+    destroy(handle);
   }
 
   [Symbol.dispose](): void {

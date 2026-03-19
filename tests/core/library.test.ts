@@ -36,7 +36,7 @@ Deno.test({
       const rows = [...functional.iterateRows(reader)];
       assertEquals(rows, [[1]]);
     } finally {
-      functional.destroyResult(result);
+      functional.destroy(result);
       functional.destroyPrepared(stmt);
       functional.closeConnection(connection);
       functional.closeDatabase(database);

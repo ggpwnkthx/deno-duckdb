@@ -86,7 +86,7 @@ Deno.test({
         assertEquals([...objectiveResult.rows()], expectedRows);
         assertEquals([...objectiveResult.objects()], expectedObjects);
       } finally {
-        functional.destroyResult(functionalResult);
+        functional.destroy(functionalResult);
         functional.destroyPrepared(stmt);
         objectiveResult.close();
       }
@@ -120,13 +120,13 @@ Deno.test({
       {
         const stmt = functional.prepare(functionalConnection, createTable);
         const result = functional.executePrepared(stmt);
-        functional.destroyResult(result);
+        functional.destroy(result);
         functional.destroyPrepared(stmt);
       }
       {
         const stmt = functional.prepare(functionalConnection, insertData);
         const result = functional.executePrepared(stmt);
-        functional.destroyResult(result);
+        functional.destroy(result);
         functional.destroyPrepared(stmt);
       }
 
@@ -167,7 +167,7 @@ Deno.test({
           assertEquals(materializeResultRows(functionalReader), expected);
           assertEquals([...objectiveResult.rows()], expected);
         } finally {
-          functional.destroyResult(functionalResult);
+          functional.destroy(functionalResult);
           objectiveResult.close();
         }
       } finally {

@@ -181,7 +181,7 @@ Deno.test({
           const reader = functional.createResultReader(result);
           assertEquals([...functional.iterateRows(reader)], [["alpha"]]);
         } finally {
-          functional.destroyResult(result);
+          functional.destroy(result);
         }
 
         functional.bind(statement, [2, false]);
@@ -191,7 +191,7 @@ Deno.test({
           const reader = functional.createResultReader(result);
           assertEquals([...functional.iterateRows(reader)], [["beta"]]);
         } finally {
-          functional.destroyResult(result);
+          functional.destroy(result);
         }
 
         functional.resetPrepared(statement);
@@ -207,7 +207,7 @@ Deno.test({
           const reader = functional.createResultReader(result);
           assertEquals([...functional.iterateRows(reader)], [["gamma"]]);
         } finally {
-          functional.destroyResult(result);
+          functional.destroy(result);
         }
       } finally {
         functional.destroyPrepared(statement);

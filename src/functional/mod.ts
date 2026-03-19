@@ -56,23 +56,23 @@ import {
   closeConnection,
   // Database
   closeDatabase,
+  columnCount,
+  columnInfos,
+  columnName,
+  columnType,
   // Connection
   connectToDatabase,
-  destroyPreparedStatement,
   // Result
-  destroyResult,
+  destroy,
+  destroyPreparedStatement,
   executePreparedStatement,
-  getResultColumnCount,
-  getResultColumnInfos,
-  getResultColumnName,
-  getResultColumnType,
-  getResultRowCount,
   isValidConnectionHandle,
   isValidDatabaseHandle,
   openDatabase,
   preparedColumnCount,
   prepareStatement,
   resetPreparedStatement,
+  rowCount,
 } from "./native.ts";
 
 import { executePreparedResult, executeSqlResult, LazyResult } from "./execution.ts";
@@ -286,102 +286,6 @@ export { resetPreparedStatement };
 export { destroyPreparedStatement };
 /** Value types that can be bound to prepared statement parameters. */
 export type { BindValue };
-
-// Result
-
-/**
- * Destroy a result handle and free associated memory.
- *
- * @param handle - A valid result handle
- * @deprecated Use {@link destroy} instead - this function will be removed in a future version
- *
- * @example
- * ```ts
- * const result = executeSqlResult(conn, "SELECT 1");
- * // ... use result
- * destroy(result);
- * ```
- */
-export { destroyResult };
-
-/**
- * Get the number of rows in a result.
- *
- * @param handle - A valid result handle
- * @returns Number of rows
- * @deprecated Use {@link rowCount} instead - this function will be removed in a future version
- *
- * @example
- * ```ts
- * const result = executeSqlResult(conn, "SELECT * FROM table");
- * console.log(rowCount(result));
- * ```
- */
-export { getResultRowCount };
-
-/**
- * Get the number of columns in a result.
- *
- * @param handle - A valid result handle
- * @returns Number of columns
- * @deprecated Use {@link columnCount} instead - this function will be removed in a future version
- *
- * @example
- * ```ts
- * const result = executeSqlResult(conn, "SELECT a, b, c FROM table");
- * console.log(columnCount(result)); // 3n
- * ```
- */
-export { getResultColumnCount };
-
-/**
- * Get metadata about all columns in a result.
- *
- * @param handle - A valid result handle
- * @returns Array of column information
- * @deprecated Use {@link columnInfos} instead - this function will be removed in a future version
- *
- * @example
- * ```ts
- * const result = executeSqlResult(conn, "SELECT id, name FROM users");
- * const columns = columnInfos(result);
- * console.log(columns[0].name); // "id"
- * ```
- */
-export { getResultColumnInfos };
-
-/**
- * Get the name of a column by index.
- *
- * @param handle - A valid result handle
- * @param columnIndex - Column index (0-based)
- * @returns Column name
- * @deprecated Use {@link columnName} instead - this function will be removed in a future version
- *
- * @example
- * ```ts
- * const result = executeSqlResult(conn, "SELECT id, name FROM users");
- * console.log(columnName(result, 0)); // "id"
- * console.log(columnName(result, 1)); // "name"
- * ```
- */
-export { getResultColumnName };
-
-/**
- * Get the type of a column by index.
- *
- * @param handle - A valid result handle
- * @param columnIndex - Column index (0-based)
- * @returns Column type enum value
- * @deprecated Use {@link columnType} instead - this function will be removed in a future version
- *
- * @example
- * ```ts
- * const result = executeSqlResult(conn, "SELECT id FROM users");
- * console.log(columnType(result, 0)); // DUCKDB_TYPE.DUCKDB_TYPE_BIGINT
- * ```
- */
-export { getResultColumnType };
 
 // Execution
 
@@ -610,18 +514,7 @@ export const resetPrepared = resetPreparedStatement;
 export const destroyPrepared = destroyPreparedStatement;
 
 // Result aliases - use native functions which handle ResultHandle
-/** Alias for {@link getResultRowCount}. */
-export const rowCount = getResultRowCount;
-/** Alias for {@link getResultColumnCount}. */
-export const columnCount = getResultColumnCount;
-/** Alias for {@link destroyResult}. */
-export const destroy = destroyResult;
-/** Alias for {@link getResultColumnInfos}. */
-export const columnInfos = getResultColumnInfos;
-/** Alias for {@link getResultColumnName}. */
-export const columnName = getResultColumnName;
-/** Alias for {@link getResultColumnType}. */
-export const columnType = getResultColumnType;
+export { columnCount, columnInfos, columnName, columnType, destroy, rowCount };
 
 /**
  * Execute a query and return an array of rows.

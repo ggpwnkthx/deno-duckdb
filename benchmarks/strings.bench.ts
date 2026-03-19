@@ -14,7 +14,7 @@ const ROW_COUNT = 100_000;
 
 // Pre-setup
 const dbHandle = await functional.open();
-const connHandle = await functional.create(dbHandle);
+const connHandle = await functional.connectToDatabase(dbHandle);
 
 // Short strings (< 16 bytes)
 Deno.bench("String: short (10 chars, 100K rows)", () => {

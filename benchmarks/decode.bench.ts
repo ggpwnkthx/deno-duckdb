@@ -69,7 +69,7 @@ function assertMaterializedRows(rows: RowsLike): void {
 }
 
 const dbHandleFunc = await functional.open();
-const connHandleFunc = await functional.create(dbHandleFunc);
+const connHandleFunc = await functional.connectToDatabase(dbHandleFunc);
 
 const dbObj = new objective.Database();
 const connObj = await dbObj.connect();

@@ -25,7 +25,7 @@ Deno.test({
     await getLibrary();
 
     const database = await functional.open();
-    const connection = await functional.create(database);
+    const connection = await functional.connect(database);
 
     // Use a prepared statement to get a ResultHandle for testing
     const stmt = functional.prepare(connection, "SELECT 1 AS value");

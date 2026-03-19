@@ -31,7 +31,7 @@ function checksumValues(rows: Array<Array<unknown>>): bigint {
 
 // Pre-setup database and connection
 const dbHandle = await functional.open();
-const connHandle = await functional.create(dbHandle);
+const connHandle = await functional.connectToDatabase(dbHandle);
 
 // Integer types
 Deno.bench("Type: TINYINT (100K rows)", () => {

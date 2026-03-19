@@ -12,7 +12,7 @@ export async function withFunctionalConnection<T>(
   const database = await functional.open();
 
   try {
-    const connection = await functional.create(database);
+    const connection = await functional.connect(database);
 
     try {
       return await fn(connection);

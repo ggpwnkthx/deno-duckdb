@@ -317,7 +317,7 @@ export function isValidConnectionHandle(handle: ConnectionHandle): boolean {
  * @returns A result handle for reading query results
  * @throws {QueryError} if the query fails
  */
-export function executeQuery(
+export function executeQueryResult(
   connectionHandle: ConnectionHandle,
   sql: string,
 ): ResultHandle {

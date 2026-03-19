@@ -19,7 +19,7 @@ const config: DatabaseConfig = {
 
 const db = await functional.open(undefined, config);
 try {
-  const conn = await functional.create(db);
+  const conn = await functional.connectToDatabase(db);
   try {
     functional.query(
       conn,

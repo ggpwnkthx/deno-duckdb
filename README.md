@@ -55,7 +55,7 @@ destroyed.
 import * as functional from "jsr:@ggpwnkthx/duckdb/functional";
 
 const db = await functional.open();
-const conn = await functional.create(db);
+const conn = await functional.connectToDatabase(db);
 
 try {
   // Eager - get all rows as objects

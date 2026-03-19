@@ -587,7 +587,7 @@ export const isValidDatabase = isValidDatabaseHandle;
 
 // Connection aliases
 /** Alias for {@link connectToDatabase}. */
-export const create = connectToDatabase;
+export const connect = connectToDatabase;
 /** Alias for {@link isValidConnectionHandle}. */
 export const isValidConnection = isValidConnectionHandle;
 

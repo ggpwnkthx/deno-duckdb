@@ -14,7 +14,11 @@ import type {
   RowData,
 } from "../types.ts";
 import { InvalidResourceError } from "../errors.ts";
-import { destroyResult, executePreparedStatement, executeQuery } from "./native.ts";
+import {
+  destroyResult,
+  executePreparedStatement,
+  executeQueryResult,
+} from "./native.ts";
 import { createResultReader, type ResultReader } from "./result.ts";
 import {
   validateConnectionHandle,
@@ -51,7 +55,7 @@ export type ExecutionRequest =
 function executeRequest(request: ExecutionRequest): ResultHandle {
   if (request.kind === "sql") {
     validateConnectionHandle(request.connectionHandle);
-    return executeQuery(
+    return executeQueryResult(
       request.connectionHandle,
       assertNonEmptyString(request.sql, "SQL query"),
     );

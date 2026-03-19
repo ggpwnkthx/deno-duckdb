@@ -50,10 +50,14 @@
       ".*"
     ]
   },
-  "check": {
+  "lint": {
     "exclude": [
       "libduckdb",
-      ".*"
+      ".opencode"
     ]
-  }
+  },
+  "exclude": [
+    "libduckdb",
+    ".opencode"
+  ]
 }

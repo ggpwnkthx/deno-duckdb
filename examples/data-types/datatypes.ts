@@ -165,7 +165,7 @@ console.log("=== Functional API ===\n");
 
 const functionalDb = await functional.open();
 try {
-  const functionalConn = await functional.create(functionalDb);
+  const functionalConn = await functional.connectToDatabase(functionalDb);
 
   try {
     // Create table and insert data

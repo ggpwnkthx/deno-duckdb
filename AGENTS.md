@@ -10,13 +10,14 @@ This is a type-safe DuckDB FFI binding library for Deno. It wraps `@ggpwnkthx/li
 
 This library is **tightly coupled** to specific versions due to direct memory access assumptions:
 
-| Dependency           | Version    | Notes                                         |
-| -------------------- | ---------- | --------------------------------------------- |
-| DuckDB               | **1.5.0**  | ABI/layout assumptions in result decoding     |
-| Deno                 | **2.0+**   | Requires FFI support                          |
-| @ggpwnkthx/libduckdb | **1.0.15** | Pinned in `deno.json`                         |
+| Dependency           | Version    | Notes                                     |
+| -------------------- | ---------- | ----------------------------------------- |
+| DuckDB               | **1.5.0**  | ABI/layout assumptions in result decoding |
+| Deno                 | **2.0+**   | Requires FFI support                      |
+| @ggpwnkthx/libduckdb | **1.0.15** | Pinned in `deno.json`                     |
 
 **Do not upgrade** DuckDB or Deno without thorough testing. Even minor version upgrades may break result decoding due to changes in:
+
 - Result struct layout (`duckdb_result` is 48 bytes)
 - Column vector representation (string length + pointer format)
 - Pointer size (assumes 64-bit)
@@ -82,6 +83,7 @@ deno cache ./src/mod.ts
 ### Imports
 
 Organize imports in this order:
+
 1. External JSR imports (`@std/assert`, `@ggpwnkthx/libduckdb`)
 2. Internal type imports (`import type { ... }`)
 3. Internal value imports (`import { ... } from "./..."`)
@@ -167,6 +169,7 @@ Deno.test({
 **Important**: `sanitizeResources: false` and `sanitizeOps: false` are required because Deno's resource sanitizer cannot track FFI-allocated resources (native pointers/memory from DuckDB). Resources are properly cleaned up in `finally` blocks.
 
 Test utilities in `tests/utils.ts`:
+
 - `withFunctionalConnection<T>(fn)` - Wraps database/connection lifecycle for functional API tests
 - `withObjectiveConnection<T>(fn)` - Wraps database/connection lifecycle for objective API tests
 - `execFunctional(connection, sql)` - Execute DDL/mutation via prepared statement
@@ -178,6 +181,7 @@ Test utilities in `tests/utils.ts`:
 ### Value Model
 
 The wrapper returns:
+
 - `boolean`, `number`, `bigint`, `string`, `null`
 - `Uint8Array` for `BLOB`
 - `{ months, days, micros }` for `INTERVAL`
@@ -187,7 +191,7 @@ The wrapper returns:
 
 Use JSDoc with `@example`, `@throws`, `@param`, `@returns`, `@see`:
 
-```ts
+````ts
 /**
  * Open a DuckDB database file or in-memory database.
  *
@@ -202,16 +206,20 @@ Use JSDoc with `@example`, `@throws`, `@param`, `@returns`, `@see`:
  * const db = await openDatabase("my.db");
  * ```
  */
-export async function openDatabase(path?: string, config?: DatabaseOpenConfig): Promise<DatabaseHandle>
-```
+export async function openDatabase(
+  path?: string,
+  config?: DatabaseOpenConfig,
+): Promise<DatabaseHandle>;
+````
 
 ### Resource Management
 
 **Functional API**: Handles must be manually managed. Always close in `finally` blocks:
+
 ```ts
 const db = await functional.open();
 try {
-  const conn = await functional.create(db);
+  const conn = await functional.connectToDatabase(db);
   try {
     // use connection
   } finally {
@@ -223,6 +231,7 @@ try {
 ```
 
 **Objective API**: Supports `Symbol.dispose` for automatic cleanup:
+
 ```ts
 using db = await Database.open();
 using conn = await db.connect();
@@ -282,11 +291,13 @@ libduckdb/                     # Native DuckDB library
 ## Required Permissions
 
 Development requires:
+
 - `--allow-ffi` - For loading native DuckDB library
 - `--allow-read` - For reading the native library
 - `--allow-env` - For environment variables
 
 For auto-downloading the native library:
+
 - `--allow-net` and `--allow-write`
 
 ## Common Pitfalls

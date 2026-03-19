@@ -17,18 +17,18 @@ Deno.bench("Lifecycle: open in-memory database", async () => {
 
 Deno.bench("Lifecycle: create connection (in-memory)", async () => {
   const db = await functional.open();
-  const conn = await functional.create(db);
+  const conn = await functional.connectToDatabase(db);
   await functional.closeConnection(conn);
   await functional.closeDatabase(db);
 });
 
 Deno.bench("Lifecycle: create and close 5 connections", async () => {
   const db = await functional.open();
-  const conn1 = await functional.create(db);
-  const conn2 = await functional.create(db);
-  const conn3 = await functional.create(db);
-  const conn4 = await functional.create(db);
-  const conn5 = await functional.create(db);
+  const conn1 = await functional.connectToDatabase(db);
+  const conn2 = await functional.connectToDatabase(db);
+  const conn3 = await functional.connectToDatabase(db);
+  const conn4 = await functional.connectToDatabase(db);
+  const conn5 = await functional.connectToDatabase(db);
 
   await functional.closeConnection(conn1);
   await functional.closeConnection(conn2);
@@ -41,7 +41,7 @@ Deno.bench("Lifecycle: create and close 5 connections", async () => {
 // Query types - DDL
 Deno.bench("Query: CREATE TABLE (DDL)", async () => {
   const db = await functional.open();
-  const conn = await functional.create(db);
+  const conn = await functional.connectToDatabase(db);
 
   const result = await functional.executeSqlResult(
     conn,
@@ -56,7 +56,7 @@ Deno.bench("Query: CREATE TABLE (DDL)", async () => {
 
 Deno.bench("Query: DROP TABLE (DDL)", async () => {
   const db = await functional.open();
-  const conn = await functional.create(db);
+  const conn = await functional.connectToDatabase(db);
 
   // Setup
   await functional.executeSqlResult(conn, "CREATE TABLE bench_test (id INTEGER)");
@@ -71,7 +71,7 @@ Deno.bench("Query: DROP TABLE (DDL)", async () => {
 // Query types - INSERT
 Deno.bench("Query: INSERT single row", async () => {
   const db = await functional.open();
-  const conn = await functional.create(db);
+  const conn = await functional.connectToDatabase(db);
 
   // Setup
   await functional.executeSqlResult(
@@ -93,7 +93,7 @@ Deno.bench("Query: INSERT single row", async () => {
 
 Deno.bench("Query: INSERT 1000 rows (batch)", async () => {
   const db = await functional.open();
-  const conn = await functional.create(db);
+  const conn = await functional.connectToDatabase(db);
 
   // Setup
   await functional.executeSqlResult(conn, "CREATE TABLE bench_test (id INTEGER)");
@@ -113,7 +113,7 @@ Deno.bench("Query: INSERT 1000 rows (batch)", async () => {
 // Prepared statement lifecycle
 Deno.bench("Prepared: prepare + execute + destroy (100 iterations)", async () => {
   const db = await functional.open();
-  const conn = await functional.create(db);
+  const conn = await functional.connectToDatabase(db);
 
   for (let i = 0; i < 100; i++) {
     const stmt = await functional.prepare(conn, "SELECT ?");
@@ -131,7 +131,7 @@ Deno.bench("Prepared: prepare + execute + destroy (100 iterations)", async () =>
 // Reusing prepared statement
 Deno.bench("Prepared: reuse (100 iterations)", async () => {
   const db = await functional.open();
-  const conn = await functional.create(db);
+  const conn = await functional.connectToDatabase(db);
 
   const stmt = await functional.prepare(conn, "SELECT ? + 1");
   for (let i = 0; i < 100; i++) {
@@ -149,7 +149,7 @@ Deno.bench("Prepared: reuse (100 iterations)", async () => {
 // Transaction handling
 Deno.bench("Transaction: COMMIT (auto-commit)", async () => {
   const db = await functional.open();
-  const conn = await functional.create(db);
+  const conn = await functional.connectToDatabase(db);
 
   const result = await functional.executeSqlResult(
     conn,
@@ -164,7 +164,7 @@ Deno.bench("Transaction: COMMIT (auto-commit)", async () => {
 
 Deno.bench("Transaction: explicit COMMIT", async () => {
   const db = await functional.open();
-  const conn = await functional.create(db);
+  const conn = await functional.connectToDatabase(db);
 
   await functional.executeSqlResult(conn, "BEGIN TRANSACTION");
   const result = await functional.executeSqlResult(conn, "COMMIT");

@@ -5,26 +5,26 @@
  */
 
 /** Base configuration option with common properties */
-export interface ConfigOption {
+export interface BaseConfigOption {
   type: string;
   aliases?: readonly string[];
 }
 
 /** Boolean configuration option with default value. */
-export interface BooleanConfigOption extends ConfigOption {
+export interface BooleanConfigOption extends BaseConfigOption {
   type: "boolean";
   default: boolean;
 }
 
 /** String configuration option with specific allowed values (enum-like). */
-export interface EnumConfigOption<T extends string> extends ConfigOption {
+export interface EnumConfigOption<T extends string> extends BaseConfigOption {
   type: "enum";
   values: readonly T[];
   default: T | null;
 }
 
 /** Integer configuration option with optional min/max bounds. */
-export interface IntegerConfigOption extends ConfigOption {
+export interface IntegerConfigOption extends BaseConfigOption {
   type: "integer";
   min?: number;
   max?: number;
@@ -32,7 +32,7 @@ export interface IntegerConfigOption extends ConfigOption {
 }
 
 /** Big integer configuration option (for large values like memory). */
-export interface BigIntConfigOption extends ConfigOption {
+export interface BigIntConfigOption extends BaseConfigOption {
   type: "bigint";
   min?: bigint;
   max?: bigint;
@@ -40,7 +40,7 @@ export interface BigIntConfigOption extends ConfigOption {
 }
 
 /** Double (floating point) configuration option. */
-export interface DoubleConfigOption extends ConfigOption {
+export interface DoubleConfigOption extends BaseConfigOption {
   type: "double";
   min?: number;
   max?: number;
@@ -48,13 +48,13 @@ export interface DoubleConfigOption extends ConfigOption {
 }
 
 /** String configuration option (any string value). */
-export interface StringConfigOption extends ConfigOption {
+export interface StringConfigOption extends BaseConfigOption {
   type: "string";
   default: string | null;
 }
 
 /** String array configuration option. */
-export interface StringArrayConfigOption extends ConfigOption {
+export interface StringArrayConfigOption extends BaseConfigOption {
   type: "string[]";
   default: readonly string[];
 }

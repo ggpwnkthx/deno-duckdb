@@ -10,7 +10,7 @@ Deno.test({
   sanitizeOps: false,
   async fn() {
     const database = await functional.open(undefined, { threads: 2n });
-    const connection = await functional.create(database);
+    const connection = await functional.connect(database);
 
     assertEquals(functional.isValidDatabase(database), true);
     assertEquals(functional.isValidConnection(connection), true);

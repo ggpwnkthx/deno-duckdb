@@ -26,7 +26,7 @@ function checksumRows(rows: Array<Array<unknown>>): bigint {
 
 // Pre-setup
 const dbHandle = await functional.open();
-const connHandle = await functional.create(dbHandle);
+const connHandle = await functional.connectToDatabase(dbHandle);
 
 // Vary row count
 for (const rowCount of ROW_SIZES) {

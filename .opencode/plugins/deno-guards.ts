@@ -25,13 +25,13 @@ function getNestedString(obj: unknown, ...keys: string[]): string | undefined {
 function getFilePath(input: unknown, output: unknown): string | undefined {
   return (
     getNestedString(output, "args", "filePath") ??
-    getNestedString(output, "args", "path") ??
-    getNestedString(output, "args", "newPath") ??
-    getNestedString(input, "args", "filePath") ??
-    getNestedString(input, "args", "path") ??
-    getNestedString(input, "args", "newPath") ??
-    getNestedString(input, "filePath") ??
-    getNestedString(input, "path")
+      getNestedString(output, "args", "path") ??
+      getNestedString(output, "args", "newPath") ??
+      getNestedString(input, "args", "filePath") ??
+      getNestedString(input, "args", "path") ??
+      getNestedString(input, "args", "newPath") ??
+      getNestedString(input, "filePath") ??
+      getNestedString(input, "path")
   );
 }
 
@@ -118,9 +118,20 @@ async function runOrBlock(
   }
 }
 
-export const DenoGuards: Plugin = async ({ directory }: { directory: string }) => {
+const LINT_PATTERNS = ["./src", "./tests", "./benchmarks", "./examples"];
+const CHECK_PATTERN = "./src";
+
+export const DenoGuards: Plugin = async ({
+  directory,
+}: {
+  directory: string;
+}) => {
+  await Promise.resolve();
   return {
-    "tool.execute.after": async (input: any, _output: any) => {
+    "tool.execute.after": async (
+      input: Record<string, unknown>,
+      _output: Record<string, unknown>,
+    ) => {
       const toolName = asString(input?.tool);
       if (!toolName || !EDIT_TOOLS.has(toolName)) return;
 
@@ -128,14 +139,14 @@ export const DenoGuards: Plugin = async ({ directory }: { directory: string }) =
       if (!isDenoFile(filePath)) return;
 
       await runOrBlock(
-        ["deno", "lint", "--fix", filePath],
+        ["deno", "lint", "--fix", ...LINT_PATTERNS],
         directory,
         toolName,
         filePath,
       );
 
       await runOrBlock(
-        ["deno", "check", filePath],
+        ["deno", "check", CHECK_PATTERN],
         directory,
         toolName,
         filePath,

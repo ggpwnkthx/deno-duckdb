@@ -64,7 +64,7 @@ Deno.test({
     }];
 
     const functionalDatabase = await functional.open();
-    const functionalConnection = await functional.create(functionalDatabase);
+    const functionalConnection = await functional.connect(functionalDatabase);
 
     const objectiveDatabase = new objective.Database();
     const objectiveConnection = await objectiveDatabase.connect();
@@ -110,7 +110,7 @@ Deno.test({
       "INSERT INTO parity_items VALUES (1, 'alpha', true), (2, 'beta', false), (3, 'gamma', true)";
 
     const functionalDatabase = await functional.open();
-    const functionalConnection = await functional.create(functionalDatabase);
+    const functionalConnection = await functional.connect(functionalDatabase);
 
     const objectiveDatabase = new objective.Database();
     const objectiveConnection = await objectiveDatabase.connect();

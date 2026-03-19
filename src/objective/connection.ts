@@ -19,7 +19,7 @@
 import type { ConnectionHandle, ObjectRow, RowData } from "../types.ts";
 import {
   closeConnection,
-  executeQuery,
+  executeQueryResult,
   prepareStatement,
 } from "../functional/native.ts";
 import { assertNonEmptyString } from "../core/validate.ts";
@@ -118,7 +118,7 @@ export class Connection extends DisposableResource<ConnectionHandle> {
   execute(sql: string): QueryResult {
     assertNonEmptyString(sql, "SQL query");
     const result = new QueryResult(
-      executeQuery(this.requireHandle("Connection"), sql),
+      executeQueryResult(this.requireHandle("Connection"), sql),
       () => {
         this.#queryResults.delete(result);
       },

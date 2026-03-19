@@ -28,7 +28,7 @@ function checksumRowsFromObjects(rows: Array<Record<string, unknown>>): bigint {
 
 // Pre-setup
 const dbHandle = await functional.open();
-const connHandle = await functional.create(dbHandle);
+const connHandle = await functional.connectToDatabase(dbHandle);
 
 const QUERY = `SELECT i as a, i + 1 as b FROM generate_series(1, ${ROW_COUNT}) s(i)`;
 

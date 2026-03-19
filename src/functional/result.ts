@@ -361,27 +361,38 @@ function microsecondsToTimeString(value: bigint): string {
  */
 function microsecondsToTimestampString(value: bigint): string {
   // Constants for time calculations (all in microseconds)
-  const MICROS_PER_DAY = 86_400_000_000_000n; // 86400 * 1_000_000_000
-  const MICROS_PER_HOUR = 3_600_000_000_000n; // 3600 * 1_000_000_000
-  const MICROS_PER_MINUTE = 60_000_000_000n; // 60 * 1_000_000_000
+  const MICROS_PER_DAY = 86_400_000_000n; // 86400 * 1_000_000
+  const MICROS_PER_HOUR = 3_600_000_000n; // 3600 * 1_000_000
+  const MICROS_PER_MINUTE = 60_000_000n; // 60 * 1_000_000
   const MICROS_PER_SECOND = 1_000_000n;
 
-  // Handle negative values
+  // Handle negative values - capture sign BEFORE taking absolute value
   const negative = value < 0n;
-  const absValue = value < 0n ? -value : value;
 
-  // Calculate total days
-  const totalDays = absValue / MICROS_PER_DAY;
-  const remainingMicros = absValue % MICROS_PER_DAY;
+  // Calculate total days (need sign here for negative timestamps)
+  const totalDays = value / MICROS_PER_DAY;
+  const remainingMicros = value % MICROS_PER_DAY;
 
-  // Calculate time components
-  const hours = remainingMicros / MICROS_PER_HOUR;
-  const mins = (remainingMicros % MICROS_PER_HOUR) / MICROS_PER_MINUTE;
-  const secs = (remainingMicros % MICROS_PER_MINUTE) / MICROS_PER_SECOND;
-  const micros = remainingMicros % MICROS_PER_SECOND;
+  // Adjust remainingMicros to be positive when value is negative
+  // e.g., -1 day and 1 microsecond = -86399999999 micros
+  // -86399999999 / MICROS_PER_DAY = -1 remainder 999999
+  // but in JS: -86399999999n % MICROS_PER_DAY = -999999n
+  // so we need to adjust: remainder was negative, add MICROS_PER_DAY and decrement days
+  let adjustedDays = totalDays;
+  let adjustedMicros = remainingMicros;
+  if (remainingMicros < 0n) {
+    adjustedMicros = remainingMicros + MICROS_PER_DAY;
+    adjustedDays = totalDays - 1n;
+  }
 
-  // Convert days to date string (daysSince1970 can be negative)
-  const daysSince1970 = totalDays < 0n ? -Number(totalDays) : Number(totalDays);
+  // Calculate time components from positive remainder
+  const hours = adjustedMicros / MICROS_PER_HOUR;
+  const mins = (adjustedMicros % MICROS_PER_HOUR) / MICROS_PER_MINUTE;
+  const secs = (adjustedMicros % MICROS_PER_MINUTE) / MICROS_PER_SECOND;
+  const micros = adjustedMicros % MICROS_PER_SECOND;
+
+  // Convert days to date string (daysSince1970 must be negative for dates before 1970)
+  const daysSince1970 = negative ? -Number(adjustedDays) : Number(adjustedDays);
 
   const dateStr = daysToDateString(daysSince1970);
 

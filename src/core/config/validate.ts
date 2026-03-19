@@ -8,7 +8,12 @@
 import {
   configSchema,
   type DatabaseConfig,
+  type DatabaseOpenConfig,
+  type GlobalConfigKey,
+  globalConfigSchema,
   type KnownConfigKey,
+  type LocalConfigKey,
+  localConfigSchema,
 } from "./schema/mod.ts";
 
 /**
@@ -203,16 +208,16 @@ export function validateDatabaseConfig(
 
   // Validate and coerce all keys
   for (const key of Object.keys(configObj)) {
+    // Reject unknown keys - only allow keys in the merged configSchema
+    if (!isValidConfigKey(key)) {
+      errors.push(`Unknown config key '${key}'`);
+      continue;
+    }
+
     const value = configObj[key];
     const error = validateConfigValue(key, value);
     if (error) {
       errors.push(error);
-      continue;
-    }
-
-    // Coerce value to proper type
-    if (!isValidConfigKey(key)) {
-      result[key] = value;
       continue;
     }
 
@@ -225,6 +230,106 @@ export function validateDatabaseConfig(
   }
 
   return result as DatabaseConfig;
+}
+
+/**
+ * Validate a database-open-time configuration (global config only).
+ *
+ * Only validates keys that are in globalConfigSchema. Throws an error if
+ * any local/session-only options (like search_path) are included.
+ *
+ * @param config - The configuration to validate
+ * @returns The validated and coerced config
+ * @throws Error if any config value is invalid or unknown
+ */
+export function validateDatabaseOpenConfig(
+  config: unknown,
+): DatabaseOpenConfig {
+  if (config === undefined || config === null) {
+    return {} as DatabaseOpenConfig;
+  }
+
+  if (typeof config !== "object") {
+    throw new Error("Database config must be an object");
+  }
+
+  const errors: string[] = [];
+  const configObj = config as Record<string, unknown>;
+  const result: Record<string, unknown> = {};
+
+  for (const key of Object.keys(configObj)) {
+    // Reject unknown keys - only allow keys in globalConfigSchema
+    if (!(key in globalConfigSchema)) {
+      errors.push(`Unknown config key '${key}' - not a valid global option`);
+      continue;
+    }
+
+    const value = configObj[key];
+    const error = validateConfigValue(key, value);
+    if (error) {
+      errors.push(error);
+      continue;
+    }
+
+    const definition = globalConfigSchema[key as GlobalConfigKey];
+    result[key] = coerceConfigValue(key, definition.type, value);
+  }
+
+  if (errors.length > 0) {
+    throw new Error(`Invalid database config: ${errors.join("; ")}`);
+  }
+
+  return result as DatabaseOpenConfig;
+}
+
+/**
+ * Validate a session/connection-time configuration (local config only).
+ *
+ * Only validates keys that are in localConfigSchema. Throws an error if
+ * any global options (like access_mode) are included.
+ *
+ * @param config - The configuration to validate
+ * @returns The validated and coerced config
+ * @throws Error if any config value is invalid or unknown
+ */
+export function validateSessionConfig(
+  config: unknown,
+): Record<string, unknown> {
+  if (config === undefined || config === null) {
+    return {};
+  }
+
+  if (typeof config !== "object") {
+    throw new Error("Session config must be an object");
+  }
+
+  const errors: string[] = [];
+  const configObj = config as Record<string, unknown>;
+  const result: Record<string, unknown> = {};
+
+  for (const key of Object.keys(configObj)) {
+    // Reject unknown keys - only allow keys in localConfigSchema
+    if (!(key in localConfigSchema)) {
+      errors.push(`Unknown config key '${key}' - not a valid session option`);
+      continue;
+    }
+
+    const value = configObj[key];
+    const error = validateConfigValue(key, value);
+    if (error) {
+      errors.push(error);
+      continue;
+    }
+
+    const definition = localConfigSchema[key as LocalConfigKey];
+    result[key] = coerceConfigValue(key, definition.type, value);
+  }
+
+  if (errors.length > 0) {
+    throw new Error(`Invalid session config: ${errors.join("; ")}`);
+  }
+
+  return result;
 }
 
 /**

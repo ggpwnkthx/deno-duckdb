@@ -36,16 +36,16 @@ import {
   openDatabase,
 } from "../functional/mod.ts";
 import { Connection } from "./connection.ts";
-import type { DatabaseConfig } from "../core/config/schema/mod.ts";
+import type { DatabaseOpenConfig } from "../core/config/schema/mod.ts";
 
 export class Database {
   #path?: string;
-  #config?: DatabaseConfig;
+  #config?: DatabaseOpenConfig;
   #handle: DatabaseHandle | null = null;
   #closed = false;
   #connections = new Set<Connection>();
 
-  constructor(path?: string, config?: DatabaseConfig) {
+  constructor(path?: string, config?: DatabaseOpenConfig) {
     this.#path = path;
     this.#config = config;
   }
@@ -57,7 +57,7 @@ export class Database {
    * @param config - Optional database configuration
    * @returns A new open Database instance
    */
-  static async open(path?: string, config?: DatabaseConfig): Promise<Database> {
+  static async open(path?: string, config?: DatabaseOpenConfig): Promise<Database> {
     const database = new Database(path, config);
     await database.open();
     return database;

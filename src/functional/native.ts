@@ -42,8 +42,8 @@ import {
   assertNonEmptyString,
   assertSafeInteger,
 } from "../core/validate.ts";
-import { configToFFI, validateDatabaseConfig } from "../core/config/mod.ts";
-import type { DatabaseConfig } from "../core/config/schema/mod.ts";
+import { configToFFI, validateDatabaseOpenConfig } from "../core/config/mod.ts";
+import type { DatabaseOpenConfig } from "../core/config/schema/mod.ts";
 
 const encoder = new TextEncoder();
 
@@ -147,11 +147,11 @@ export type BindValue = boolean | number | bigint | string | Uint8Array | null;
  */
 export async function openDatabase(
   path?: string,
-  config?: DatabaseConfig,
+  config?: DatabaseOpenConfig,
 ): Promise<DatabaseHandle> {
   // Validate config before normalization
   if (config) {
-    validateDatabaseConfig(config);
+    validateDatabaseOpenConfig(config);
   }
 
   const library = await getLibrary();

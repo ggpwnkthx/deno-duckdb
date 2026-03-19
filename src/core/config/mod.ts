@@ -4,12 +4,19 @@
  * Provides functions to convert type-safe database config to FFI format.
  */
 
-import type { DatabaseConfig } from "./schema/mod.ts";
+import type { DatabaseOpenConfig } from "./schema/mod.ts";
 import { configSchema, getConfigDefinition, isKnownConfigKey } from "./schema/mod.ts";
-import { validateDatabaseConfig as _validateDatabaseConfig } from "./validate.ts";
+import {
+  validateDatabaseConfig as _validateDatabaseConfig,
+  validateDatabaseOpenConfig as _validateDatabaseOpenConfig,
+  validateSessionConfig as _validateSessionConfig,
+} from "./validate.ts";
 
+export type { DatabaseOpenConfig };
 export { getConfigDefinition };
 export { _validateDatabaseConfig as validateDatabaseConfig };
+export { _validateDatabaseOpenConfig as validateDatabaseOpenConfig };
+export { _validateSessionConfig as validateSessionConfig };
 
 /** A configuration option for DuckDB FFI. */
 export interface ConfigOption {
@@ -38,7 +45,7 @@ export interface ConfigOption {
  */
 export function configToFFI(
   path?: string,
-  config?: DatabaseConfig,
+  config?: DatabaseOpenConfig,
 ): { path: string; options: readonly ConfigOption[] } {
   // Handle path - default to :memory:
   let dbPath = ":memory:";

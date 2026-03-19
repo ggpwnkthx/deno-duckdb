@@ -64,11 +64,20 @@ type AliasToPrimaryKey<A extends string> = {
 }[ConfigKey];
 
 /**
- * Extract all aliases as a union of strings
+ * Extract all aliases as a union of strings.
+ *
+ * Uses a mapped type to properly distribute over each config key and extract
+ * aliases, then re-indexes to get a flat union of all alias values.
  */
-type AllAliases = (typeof configSchema)[keyof typeof configSchema] extends
-  { aliases: readonly (infer A)[] } ? A
-  : never;
+type KeysWithAliases = {
+  [K in keyof typeof configSchema]: (typeof configSchema)[K] extends
+    { aliases: readonly string[] } ? K : never;
+}[keyof typeof configSchema];
+
+type AllAliases = KeysWithAliases extends never ? never : {
+  [K in KeysWithAliases]: (typeof configSchema)[K] extends
+    { aliases: readonly (infer A)[] } ? A : never;
+}[KeysWithAliases];
 
 /**
  * Type-safe database configuration derived from DuckDB config schema.
@@ -95,7 +104,7 @@ export type DatabaseConfig =
  *
  * Use this type for Database.open() and openDatabase() calls.
  */
-type GlobalConfigKey = keyof typeof globalConfigSchema & string;
+export type GlobalConfigKey = keyof typeof globalConfigSchema & string;
 
 type GlobalAliasToPrimaryKey<A extends string> = {
   [K in GlobalConfigKey]: (typeof globalConfigSchema)[K] extends
@@ -105,10 +114,15 @@ type GlobalAliasToPrimaryKey<A extends string> = {
     : never;
 }[GlobalConfigKey];
 
-type GlobalAllAliases =
-  (typeof globalConfigSchema)[keyof typeof globalConfigSchema] extends
-    { aliases: readonly (infer A)[] } ? A
-    : never;
+type GlobalKeysWithAliases = {
+  [K in keyof typeof globalConfigSchema]: (typeof globalConfigSchema)[K] extends
+    { aliases: readonly string[] } ? K : never;
+}[keyof typeof globalConfigSchema];
+
+type GlobalAllAliases = GlobalKeysWithAliases extends never ? never : {
+  [K in GlobalKeysWithAliases]: (typeof globalConfigSchema)[K] extends
+    { aliases: readonly (infer A)[] } ? A : never;
+}[GlobalKeysWithAliases];
 
 export type DatabaseOpenConfig =
   & {
@@ -128,7 +142,7 @@ export type DatabaseOpenConfig =
  *
  * Use this type for Connection.setConfig() calls.
  */
-type LocalConfigKey = keyof typeof localConfigSchema & string;
+export type LocalConfigKey = keyof typeof localConfigSchema & string;
 
 export type SessionConfig = {
   [K in LocalConfigKey]?: SchemaValueType<(typeof localConfigSchema)[K]>;

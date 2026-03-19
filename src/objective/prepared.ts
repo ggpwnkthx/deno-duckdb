@@ -33,12 +33,12 @@ import { QueryResult } from "./query.ts";
 
 export class PreparedStatement extends DisposableResource<PreparedStatementHandle> {
   #onClose?: () => void;
-  #onQueryResultCreated?: (result: QueryResult) => void;
+  #onQueryResultCreated?: (result: QueryResult) => () => void;
 
   constructor(
     handle: PreparedStatementHandle,
     onClose?: () => void,
-    onQueryResultCreated?: (result: QueryResult) => void,
+    onQueryResultCreated?: (result: QueryResult) => () => void,
   ) {
     super(handle);
     this.#onClose = onClose;
@@ -72,10 +72,12 @@ export class PreparedStatement extends DisposableResource<PreparedStatementHandl
    * @returns QueryResult for iterating over rows
    */
   execute(): QueryResult {
-    const result = new QueryResult(
-      executePreparedStatement(this.requireHandle("PreparedStatement")),
-    );
-    this.#onQueryResultCreated?.(result);
+    const handle = executePreparedStatement(this.requireHandle("PreparedStatement"));
+    // Use an object to hold the unregister function reference since we need
+    // to pass a callback to QueryResult before we have the result reference
+    const onCloseRef: { fn: (() => void) | undefined } = { fn: undefined };
+    const result = new QueryResult(handle, () => onCloseRef.fn?.());
+    onCloseRef.fn = this.#onQueryResultCreated?.(result);
     return result;
   }
 

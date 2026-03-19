@@ -14,6 +14,7 @@ import {
   type KnownConfigKey,
   type LocalConfigKey,
   localConfigSchema,
+  type SessionConfig,
 } from "./schema/mod.ts";
 
 /**
@@ -37,6 +38,17 @@ export type DatabaseConfigInput =
   };
 
 /**
+ * Check if a key is a valid global config key (primary key or alias).
+ */
+function isValidGlobalKey(key: string): boolean {
+  if (key in globalConfigSchema) return true;
+  for (const def of Object.values(globalConfigSchema)) {
+    if (def.aliases?.includes(key)) return true;
+  }
+  return false;
+}
+
+/**
  * Type guard to check if a string is a known config key.
  */
 export function isValidConfigKey(key: string): key is KnownConfigKey {
@@ -54,7 +66,6 @@ export function validateConfigValue(
   key: string,
   value: unknown,
 ): string | null {
-  // Unknown keys are allowed for backward compatibility
   if (!isValidConfigKey(key)) {
     return null;
   }
@@ -258,8 +269,8 @@ export function validateDatabaseOpenConfig(
   const result: Record<string, unknown> = {};
 
   for (const key of Object.keys(configObj)) {
-    // Reject unknown keys - only allow keys in globalConfigSchema
-    if (!(key in globalConfigSchema)) {
+    // Reject unknown keys - only allow keys in globalConfigSchema (primary or alias)
+    if (!isValidGlobalKey(key)) {
       errors.push(`Unknown config key '${key}' - not a valid global option`);
       continue;
     }
@@ -294,7 +305,7 @@ export function validateDatabaseOpenConfig(
  */
 export function validateSessionConfig(
   config: unknown,
-): Record<string, unknown> {
+): SessionConfig {
   if (config === undefined || config === null) {
     return {};
   }
@@ -305,7 +316,7 @@ export function validateSessionConfig(
 
   const errors: string[] = [];
   const configObj = config as Record<string, unknown>;
-  const result: Record<string, unknown> = {};
+  const result: SessionConfig = {};
 
   for (const key of Object.keys(configObj)) {
     // Reject unknown keys - only allow keys in localConfigSchema
@@ -322,7 +333,11 @@ export function validateSessionConfig(
     }
 
     const definition = localConfigSchema[key as LocalConfigKey];
-    result[key] = coerceConfigValue(key, definition.type, value);
+    result[key] = coerceConfigValue(
+      key,
+      definition.type,
+      value,
+    ) as SessionConfig[LocalConfigKey];
   }
 
   if (errors.length > 0) {

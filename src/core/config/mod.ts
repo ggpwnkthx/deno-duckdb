@@ -5,7 +5,12 @@
  */
 
 import type { DatabaseOpenConfig } from "./schema/mod.ts";
-import { configSchema, getConfigDefinition, isKnownConfigKey } from "./schema/mod.ts";
+import { getConfigDefinition } from "./schema/mod.ts";
+import {
+  getGlobalConfigDefinition,
+  globalConfigSchema,
+  isKnownGlobalConfigKey,
+} from "./schema/mod.ts";
 import {
   validateDatabaseConfig as _validateDatabaseConfig,
   validateDatabaseOpenConfig as _validateDatabaseOpenConfig,
@@ -83,12 +88,12 @@ export function configToFFI(
       value = String(rawValue);
     }
 
-    // Resolve alias keys to primary keys using getConfigDefinition
-    if (!isKnownConfigKey(key)) {
-      const configDef = getConfigDefinition(key);
+    // Resolve alias keys to primary keys using getGlobalConfigDefinition
+    if (!isKnownGlobalConfigKey(key)) {
+      const configDef = getGlobalConfigDefinition(key);
       if (configDef) {
         // Find the primary key that has this alias
-        for (const [primaryKey, def] of Object.entries(configSchema)) {
+        for (const [primaryKey, def] of Object.entries(globalConfigSchema)) {
           const d = def as { aliases?: readonly string[] };
           if (d.aliases?.includes(key)) {
             name = primaryKey;
@@ -99,11 +104,11 @@ export function configToFFI(
     }
 
     // Normalize known config values
-    if (isKnownConfigKey(name)) {
-      const definition = configSchema[name];
+    if (isKnownGlobalConfigKey(name)) {
+      const definition = globalConfigSchema[name];
       if (definition.type === "enum") {
         const lower = value.toLowerCase();
-        const match = definition.values.find((v) => v.toLowerCase() === lower);
+        const match = definition.values.find((v: string) => v.toLowerCase() === lower);
         value = match ?? value.toUpperCase();
       }
     }

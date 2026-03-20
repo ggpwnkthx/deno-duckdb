@@ -43,7 +43,52 @@ const BYTE_SIZE_128 = 16;
 import { isResultValueNull, readResultValueAsText } from "./native.ts";
 import { assertIntegerIndex } from "../core/validate.ts";
 
-const textDecoder = new TextDecoder();
+const DEFAULT_STRING_BUFFER_SIZE = 4096;
+
+class StringDecoder {
+  #buffer: Uint8Array;
+  #decoder: TextDecoder;
+
+  constructor(bufferSize: number = DEFAULT_STRING_BUFFER_SIZE) {
+    this.#buffer = new Uint8Array(bufferSize);
+    this.#decoder = new TextDecoder();
+  }
+
+  #ensureBufferSize(minSize: number): void {
+    if (minSize > this.#buffer.length) {
+      this.#buffer = new Uint8Array(minSize * 2);
+    }
+  }
+
+  decode(data: Uint8Array, length: number): string {
+    this.#ensureBufferSize(length);
+    this.#buffer.set(data.subarray(0, length), 0);
+    return this.#decoder.decode(this.#buffer.subarray(0, length), { stream: false });
+  }
+
+  decodeFromPointer(
+    view: Deno.UnsafePointerView,
+    offset: number,
+    length: number,
+  ): string {
+    if (length <= 0) {
+      return "";
+    }
+
+    const buf = view.getArrayBuffer(length, offset);
+    if (buf) {
+      return this.#decoder.decode(buf, { stream: false });
+    }
+
+    this.#ensureBufferSize(length);
+    for (let i = 0; i < length; i++) {
+      this.#buffer[i] = view.getUint8(offset + i);
+    }
+    return this.#decoder.decode(this.#buffer.subarray(0, length), { stream: false });
+  }
+}
+
+const textDecoder = new StringDecoder();
 
 /**
  * Estimate the byte size of a decoded value for materialization limit checking.
@@ -81,11 +126,17 @@ function estimateValueByteSize(value: ValueType): number {
   return 16;
 }
 
+interface StringColumnCache {
+  readonly lengths: BigUint64Array;
+  readonly innerPointers: BigUint64Array;
+}
+
 interface ColumnVector {
   readonly name: string;
   readonly type: DUCKDB_TYPE;
   readonly dataView: Deno.UnsafePointerView | null;
   readonly validityView: Deno.UnsafePointerView | null;
+  readonly stringCache?: StringColumnCache;
 }
 
 interface ResultView {
@@ -254,8 +305,7 @@ function getStringLikeValue(
     return readBytes(innerView, 0, length);
   }
 
-  const bytes = readBytes(innerView, 0, length);
-  return textDecoder.decode(bytes);
+  return textDecoder.decodeFromPointer(innerView, 0, length);
 }
 
 /**
@@ -456,64 +506,110 @@ function decodeValueByType(
   type: DUCKDB_TYPE,
   dataView: Deno.UnsafePointerView | null,
   validityView: Deno.UnsafePointerView | null,
+  stringCache?: StringColumnCache,
 ): ValueType {
   if (type === DUCKDB_TYPE.DUCKDB_TYPE_INVALID) {
     return null;
   }
 
-  if (isTextFallbackType(type)) {
-    if (type === DUCKDB_TYPE.DUCKDB_TYPE_VARCHAR) {
-      if (isNullFromBitmap(validityView, rowIndex, handle, columnIndex)) {
+  if (type === DUCKDB_TYPE.DUCKDB_TYPE_VARCHAR) {
+    if (validityView) {
+      const bitmapIndex = rowIndex >> 3;
+      const bitIndex = rowIndex & 7;
+      if ((validityView.getUint8(bitmapIndex) & (1 << bitIndex)) === 0) {
         return null;
       }
-      return getStringLikeValue(dataView, rowIndex, false, handle, columnIndex);
+    } else if (isResultValueNull(handle, rowIndex, columnIndex)) {
+      return null;
+    }
+    if (stringCache) {
+      const length = Number(stringCache.lengths[rowIndex]);
+      if (length === 0) {
+        return "";
+      }
+      if (length > MAX_REASONABLE_STRING_LENGTH) {
+        const fallback = readResultValueAsText(handle, rowIndex, columnIndex);
+        return fallback ?? "";
+      }
+      const innerPtr = stringCache.innerPointers[rowIndex];
+      if (innerPtr === 0n) {
+        return "";
+      }
+      const innerView = createPointerView(
+        innerPtr as unknown as Deno.PointerValue<unknown>,
+      );
+      if (!innerView) {
+        return "";
+      }
+      return textDecoder.decodeFromPointer(innerView, 0, length);
+    }
+    return getStringLikeValue(dataView, rowIndex, false, handle, columnIndex);
+  }
+
+  if (type === DUCKDB_TYPE.DUCKDB_TYPE_BLOB) {
+    if (validityView) {
+      const bitmapIndex = rowIndex >> 3;
+      const bitIndex = rowIndex & 7;
+      if ((validityView.getUint8(bitmapIndex) & (1 << bitIndex)) === 0) {
+        return null;
+      }
+    } else if (isResultValueNull(handle, rowIndex, columnIndex)) {
+      return null;
     }
 
-    if (type === DUCKDB_TYPE.DUCKDB_TYPE_BLOB) {
-      if (isNullFromBitmap(validityView, rowIndex, handle, columnIndex)) {
-        return null;
-      }
-
-      if (dataView) {
-        const headerOffset = rowIndex * BYTE_SIZE_128;
-        const length = Number(dataView.getBigUint64(headerOffset));
-        if (length > 0 && length < 1024 * 1024) {
-          const innerPtr = dataView.getPointer(headerOffset + BYTE_SIZE_64);
-          if (innerPtr) {
-            const innerView = createPointerView(innerPtr);
-            if (innerView) {
-              return readBytes(innerView, 0, length);
-            }
+    if (dataView) {
+      const headerOffset = rowIndex * BYTE_SIZE_128;
+      const length = Number(dataView.getBigUint64(headerOffset));
+      if (length > 0 && length < 1024 * 1024) {
+        const innerPtr = dataView.getPointer(headerOffset + BYTE_SIZE_64);
+        if (innerPtr) {
+          const innerView = createPointerView(innerPtr);
+          if (innerView) {
+            return readBytes(innerView, 0, length);
           }
         }
       }
-
-      const text = decodeLegacyTextFallback(handle, rowIndex, columnIndex);
-      if (typeof text === "string") {
-        const bytes = parseHexToBytes(text);
-        if (bytes) {
-          return bytes;
-        }
-      }
-      return new Uint8Array();
     }
 
-    if (type === DUCKDB_TYPE.DUCKDB_TYPE_BIT || type === DUCKDB_TYPE.DUCKDB_TYPE_UUID) {
-      if (isNullFromBitmap(validityView, rowIndex, handle, columnIndex)) {
+    const text = decodeLegacyTextFallback(handle, rowIndex, columnIndex);
+    if (typeof text === "string") {
+      const bytes = parseHexToBytes(text);
+      if (bytes) {
+        return bytes;
+      }
+    }
+    return new Uint8Array();
+  }
+
+  if (type === DUCKDB_TYPE.DUCKDB_TYPE_BIT || type === DUCKDB_TYPE.DUCKDB_TYPE_UUID) {
+    if (validityView) {
+      const bitmapIndex = rowIndex >> 3;
+      const bitIndex = rowIndex & 7;
+      if ((validityView.getUint8(bitmapIndex) & (1 << bitIndex)) === 0) {
         return null;
       }
-
-      if (!dataView) {
-        return decodeLegacyTextFallback(handle, rowIndex, columnIndex) ?? "";
-      }
-
-      return getStringLikeValue(dataView, rowIndex, false, handle, columnIndex);
+    } else if (isResultValueNull(handle, rowIndex, columnIndex)) {
+      return null;
     }
 
+    if (!dataView) {
+      return decodeLegacyTextFallback(handle, rowIndex, columnIndex) ?? "";
+    }
+
+    return getStringLikeValue(dataView, rowIndex, false, handle, columnIndex);
+  }
+
+  if (isTextFallbackType(type)) {
     return decodeLegacyTextFallback(handle, rowIndex, columnIndex);
   }
 
-  if (isNullFromBitmap(validityView, rowIndex, handle, columnIndex)) {
+  if (validityView) {
+    const bitmapIndex = rowIndex >> 3;
+    const bitIndex = rowIndex & 7;
+    if ((validityView.getUint8(bitmapIndex) & (1 << bitIndex)) === 0) {
+      return null;
+    }
+  } else if (isResultValueNull(handle, rowIndex, columnIndex)) {
     return null;
   }
 
@@ -654,11 +750,33 @@ function buildResultView(handle: ResultHandle): ResultView {
       validityView = validityPtr ? createPointerView(validityPtr) : null;
     }
 
+    let stringCache: StringColumnCache | undefined;
+    if (
+      dataView && (
+        type === DUCKDB_TYPE.DUCKDB_TYPE_VARCHAR
+        || type === DUCKDB_TYPE.DUCKDB_TYPE_BLOB
+        || type === DUCKDB_TYPE.DUCKDB_TYPE_BIT
+        || type === DUCKDB_TYPE.DUCKDB_TYPE_UUID
+      )
+    ) {
+      const rowCount = Number(resultRowCount);
+      const lengths = new BigUint64Array(rowCount);
+      const innerPointers = new BigUint64Array(rowCount);
+      for (let row = 0; row < rowCount; row++) {
+        const headerOffset = row * BYTE_SIZE_64;
+        lengths[row] = dataView.getBigUint64(headerOffset);
+        innerPointers[row] = dataView.getBigUint64(headerOffset + BYTE_SIZE_64);
+      }
+
+      stringCache = { lengths, innerPointers };
+    }
+
     columns.push({
       name,
       type,
       dataView,
       validityView,
+      stringCache,
     });
     columnInfos.push({ name, type });
   }
@@ -739,6 +857,7 @@ export class ResultReader {
       column.type,
       column.dataView,
       column.validityView,
+      column.stringCache,
     );
   }
 
@@ -757,6 +876,7 @@ export class ResultReader {
       column.type,
       column.dataView,
       column.validityView,
+      column.stringCache,
     );
   }
 

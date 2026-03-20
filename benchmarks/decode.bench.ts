@@ -96,7 +96,7 @@ Deno.bench(
     if (result === null) {
       throw new Error("Query returned null");
     }
-    const rows = result.toArray();
+    const rows = result.toArray({ skipByteSizeCheck: true });
     assertMaterializedRows(rows);
     result.close();
   },
@@ -151,7 +151,7 @@ Deno.bench(
     const result = functional.executePreparedResult(preparedHandleFunc);
 
     try {
-      const rows = result.toArray();
+      const rows = result.toArray({ skipByteSizeCheck: true });
       assertMaterializedRows(rows);
     } finally {
       result.close();
@@ -221,7 +221,7 @@ Deno.bench(
       const result = functional.executePreparedResult(stmtHandle);
 
       try {
-        const rows = result.toArray();
+        const rows = result.toArray({ skipByteSizeCheck: true });
         assertMaterializedRows(rows);
       } finally {
         result.close();

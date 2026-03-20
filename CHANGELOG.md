@@ -8,7 +8,6 @@ All notable changes to this project will be documented in this file.
 
 - `StringDecoder` class for optimized bulk string decoding with reusable buffer
 - `skipByteSizeCheck` option for `toArray()` and `toObjectArray()` to bypass per-cell byte size estimation for faster materialization
-- Comprehensive benchmarks for string decoding, type decoding, materialization patterns, lifecycle operations, null validity checking, row/column scaling, and API comparison
 
 ### Changed
 

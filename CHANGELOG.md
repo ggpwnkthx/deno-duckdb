@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- Use if/else instead of try/catch for string length validation in result decoding
+- Remove redundant cache.delete() call before Map.set() (Map.set() moves key to end of insertion order)
+
 ## [1.1.16]
 
 ### Changed

@@ -36,7 +36,7 @@ export function stringToCStringPointer(
 ): Deno.PointerObject<unknown> {
   const cached = cache.get(value);
   if (cached) {
-    cache.delete(value);
+    // Map.set() moves key to end of insertion order - no need to delete first
     cache.set(value, cached);
     return cached.pointer;
   }

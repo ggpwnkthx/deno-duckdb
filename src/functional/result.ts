@@ -18,9 +18,9 @@ import { createPointerView, validateResultHandle } from "../core/handles.ts";
 import { ValidationError } from "../errors.ts";
 import {
   checkRowCountLimit,
-  checkStringLengthLimit,
   getEffectiveLimits,
   type MaterializationLimits,
+  MAX_REASONABLE_STRING_LENGTH,
 } from "../core/config/limits.ts";
 
 /**
@@ -231,10 +231,8 @@ function getStringLikeValue(
   const headerOffset = row * BYTE_SIZE_64;
   const length = Number(dataView.getBigUint64(headerOffset));
 
-  // Validate length - if exceeds reasonable limit, use fallback for text types
-  try {
-    checkStringLengthLimit(BigInt(length));
-  } catch {
+  // Use if/else instead of try/catch for control flow - faster
+  if (length > MAX_REASONABLE_STRING_LENGTH) {
     if (handle !== undefined && columnIndex !== undefined) {
       const fallback = readResultValueAsText(handle, row, columnIndex);
       if (fallback !== null) {

@@ -6,6 +6,18 @@ import * as functional from "@ggpwnkthx/duckdb/functional";
 import * as objective from "@ggpwnkthx/duckdb/objective";
 import type { ConnectionHandle, ObjectRow, RowData } from "@ggpwnkthx/duckdb";
 
+export function test(
+  name: string,
+  fn: () => void | Promise<void>,
+): void {
+  Deno.test({
+    name,
+    sanitizeResources: false,
+    sanitizeOps: false,
+    fn,
+  });
+}
+
 export async function withFunctionalConnection<T>(
   fn: (connection: ConnectionHandle) => Promise<T> | T,
 ): Promise<T> {
@@ -88,14 +100,9 @@ export function queryCachedObjects(
   return result ? [...result] : null;
 }
 
-export function materializeResultRows(
-  reader: functional.ResultReader,
-): RowData[] {
-  return [...functional.iterateRows(reader)].map((row) =>
-    row.map((value) => value instanceof Uint8Array ? value.slice() : value)
-  );
-}
-
+/**
+ * Execute a SELECT query using executeSqlResult and materialize as object rows.
+ */
 export function materializeResultObjects(
   reader: functional.ResultReader,
 ): ObjectRow[] {
@@ -107,4 +114,46 @@ export function materializeResultObjects(
       ]),
     ) as ObjectRow
   );
+}
+
+export function materializeResultRows(
+  reader: functional.ResultReader,
+): RowData[] {
+  return [...functional.iterateRows(reader)].map((row) =>
+    row.map((value) => value instanceof Uint8Array ? value.slice() : value)
+  );
+}
+
+export type TestTable = {
+  name: string;
+  schema: string;
+  rows: unknown[][];
+};
+
+export function createTable(
+  connection: ConnectionHandle,
+  table: TestTable,
+): void {
+  execFunctional(connection, `CREATE TABLE ${table.name}(${table.schema})`);
+  if (table.rows.length > 0) {
+    const placeholders = table.rows[0].map(() => "?").join(", ");
+    const stmt = functional.prepare(
+      connection,
+      `INSERT INTO ${table.name} VALUES (${placeholders})`,
+    );
+    for (const row of table.rows) {
+      functional.bind(stmt, row as never[]);
+      functional.executePrepared(stmt);
+    }
+    functional.destroyPrepared(stmt);
+  }
+}
+
+export function executeSetup(
+  connection: ConnectionHandle,
+  statements: string[],
+): void {
+  for (const sql of statements) {
+    execFunctional(connection, sql);
+  }
 }

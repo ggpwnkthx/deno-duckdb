@@ -5,7 +5,12 @@ import type {
   PreparedStatementHandle,
   ResultHandle,
 } from "@ggpwnkthx/duckdb";
-import { DatabaseError, ValidationError } from "@ggpwnkthx/duckdb";
+import {
+  DatabaseError,
+  DuckDBError,
+  InvalidResourceError,
+  ValidationError,
+} from "@ggpwnkthx/duckdb";
 import * as functional from "@ggpwnkthx/duckdb/functional";
 import { withFunctionalConnection } from "./utils.ts";
 
@@ -98,4 +103,99 @@ Deno.test("functional: representative handle validation uses typed ValidationErr
     ValidationError,
     "ResultHandle must be 48 bytes",
   );
+});
+
+Deno.test({
+  name: "DuckDBError: non-Error cause is stored directly on error object",
+  fn() {
+    const error = new DuckDBError({
+      code: "DATABASE_ERROR",
+      message: "test error",
+      cause: "plain string cause",
+    });
+
+    assertEquals(error.cause, "plain string cause");
+    assertEquals(error.code, "DATABASE_ERROR");
+  },
+});
+
+Deno.test({
+  name: "DuckDBError: object cause is stored directly on error object",
+  fn() {
+    const cause = { code: "ERR_SOME_THING", detail: "some details" };
+    const error = new DuckDBError({
+      code: "DATABASE_ERROR",
+      message: "test error",
+      cause,
+    });
+
+    assertEquals(error.cause, cause);
+    assertEquals((error.cause as typeof cause).code, "ERR_SOME_THING");
+  },
+});
+
+Deno.test({
+  name: "DuckDBError: Error cause is wrapped in standard cause property",
+  fn() {
+    const cause = new Error("inner error");
+    const error = new DuckDBError({
+      code: "DATABASE_ERROR",
+      message: "test error",
+      cause,
+    });
+
+    assertEquals(error.cause instanceof Error, true);
+    assertEquals((error.cause as Error).message, "inner error");
+  },
+});
+
+Deno.test({
+  name: "DuckDBError: undefined cause does not set cause property",
+  fn() {
+    const error = new DuckDBError({
+      code: "DATABASE_ERROR",
+      message: "test error",
+    });
+
+    assertEquals(error.cause, undefined);
+    assertEquals(error.code, "DATABASE_ERROR");
+  },
+});
+
+Deno.test({
+  name: "DatabaseError: propagates non-Error cause to error object",
+  fn() {
+    const cause = "string cause";
+    const error = new DatabaseError("db failed", undefined, cause);
+
+    assertEquals(error.cause, cause);
+    assertEquals(error.code, "DATABASE_ERROR");
+  },
+});
+
+Deno.test({
+  name: "InvalidResourceError: can be instantiated directly",
+  fn() {
+    const error = new InvalidResourceError("resource is closed", {
+      resourceType: "Connection",
+    });
+
+    assertEquals(error.code, "INVALID_RESOURCE");
+    assertEquals(error.message, "resource is closed");
+    assertEquals(error.context?.resourceType, "Connection");
+  },
+});
+
+Deno.test({
+  name: "ValidationError: can be instantiated directly",
+  fn() {
+    const error = new ValidationError("invalid value", {
+      value: 42,
+      field: "age",
+    });
+
+    assertEquals(error.code, "VALIDATION_ERROR");
+    assertEquals(error.message, "invalid value");
+    assertEquals(error.context?.field, "age");
+  },
 });

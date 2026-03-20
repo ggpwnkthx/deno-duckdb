@@ -321,3 +321,369 @@ test("HUGEINT and UHUGEINT decode correctly", () =>
     assertEquals(rows[0][2], 9223372036854775808n);
     assertEquals(rows[0][3], 18446744073709551615n);
   }));
+
+test("iterateRows works directly with LazyResult (not ResultReader)", () =>
+  withFunctionalConnection((connection) => {
+    createTable(connection, {
+      name: "lazy_iter_test",
+      schema: "id INTEGER, name TEXT",
+      rows: [[1, "first"], [2, "second"]],
+    });
+    const result = functional.executeSqlResult(
+      connection,
+      "SELECT * FROM lazy_iter_test ORDER BY id",
+    );
+    try {
+      const rows = [...functional.iterateRows(result)];
+      assertEquals(rows, [[1, "first"], [2, "second"]]);
+    } finally {
+      result.close();
+    }
+  }));
+
+test("iterateObjects works directly with LazyResult (not ResultReader)", () =>
+  withFunctionalConnection((connection) => {
+    createTable(connection, {
+      name: "lazy_obj_test",
+      schema: "id INTEGER, name TEXT",
+      rows: [[1, "one"], [2, "two"]],
+    });
+    const result = functional.executeSqlResult(
+      connection,
+      "SELECT * FROM lazy_obj_test ORDER BY id",
+    );
+    try {
+      const objects = [...functional.iterateObjects(result)];
+      assertEquals(objects, [{ id: 1, name: "one" }, { id: 2, name: "two" }]);
+    } finally {
+      result.close();
+    }
+  }));
+
+test("getInt32 returns truncated integer", () =>
+  withFunctionalConnection((connection) => {
+    const result = functional.executeSqlResult(
+      connection,
+      "SELECT 42.9::DOUBLE, -42.9::DOUBLE",
+    );
+    try {
+      const reader = result.reader();
+      assertEquals(functional.getInt32(reader, 0, 0), 42);
+      assertEquals(functional.getInt32(reader, 0, 1), -42);
+    } finally {
+      result.close();
+    }
+  }));
+
+test("empty result set yields zero rows from iterator", () =>
+  withFunctionalConnection((connection) => {
+    const result = functional.executeSqlResult(
+      connection,
+      "SELECT 1 AS x WHERE 1 = 0",
+    );
+    try {
+      const rows = [...functional.iterateRows(result)];
+      assertEquals(rows, []);
+    } finally {
+      result.close();
+    }
+  }));
+
+test("BLOB decode with valid hex string", () =>
+  withFunctionalConnection((connection) => {
+    const result = functional.executeSqlResult(
+      connection,
+      "SELECT unhex('DEADBEEF') AS blob_data",
+    );
+    try {
+      const rows = [...functional.iterateRows(result)];
+      assertEquals(rows[0][0], new Uint8Array([0xDE, 0xAD, 0xBE, 0xEF]));
+    } finally {
+      result.close();
+    }
+  }));
+
+test("UUID type decodes (tests UUID branch coverage)", () =>
+  withFunctionalConnection((connection) => {
+    const result = functional.executeSqlResult(
+      connection,
+      "SELECT 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'::UUID",
+    );
+    try {
+      const rows = [...functional.iterateRows(result)];
+      assertEquals(rows.length, 1);
+    } finally {
+      result.close();
+    }
+  }));
+
+test("BIT type decodes as string", () =>
+  withFunctionalConnection((connection) => {
+    const result = functional.executeSqlResult(
+      connection,
+      "SELECT '101010'::BIT::VARCHAR",
+    );
+    try {
+      const rows = [...functional.iterateRows(result)];
+      assertEquals(rows[0][0], "101010");
+    } finally {
+      result.close();
+    }
+  }));
+
+test("DATE type decodes correctly", () =>
+  withFunctionalConnection((connection) => {
+    const result = functional.executeSqlResult(
+      connection,
+      "SELECT '2024-12-25'::DATE",
+    );
+    try {
+      const rows = [...functional.iterateRows(result)];
+      assertEquals(rows[0][0], "2024-12-25");
+    } finally {
+      result.close();
+    }
+  }));
+
+test("TIME type with microseconds decodes correctly", () =>
+  withFunctionalConnection((connection) => {
+    const result = functional.executeSqlResult(
+      connection,
+      "SELECT '12:34:56.123456'::TIME",
+    );
+    try {
+      const rows = [...functional.iterateRows(result)];
+      assertEquals(rows[0][0], "12:34:56.123456");
+    } finally {
+      result.close();
+    }
+  }));
+
+test("TIME type without microseconds omits decimal part", () =>
+  withFunctionalConnection((connection) => {
+    const result = functional.executeSqlResult(
+      connection,
+      "SELECT '12:34:56'::TIME",
+    );
+    try {
+      const rows = [...functional.iterateRows(result)];
+      assertEquals(rows[0][0], "12:34:56");
+    } finally {
+      result.close();
+    }
+  }));
+
+test("TIMESTAMP_NS type decodes (testing coverage of NS branch)", () =>
+  withFunctionalConnection((connection) => {
+    const result = functional.executeSqlResult(
+      connection,
+      "SELECT '2024-01-15 12:34:56.123456'::TIMESTAMP_NS",
+    );
+    try {
+      const rows = [...functional.iterateRows(result)];
+      assertEquals(rows.length, 1);
+    } finally {
+      result.close();
+    }
+  }));
+
+test("INTERVAL with zero micros omits decimal", () =>
+  withFunctionalConnection((connection) => {
+    const result = functional.executeSqlResult(
+      connection,
+      "SELECT INTERVAL '1 year 2 days'",
+    );
+    try {
+      const rows = [...functional.iterateRows(result)];
+      assertEquals(rows[0][0], { months: 12, days: 2, micros: 0n });
+    } finally {
+      result.close();
+    }
+  }));
+
+test("TIMESTAMP_S type decodes (testing coverage of S branch)", () =>
+  withFunctionalConnection((connection) => {
+    const result = functional.executeSqlResult(
+      connection,
+      "SELECT '2024-01-15 12:34:56'::TIMESTAMP_S",
+    );
+    try {
+      const rows = [...functional.iterateRows(result)];
+      assertEquals(rows.length, 1);
+    } finally {
+      result.close();
+    }
+  }));
+
+test("TIMESTAMP_MS type decodes (testing coverage of MS branch)", () =>
+  withFunctionalConnection((connection) => {
+    const result = functional.executeSqlResult(
+      connection,
+      "SELECT '2024-01-15 12:34:56.123'::TIMESTAMP_MS",
+    );
+    try {
+      const rows = [...functional.iterateRows(result)];
+      assertEquals(rows.length, 1);
+    } finally {
+      result.close();
+    }
+  }));
+
+test("getValue rejects invalid column index", () =>
+  withFunctionalConnection((connection) => {
+    const result = functional.executeSqlResult(connection, "SELECT 1, 2, 3");
+    try {
+      const reader = result.reader();
+      assertThrows(
+        () => functional.getValue(reader, 0, 5),
+        Error,
+        "Column index",
+      );
+    } finally {
+      result.close();
+    }
+  }));
+
+test("ResultReader.rowCount returns correct count", () =>
+  withFunctionalConnection((connection) => {
+    createTable(connection, {
+      name: "count_test",
+      schema: "id INTEGER",
+      rows: [[1], [2], [3], [4], [5]],
+    });
+    const result = functional.executeSqlResult(
+      connection,
+      "SELECT * FROM count_test",
+    );
+    try {
+      const reader = result.reader();
+      assertEquals(reader.rowCount, 5n);
+    } finally {
+      result.close();
+    }
+  }));
+
+test("ResultReader.columnCount returns correct count", () =>
+  withFunctionalConnection((connection) => {
+    const result = functional.executeSqlResult(
+      connection,
+      "SELECT 1 AS a, 2 AS b, 3 AS c",
+    );
+    try {
+      const reader = result.reader();
+      assertEquals(reader.columnCount, 3);
+    } finally {
+      result.close();
+    }
+  }));
+
+test("ResultReader.columns returns column metadata", () =>
+  withFunctionalConnection((connection) => {
+    const result = functional.executeSqlResult(
+      connection,
+      "SELECT 1 AS id, 'hello' AS name",
+    );
+    try {
+      const reader = result.reader();
+      const columns = reader.columns;
+      assertEquals(columns.length, 2);
+      assertEquals(columns[0].name, "id");
+      assertEquals(columns[1].name, "name");
+    } finally {
+      result.close();
+    }
+  }));
+
+test("getRow returns array of values for a row", () =>
+  withFunctionalConnection((connection) => {
+    createTable(connection, {
+      name: "row_test",
+      schema: "a INTEGER, b TEXT",
+      rows: [[1, "hello"]],
+    });
+    const result = functional.executeSqlResult(
+      connection,
+      "SELECT * FROM row_test",
+    );
+    try {
+      const reader = result.reader();
+      const row = reader.getRow(0);
+      assertEquals(row, [1, "hello"]);
+    } finally {
+      result.close();
+    }
+  }));
+
+test("getObjectRow returns object for a row", () =>
+  withFunctionalConnection((connection) => {
+    createTable(connection, {
+      name: "obj_row_test",
+      schema: "x INTEGER, y TEXT",
+      rows: [[42, "answer"]],
+    });
+    const result = functional.executeSqlResult(
+      connection,
+      "SELECT * FROM obj_row_test",
+    );
+    try {
+      const reader = result.reader();
+      const row = reader.getObjectRow(0);
+      assertEquals(row, { x: 42, y: "answer" });
+    } finally {
+      result.close();
+    }
+  }));
+
+test("toArray returns array of arrays", () =>
+  withFunctionalConnection((connection) => {
+    createTable(connection, {
+      name: "to_array_test",
+      schema: "id INTEGER",
+      rows: [[1], [2], [3]],
+    });
+    const result = functional.executeSqlResult(
+      connection,
+      "SELECT * FROM to_array_test",
+    );
+    try {
+      const reader = result.reader();
+      const arr = reader.toArray();
+      assertEquals(arr, [[1], [2], [3]]);
+    } finally {
+      result.close();
+    }
+  }));
+
+test("toObjectArray returns array of objects", () =>
+  withFunctionalConnection((connection) => {
+    createTable(connection, {
+      name: "to_obj_array_test",
+      schema: "id INTEGER, name TEXT",
+      rows: [[1, "one"], [2, "two"]],
+    });
+    const result = functional.executeSqlResult(
+      connection,
+      "SELECT * FROM to_obj_array_test ORDER BY id",
+    );
+    try {
+      const reader = result.reader();
+      const arr = reader.toObjectArray();
+      assertEquals(arr, [{ id: 1, name: "one" }, { id: 2, name: "two" }]);
+    } finally {
+      result.close();
+    }
+  }));
+
+test("getValue returns INVALID type as null", () =>
+  withFunctionalConnection((connection) => {
+    const result = functional.executeSqlResult(
+      connection,
+      "SELECT NULL::INTEGER",
+    );
+    try {
+      const reader = result.reader();
+      assertEquals(functional.getValue(reader, 0, 0), null);
+    } finally {
+      result.close();
+    }
+  }));

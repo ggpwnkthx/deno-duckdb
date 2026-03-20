@@ -22,6 +22,9 @@ jobs:
       - name: Type check
         run: deno check ./src/*
 
+      - name: Coverage check
+        run: deno task coverage:check
+
       - name: Run tests
         run: deno test -A ./tests/*
 

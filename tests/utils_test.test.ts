@@ -6,7 +6,7 @@ import {
   queryCachedObjects,
   test,
   withFunctionalConnection,
-} from "../utils.ts";
+} from "./utils.ts";
 
 test("queryCachedObjects returns object rows", () =>
   withFunctionalConnection((connection) => {

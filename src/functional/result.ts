@@ -791,20 +791,23 @@ export class ResultReader {
     const columnCount = this.#view.columnCount;
     const columns = this.#view.columns;
     const result = new Array(rowCount);
+    const skipByteCheck = effectiveLimits.skipByteSizeCheck;
     for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
       // Pre-allocate array and fill directly to avoid function mapper overhead
       const row = new Array(columnCount);
       for (let i = 0; i < columnCount; i++) {
         row[i] = this.decodeValueFast(rowIndex, i, columns[i]);
       }
-      const rowByteSize = row.reduce(
-        (sum, val) => sum + estimateValueByteSize(val),
-        0,
-      );
-      if (rowByteSize > effectiveLimits.maxBytesPerRow) {
-        throw new ValidationError(
-          `Row ${rowIndex} byte size ${rowByteSize} exceeds limit ${effectiveLimits.maxBytesPerRow}`,
+      if (!skipByteCheck) {
+        const rowByteSize = row.reduce(
+          (sum, val) => sum + estimateValueByteSize(val),
+          0,
         );
+        if (rowByteSize > effectiveLimits.maxBytesPerRow) {
+          throw new ValidationError(
+            `Row ${rowIndex} byte size ${rowByteSize} exceeds limit ${effectiveLimits.maxBytesPerRow}`,
+          );
+        }
       }
       result[rowIndex] = row;
     }
@@ -825,19 +828,22 @@ export class ResultReader {
 
     const columns = this.#view.columns;
     const result = new Array(rowCount);
+    const skipByteCheck = effectiveLimits.skipByteSizeCheck;
     for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
       const row: ObjectRow = {};
       for (let i = 0; i < columns.length; i++) {
         row[columns[i].name] = this.decodeValueFast(rowIndex, i, columns[i]);
       }
-      const rowByteSize = (Object.values(row) as ValueType[]).reduce(
-        (sum: number, val: ValueType) => sum + estimateValueByteSize(val),
-        0,
-      );
-      if (rowByteSize > effectiveLimits.maxBytesPerRow) {
-        throw new ValidationError(
-          `Row ${rowIndex} byte size ${rowByteSize} exceeds limit ${effectiveLimits.maxBytesPerRow}`,
+      if (!skipByteCheck) {
+        const rowByteSize = (Object.values(row) as ValueType[]).reduce(
+          (sum: number, val: ValueType) => sum + estimateValueByteSize(val),
+          0,
         );
+        if (rowByteSize > effectiveLimits.maxBytesPerRow) {
+          throw new ValidationError(
+            `Row ${rowIndex} byte size ${rowByteSize} exceeds limit ${effectiveLimits.maxBytesPerRow}`,
+          );
+        }
       }
       result[rowIndex] = row;
     }

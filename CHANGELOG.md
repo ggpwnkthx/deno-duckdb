@@ -4,10 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `skipByteSizeCheck` option for `toArray()` and `toObjectArray()` to bypass per-cell byte size estimation for faster materialization
+
 ### Changed
 
 - Use if/else instead of try/catch for string length validation in result decoding
 - Remove redundant cache.delete() call before Map.set() (Map.set() moves key to end of insertion order)
+- Optimized `checkStringLengthLimit()` to use Number comparison when length is not bigint
+
+### Removed
+
+- `benchmarks/materialization.bench.ts` (byte size estimation overhead is now optional)
 
 ## [1.1.16]
 

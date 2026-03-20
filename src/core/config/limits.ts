@@ -28,6 +28,8 @@ export const DEFAULT_MAX_BYTES_PER_ROW = 100 * 1024 * 1024; // 100MB
  */
 export const MAX_REASONABLE_STRING_LENGTH = 1024n * 1024n * 1024n * 1024n; // 1TB
 
+const MAX_REASONABLE_STRING_AS_NUMBER = Number(MAX_REASONABLE_STRING_LENGTH);
+
 /**
  * Configuration options for materialization limits.
  */
@@ -43,6 +45,14 @@ export interface MaterializationLimits {
    * @default DEFAULT_MAX_BYTES_PER_ROW (100MB)
    */
   maxBytesPerRow?: number;
+
+  /**
+   * Skip per-cell byte size estimation.
+   * Enable this for faster materialization when you know
+   * rows won't contain extremely large values (>100MB per row).
+   * @default false
+   */
+  skipByteSizeCheck?: boolean;
 }
 
 /**
@@ -79,10 +89,11 @@ export function validateMaterializationLimits(
  */
 export function getEffectiveLimits(
   limits?: MaterializationLimits,
-): Required<MaterializationLimits> {
+): Required<MaterializationLimits> & { skipByteSizeCheck: boolean } {
   return {
     maxRows: limits?.maxRows ?? DEFAULT_MAX_ROWS,
     maxBytesPerRow: limits?.maxBytesPerRow ?? DEFAULT_MAX_BYTES_PER_ROW,
+    skipByteSizeCheck: limits?.skipByteSizeCheck ?? false,
   };
 }
 
@@ -110,11 +121,25 @@ export function checkRowCountLimit(rowCount: number, maxRows: number): void {
  * @throws {ValidationError} if length exceeds MAX_REASONABLE_STRING_LENGTH
  */
 export function checkStringLengthLimit(length: bigint): void {
-  if (length > MAX_REASONABLE_STRING_LENGTH) {
+  if (typeof length === "bigint") {
+    if (length > MAX_REASONABLE_STRING_LENGTH) {
+      throw new ValidationError(
+        `String/blob length ${length} exceeds maximum reasonable length. `
+          + "This may indicate corrupted data.",
+        {
+          length: length.toString(),
+          maxLength: MAX_REASONABLE_STRING_LENGTH.toString(),
+        },
+      );
+    }
+  } else if (length > MAX_REASONABLE_STRING_AS_NUMBER) {
     throw new ValidationError(
       `String/blob length ${length} exceeds maximum reasonable length. `
         + "This may indicate corrupted data.",
-      { length: length.toString(), maxLength: MAX_REASONABLE_STRING_LENGTH.toString() },
+      {
+        length: String(length),
+        maxLength: MAX_REASONABLE_STRING_LENGTH.toString(),
+      },
     );
   }
 }

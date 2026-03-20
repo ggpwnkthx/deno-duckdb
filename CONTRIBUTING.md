@@ -1,92 +1,16 @@
 # Contributing to @ggpwnkthx/duckdb
 
-Thank you for your interest in contributing!
+Thanks for your interest in contributing.
 
-## Prerequisites
+This project is a Deno wrapper around DuckDB's native library via FFI. Because it
+uses direct memory access and version-specific ABI/layout assumptions, correctness and
+compatibility matter a lot. Small changes can have outsized effects.
 
-- **Deno 2.0+** - This library requires Deno's FFI support
-- **@ggpwnkthx/libduckdb@1.0.15** - Pinned in `deno.json`
+## Before You Start
 
-## Development Setup
+Please read the README first, especially the version compatibility notes.
 
-1. Clone the repository
-2. Install dependencies (Deno fetches JSR packages automatically):
-   ```bash
-   deno cache ./src/mod.ts
-   ```
-
-## Development Commands
-
-```bash
-# Run all checks (format, lint, type check, test)
-deno task ci
-
-# Run tests only
-deno task test
-
-# Run a specific test file
-deno test -A ./tests/functional_api.test.ts
-
-# Type check the project
-deno check
-
-# Lint the project
-deno lint
-
-# Format the project
-deno fmt
-
-# Run benchmarks
-deno task bench
-
-# Run all examples
-deno task examples
-```
-
-## Code Style
-
-This project uses Deno's formatter with the following settings (defined in `deno.json`):
-
-- Line width: 88
-- Indent width: 2 spaces
-- Semicolons: yes
-- Single quotes: no
-- Trailing commas: only multi-line
-
-Run `deno fmt` before committing.
-
-## Testing
-
-All tests are in the `tests/` directory. Tests use `@std/assert` for assertions.
-
-### Writing Tests
-
-```ts
-Deno.test({
-  name: "description of the test",
-  async fn() {
-    // test code
-  },
-});
-```
-
-### Test Categories
-
-- `tests/api/` - API tests for functional and objective interfaces
-- `tests/core/` - Core layer tests (config, handles, library)
-- `tests/errors.test.ts` - Error handling tests
-
-## Pull Request Process
-
-1. Fork the repository and create a branch from `main`
-2. Make your changes
-3. Ensure `deno task ci` passes
-4. Update documentation if needed
-5. Submit a pull request with the completed checklist in the PR template
-
-## Version Compatibility
-
-This library is tightly coupled to specific versions:
+This project is tightly coupled to specific versions:
 
 | Dependency           | Version |
 | -------------------- | ------- |
@@ -94,8 +18,171 @@ This library is tightly coupled to specific versions:
 | Deno                 | 2.0+    |
 | @ggpwnkthx/libduckdb | 1.0.15  |
 
-Changes to these versions may require significant testing due to direct memory access assumptions in result decoding.
+Do not update DuckDB, Deno, or `@ggpwnkthx/libduckdb` casually. Version changes may
+require substantial compatibility testing.
 
-## Questions?
+## Development Setup
 
-Open an issue for bugs or feature requests. For general questions,Discussions is the best place to ask.
+1. Fork and clone the repository
+2. Ensure you are using a compatible Deno version
+3. Cache dependencies:
+
+```bash
+deno cache ./src/mod.ts
+```
+
+## Permissions
+
+Typical development and test workflows may require:
+
+- `--allow-ffi`
+- `--allow-read`
+- `--allow-env`
+
+If the native DuckDB library is not already present and must be fetched, you may also
+need:
+
+- `--allow-net`
+- `--allow-write`
+
+Most repository tasks already pass the necessary flags where applicable.
+
+## Development Commands
+
+```bash
+# Run all checks used in CI
+deno task ci
+
+# Run tests
+deno task test
+
+# Run a specific test file
+deno test -A ./tests/api/api.test.ts
+
+# Type-check the public entrypoint
+deno check ./src/mod.ts
+
+# Lint
+deno lint
+
+# Format
+deno fmt
+
+# Run benchmarks
+deno task bench
+
+# Run examples
+deno task examples
+```
+
+## Project Structure
+
+- `src/core/` - internal shared helpers, config, validation, handles, library loading
+- `src/functional/` - functional API
+- `src/objective/` - object-oriented API
+- `tests/` - test suite
+
+## Contribution Guidelines
+
+### Bug Fixes
+
+- Add or update tests that fail before the fix and pass after it
+- Prefer the smallest change that fixes the issue cleanly
+- Preserve existing public API behavior unless a breaking change is intentional
+
+### New Features
+
+- Open an issue or discussion first for substantial changes
+- Include tests
+- Update README and examples when the public API changes
+- Keep dependencies minimal
+
+### FFI and Result-Decoding Changes
+
+Changes touching FFI boundaries, pointer handling, memory layout assumptions, result
+decoding, or ABI-sensitive code need extra care.
+
+For these changes:
+
+- explain the ABI/layout assumption clearly in the PR
+- add focused tests for the affected types/paths
+- call out risks around memory safety, invalid handles, or version coupling
+
+## Code Style
+
+This project uses Deno's formatter and linter. The canonical settings are defined in
+`deno.json`.
+
+Please run:
+
+```bash
+deno fmt
+deno lint
+```
+
+before opening a PR.
+
+A few expectations:
+
+- keep TypeScript strict
+- avoid `any`
+- prefer small, composable functions
+- validate untrusted inputs early
+- preserve typed errors and clear failure modes
+- avoid unnecessary dependencies
+
+## Testing
+
+Tests live under `tests/` and use `@std/assert`.
+
+Examples of current test areas include:
+
+- `tests/api/` - public API behavior and parity
+- `tests/core/` - config, handles, library loading, validation
+- `tests/errors.test.ts` - error hierarchy and error behavior
+- `tests/functional/` - functional helpers and value extraction
+
+When adding tests:
+
+- use descriptive names
+- keep fixtures minimal
+- close resources explicitly unless the test is specifically about lifecycle behavior
+- add regression coverage for reported bugs
+
+## Pull Requests
+
+1. Create a branch from `main`
+2. Make your changes
+3. Add or update tests
+4. Update docs if behavior changed
+5. Run `deno task ci`
+6. Open a pull request with a clear description of:
+   - what changed
+   - why it changed
+   - any compatibility or safety considerations
+
+## AI / LLM-Assisted Contributions
+
+AI/LLM-generated code is allowed, but contributors are fully responsible for anything they submit.
+
+If you use AI tools:
+
+- review, understand, and test all generated code before opening a PR
+- ensure the code matches this project's style, safety, and version requirements
+- do not submit code you cannot explain or maintain
+- verify that generated code does not add unsafe dependencies, weaken validation, or change public behavior unintentionally
+- avoid including secrets, private data, or unpublished code in AI tool prompts
+
+PRs may be rejected if AI-generated changes are low-quality, unreviewed, overly broad, or unsafe.
+
+## Reporting Security Issues
+
+Please do **not** open public issues for security-sensitive bugs.
+
+See `SECURITY.md` for vulnerability reporting instructions.
+
+## Questions
+
+Open an issue for bugs or feature requests.
+
+For general questions, GitHub Discussions is the best place to ask.

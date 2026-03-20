@@ -12,21 +12,7 @@ jobs:
       - uses: denoland/setup-deno@v1
         with:
           deno-version: 2.x
+          cache: true
 
-      - name: Format check
-        run: deno fmt --check
-
-      - name: Lint
-        run: deno lint
-
-      - name: Type check
-        run: deno check ./src/*
-
-      - name: Coverage check
-        run: deno task coverage:check
-
-      - name: Run tests
-        run: deno test -A ./tests/*
-
-      - name: Run examples
-        run: deno task examples
+      - name: CI
+        run: deno task ci

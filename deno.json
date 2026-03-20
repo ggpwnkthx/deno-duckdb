@@ -1,6 +1,6 @@
 {
   "name": "@ggpwnkthx/duckdb",
-  "version": "1.1.15",
+  "version": "1.1.16",
   "exports": {
     ".": "./src/mod.ts",
     "./functional": "./src/functional/mod.ts",
@@ -15,15 +15,15 @@
     "@ggpwnkthx/duckdb/objective": "./src/objective/mod.ts"
   },
   "tasks": {
-    "test": "deno test -A ./tests/*",
-    "coverage": "deno test -A --clean --coverage=coverage ./tests/* && deno coverage --output=coverage/coverage.txt --lcov",
+    "test": "deno test -A --clean --coverage=coverage ./tests/*",
+    "coverage": "deno task test && deno coverage --output=coverage/coverage.txt --lcov",
     "coverage:check": "deno task coverage && deno run -A scripts/check_coverage.ts coverage/coverage.txt",
     "bench": "deno bench -A ./benchmarks/*",
     "fmt": "deno fmt",
     "fmt:check": "deno fmt --check",
     "lint": "deno lint",
     "check": "deno check ./src/*",
-    "ci": "deno task fmt && deno task lint && deno task check && deno task coverage:check && deno task examples",
+    "ci": "deno task fmt && deno task lint && deno task check && deno task coverage && deno task examples",
     "example:basic": "deno run -A ./examples/getting-started/basic.ts",
     "example:quickstart": "deno run -A ./examples/getting-started/quickstart.ts",
     "example:config:memory": "deno run -A ./examples/configuration/memory-and-threads.ts",

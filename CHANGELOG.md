@@ -2,21 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [1.1.17] - 2026-03-20
 
 ### Added
 
+- `StringDecoder` class for optimized bulk string decoding with reusable buffer
 - `skipByteSizeCheck` option for `toArray()` and `toObjectArray()` to bypass per-cell byte size estimation for faster materialization
+- Comprehensive benchmarks for string decoding, type decoding, materialization patterns, lifecycle operations, null validity checking, row/column scaling, and API comparison
 
 ### Changed
 
 - Use if/else instead of try/catch for string length validation in result decoding
 - Remove redundant cache.delete() call before Map.set() (Map.set() moves key to end of insertion order)
 - Optimized `checkStringLengthLimit()` to use Number comparison when length is not bigint
+- Optimized `buildResultView()` to get library reference once instead of per-column, reducing JavaScript overhead in ResultReader construction
+- Optimized `StringDecoder` to always use bulk `getArrayBuffer()` copy instead of byte-by-byte loop for small strings
 
 ### Removed
 
 - `benchmarks/materialization.bench.ts` (byte size estimation overhead is now optional)
+- Dead code in `StringDecoder` class: `#lock` field, `tryLock()`, and `unlock()` methods were never used
 
 ## [1.1.16]
 

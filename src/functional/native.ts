@@ -731,14 +731,16 @@ export function columnType(
  * ```
  */
 export function columnInfos(handle: ResultHandle): ColumnInfo[] {
+  const library = getLibraryFast();
+  const symbols = library.symbols;
   const count = Number(columnCount(handle));
   const columns: ColumnInfo[] = [];
 
   for (let index = 0; index < count; index += 1) {
-    columns.push({
-      name: columnName(handle, index),
-      type: columnType(handle, index),
-    });
+    const namePtr = symbols.duckdb_column_name(handle, BigInt(index));
+    const name = readCString(namePtr) ?? "";
+    const type = symbols.duckdb_column_type(handle, BigInt(index)) as DUCKDB_TYPE;
+    columns.push({ name, type });
   }
 
   return columns;

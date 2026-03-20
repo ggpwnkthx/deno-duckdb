@@ -15,6 +15,7 @@ import type {
   ValueType,
 } from "../types.ts";
 import { createPointerView, validateResultHandle } from "../core/handles.ts";
+import { getLibraryFast } from "../core/library.ts";
 import { ValidationError } from "../errors.ts";
 import {
   checkRowCountLimit,
@@ -39,14 +40,7 @@ const BYTE_SIZE_32 = 4;
 const BYTE_SIZE_64 = 8;
 /** @internal */
 const BYTE_SIZE_128 = 16;
-import {
-  columnInfos,
-  getResultColumnData,
-  getResultColumnValidity,
-  isResultValueNull,
-  readResultValueAsText,
-  rowCount,
-} from "./native.ts";
+import { isResultValueNull, readResultValueAsText } from "./native.ts";
 import { assertIntegerIndex } from "../core/validate.ts";
 
 const textDecoder = new TextDecoder();
@@ -624,28 +618,66 @@ function decodeValueByType(
 /**
  * Build a cached result view from a result handle.
  *
+ * Optimized to get library reference once and batch FFI calls per column.
+ *
  * @internal
  * @param handle - Valid result handle
  * @returns Cached ResultView with column metadata and data pointers
  */
 function buildResultView(handle: ResultHandle): ResultView {
   validateResultHandle(handle);
-  const info = columnInfos(handle);
 
-  const columns: ColumnVector[] = info.map((column, index) => ({
-    name: column.name,
-    type: column.type,
-    dataView: getResultColumnData(handle, index),
-    validityView: getResultColumnValidity(handle, index),
-  }));
+  const library = getLibraryFast();
+  const symbols = library.symbols;
+  const count = Number(symbols.duckdb_column_count(handle));
+  const resultRowCount = symbols.duckdb_row_count(handle);
+
+  const validityFn = (symbols as Record<string, unknown>)["duckdb_column_validity"] as
+    | ((handle: ResultHandle, col: bigint) => Deno.PointerValue<unknown>)
+    | undefined;
+
+  const columns: ColumnVector[] = [];
+  const columnInfos: ColumnInfo[] = [];
+
+  for (let index = 0; index < count; index += 1) {
+    const bigIntIndex = BigInt(index);
+    const namePtr = symbols.duckdb_column_name(handle, bigIntIndex);
+    const name = readCStringFast(namePtr) ?? "";
+    const type = symbols.duckdb_column_type(handle, bigIntIndex) as DUCKDB_TYPE;
+
+    const dataPtr = symbols.duckdb_column_data(handle, bigIntIndex);
+    const dataView = dataPtr ? createPointerView(dataPtr) : null;
+
+    let validityView: Deno.UnsafePointerView | null = null;
+    if (validityFn) {
+      const validityPtr = validityFn(handle, bigIntIndex);
+      validityView = validityPtr ? createPointerView(validityPtr) : null;
+    }
+
+    columns.push({
+      name,
+      type,
+      dataView,
+      validityView,
+    });
+    columnInfos.push({ name, type });
+  }
 
   return {
     handle,
-    rowCount: rowCount(handle),
-    columnCount: info.length,
+    rowCount: resultRowCount,
+    columnCount: count,
     columns,
-    columnInfos: info,
+    columnInfos,
   };
+}
+
+function readCStringFast(pointer: Deno.PointerValue<unknown>): string | null {
+  if (!pointer) {
+    return null;
+  }
+  const view = createPointerView(pointer);
+  return view?.getCString() ?? null;
 }
 
 /**

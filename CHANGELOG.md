@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.18]
+
+### Changed
+
+- Update `exclude` patterns in deno.json for JSR publishing compliance
+
 ## [1.1.17] - 2026-03-20
 
 ### Added

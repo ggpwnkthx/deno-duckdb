@@ -22,6 +22,8 @@ import {
   executeQueryResult,
   prepareStatement,
 } from "../functional/native.ts";
+import { applySessionConfig } from "../functional/session.ts";
+import type { SessionConfig } from "../core/config/schema/mod.ts";
 import { assertNonEmptyString } from "../core/validate.ts";
 import { InvalidResourceError, ValidationError } from "../errors.ts";
 import type { MaterializationLimits } from "../core/config/limits.ts";
@@ -125,6 +127,27 @@ export class Connection extends DisposableResource<ConnectionHandle> {
     );
     this.#queryResults.add(result);
     return result;
+  }
+
+  /**
+   * Apply session/local DuckDB settings to this connection.
+   *
+   * Issues one `SET` statement per option. DuckDB's C API does not expose a
+   * per-connection config setter, so `SET name = value` SQL is the supported
+   * mechanism for runtime session changes.
+   *
+   * @param config - Session/local DuckDB settings to apply
+   * @throws {ValidationError} if `config` contains unknown keys or invalid values
+   * @throws {QueryError} if any of the underlying `SET` statements fails
+   *
+   * @example
+   * ```ts
+   * conn.setConfig({ search_path: ["main", "analytics"] });
+   * conn.setConfig({ enable_progress_bar: false });
+   * ```
+   */
+  setConfig(config: SessionConfig): void {
+    applySessionConfig(this.requireHandle("Connection"), config);
   }
 
   /**

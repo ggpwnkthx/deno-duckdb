@@ -28,7 +28,7 @@ import {
  * Fixed-width byte sizes used by DuckDB's legacy result memory layout.
  *
  * These sizes match the libduckdb C ABI targeted by
- * `@ggpwnkthx/libduckdb@1.0.15` (DuckDB 1.5.0).
+ * `@ggpwnkthx/libduckdb@1.0.17` (DuckDB 1.5.5).
  * @internal
  */
 const BYTE_SIZE_8 = 1;

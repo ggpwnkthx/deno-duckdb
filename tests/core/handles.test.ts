@@ -7,7 +7,7 @@ import {
   validateDatabaseHandle,
   validatePreparedStatementHandle,
   validateResultHandle,
-} from "../../src/core/handles.ts";
+} from "../../core/handles.ts";
 import { QueryError, ValidationError } from "@ggpwnkthx/duckdb";
 
 Deno.test("core: newly created opaque handles start as null pointers", () => {

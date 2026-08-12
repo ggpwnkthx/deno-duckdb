@@ -1,6 +1,6 @@
 import { assertEquals, assertExists, assertThrows } from "@std/assert";
-import { DuckDBError } from "../../src/errors.ts";
-import { getLibrary, getLibraryFast, getLibrarySync } from "../../src/core/library.ts";
+import { DuckDBError } from "../../errors.ts";
+import { getLibrary, getLibraryFast, getLibrarySync } from "../../core/library.ts";
 import * as functional from "@ggpwnkthx/duckdb/functional";
 
 Deno.test({

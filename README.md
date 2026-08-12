@@ -1,6 +1,6 @@
 # @ggpwnkthx/duckdb
 
-Type-safe DuckDB functional and object-oriented APIs.
+Type-safe DuckDB FFI binding library for Deno.
 
 ## Version Compatibility
 
@@ -9,28 +9,11 @@ Type-safe DuckDB functional and object-oriented APIs.
 
 | Dependency           | Version    | Notes                                     |
 | -------------------- | ---------- | ----------------------------------------- |
-| DuckDB               | **1.5.0**  | ABI/layout assumptions in result decoding |
+| DuckDB               | **1.5.5**  | ABI/layout assumptions in result decoding |
 | Deno                 | **2.0+**   | Requires FFI support                      |
-| @ggpwnkthx/libduckdb | **1.0.15** | Pinned in `deno.json`                     |
+| @ggpwnkthx/libduckdb | **1.0.17** | Pinned in `deno.jsonc`                    |
 
-This library uses direct memory access for high-performance result decoding. It makes
-assumptions about DuckDB's internal memory layout (pointer sizes, struct sizes, column
-vector formats). These assumptions are **only guaranteed for the versions above**.
-
-**Do not upgrade** DuckDB or Deno without testing thoroughly first. Even minor version
-upgrades may break result decoding due to changes in:
-
-- Result struct layout (`duckdb_result` is 48 bytes)
-- Column vector representation (string length + pointer format)
-- Pointer size (assumes 64-bit)
-
----
-
-> Starting with version 1.2.0, this project will adhere to **semantic versioning**:
->
-> - **MAJOR** (x.0.0) - Breaking changes to the public API
-> - **MINOR** (1.x.0) - New features (backward-compatible)
-> - **PATCH** (1.2.x) - Bug fixes (backward-compatible)
+The library uses direct memory access for high-performance result decoding and makes assumptions about DuckDB's internal memory layout. These assumptions are **only guaranteed for the versions above**. Do not upgrade DuckDB or `@ggpwnkthx/libduckdb` without thorough testing.
 
 ## Installation
 
@@ -39,207 +22,94 @@ import * as functional from "jsr:@ggpwnkthx/duckdb/functional";
 import { Database } from "jsr:@ggpwnkthx/duckdb/objective";
 ```
 
-## Dual APIs
+Or via `deno.json` import map:
 
-This library provides two distinct APIs for working with DuckDB:
+```jsonc
+{
+  "imports": {
+    "@ggpwnkthx/duckdb/functional": "jsr:@ggpwnkthx/duckdb@1.2.0/functional",
+    "@ggpwnkthx/duckdb/objective": "jsr:@ggpwnkthx/duckdb@1.2.0/objective"
+  }
+}
+```
 
-### Functional API
+## Quick Start — Functional API
 
-Pure functional style with explicit state passing. Handles must be manually managed and
-destroyed.
+Pure functions; handles are managed manually.
 
 ```ts
 import * as functional from "jsr:@ggpwnkthx/duckdb/functional";
 
 const db = await functional.open();
 const conn = await functional.connectToDatabase(db);
-
 try {
-  // Eager - get all rows as objects
   const rows = functional.queryObjects(conn, "SELECT 42 AS answer");
-  console.log([...rows]);
+  console.log(rows);
 } finally {
   functional.closeConnection(conn);
   functional.closeDatabase(db);
 }
 ```
 
-### Objective API
+## Quick Start — Objective API
 
-Object-oriented API with classes that encapsulate DuckDB handles. Supports
-`Symbol.dispose` for automatic cleanup.
+Classes with `Symbol.dispose` for automatic cleanup.
 
 ```ts
 import { Database } from "jsr:@ggpwnkthx/duckdb/objective";
 
 using db = await Database.open();
 using conn = await db.connect();
-
-// Eager - get all rows as objects
 const rows = conn.queryObjects("SELECT 42 AS answer");
 console.log(rows);
-// Resources automatically cleaned up when exiting scope
-```
-
-## Architecture
-
-The library uses a three-layer architecture:
-
-- **Core Layer** (`src/core/`) - Internal shared FFI operations (database, connection,
-  query, prepared statements)
-- **Functional API** (`src/functional/`) - Pure functional style with explicit state
-  passing
-- **Objective API** (`src/objective/`) - Object-oriented classes with automatic cleanup
-
-## Key Features
-
-### Lazy Iteration
-
-Both APIs support lazy row iteration that decodes rows on-demand from an in-memory
-result buffer. Note that while row decoding is lazy (rows are decoded only when iterated),
-DuckDB itself materializes the full result set in memory when the query executes - this
-library does not provide streaming execution.
-
-**Functional API:**
-
-```ts
-for (const row of functional.iterateRows(result)) {
-  console.log(row);
-}
-
-for (const obj of functional.iterateObjects(result)) {
-  console.log(obj);
-}
-```
-
-**Objective API:**
-
-```ts
-for (const row of result.rows()) {
-  console.log(row);
-}
-
-for (const obj of result.objects()) {
-  console.log(obj);
-}
-```
-
-### Result Caching
-
-The `ResultReader` class caches column metadata for efficient repeated access.
-
-### Config Normalization
-
-User-friendly config options are normalized to DuckDB's expected names:
-
-```ts
-// Use the native DuckDB config option name:
-Database.open(undefined, { access_mode: "READ_ONLY" });
-```
-
-### Type-Safe Configuration
-
-The `DatabaseConfig` type is derived from DuckDB's config schema, providing autocomplete
-and type safety for all known configuration options:
-
-```ts
-import { Database } from "jsr:@ggpwnkthx/duckdb/objective";
-
-// TypeScript provides autocomplete for known config options:
-const db = await Database.open(undefined, {
-  access_mode: "READ_ONLY", // Restricted to "AUTOMATIC" | "READ_ONLY" | "READ_WRITE"
-  threads: 4n, // bigint
-  max_memory: "8GB", // string
-  enable_http_metadata_cache: true, // boolean
-});
-```
-
-Each config option has a proper TypeScript type based on the DuckDB schema:
-
-- **Boolean options** - `boolean` type
-- **Enum options** - Specific union type of valid values
-- **Integer/Double options** - `number` type
-- **BigInt options** - `bigint` type
-- **String options** - `string` type
-- **String array options** - `readonly string[]` type
-
-### Branded Handle Types
-
-The library uses unique symbol-based types to prevent mixing handles at compile time:
-
-- `DatabaseHandle` - Database instance
-- `ConnectionHandle` - Connection to a database
-- `ResultHandle` - Query result
-- `PreparedStatementHandle` - Prepared statement
-
-### Symbol.dispose Support
-
-The objective API supports automatic resource cleanup using `Symbol.dispose`:
-
-```ts
-using db = await Database.open();
-using conn = await db.connect();
-// Resources automatically cleaned up when exiting scope
 ```
 
 ## Value Model
 
-The wrapper returns the following JavaScript value types:
+DuckDB values surface as the following JavaScript types:
 
-- booleans, numbers, bigints, strings, `null`
-- `Uint8Array` for `BLOB`
-- `{ months, days, micros }` for `INTERVAL`
+| DuckDB type                                  | JS value                                           |
+| -------------------------------------------- | -------------------------------------------------- |
+| `BOOLEAN`                                    | `boolean`                                          |
+| `TINYINT..DOUBLE`                            | `number`                                           |
+| `HUGEINT`, `UBIGINT`                         | `bigint`                                           |
+| `VARCHAR`                                    | `string`                                           |
+| `BLOB`                                       | `Uint8Array`                                       |
+| `DATE`                                       | `string` (`YYYY-MM-DD`)                            |
+| `TIME`                                       | `string` (`HH:MM:SS[.ffffff]`)                     |
+| `TIMESTAMP[*]`                               | `string` (ISO with µs precision)                   |
+| `INTERVAL`                                   | `{ months: number, days: number, micros: bigint }` |
+| `UUID`, `BIT`, `ENUM`, `DECIMAL`, extensions | `string` (DuckDB legacy text conversion)           |
+| `NULL`                                       | `null`                                             |
 
-Notes:
+`DECIMAL`/`ENUM`/`UUID`/`BIT` and other complex types are returned as exact text
+via DuckDB's legacy value conversion helpers. This avoids silent precision loss
+while keeping the public API simple and serializable.
 
-- `DECIMAL`, `ENUM`, `UUID`, `BIT`, and other complex/legacy-awkward values are returned
-  as exact text through DuckDB's legacy value conversion helpers.
-- This avoids silent precision loss while keeping the public API simple and
-  serializable.
+## Error Hierarchy
 
-## Error Handling
+All errors extend `DuckDBError` (which extends `Error`) and carry a `code`:
 
-The library provides a custom error hierarchy:
-
-- `DuckDBError` - Base error class
-- `DatabaseError` - Database operation errors (connection, creation)
-- `QueryError` - Query execution errors
-- `InvalidResourceError` - Invalid handle errors
-- `ValidationError` - Input validation errors
-
-```ts
-import { executeSqlResult, query } from "jsr:@ggpwnkthx/duckdb/functional";
-import { QueryError } from "jsr:@ggpwnkthx/duckdb";
-
-// Convenience method - returns null on query failure
-const result = query(conn, "SELECT * FROM nonexistent");
-if (result === null) {
-  console.log("Query failed");
-} else {
-  console.log("Query succeeded with", result.length, "rows");
-}
-
-// Lower-level method - throws QueryError on failure
-try {
-  const result = executeSqlResult(conn, "INVALID SQL");
-  // ... use result
-} catch (e) {
-  if (e instanceof QueryError) {
-    console.log(`Query failed: ${e.message}`);
-  }
-}
-```
+| Class                  | `code`             | When                                                                     |
+| ---------------------- | ------------------ | ------------------------------------------------------------------------ |
+| `DuckDBError`          | (varies)           | Base class. `LIBRARY_LOAD_FAILED` is used for FFI load failures.         |
+| `DatabaseError`        | `DATABASE_ERROR`   | Database / connection / prepared-statement lifecycle.                    |
+| `QueryError`           | `QUERY_ERROR`      | Query text or execution failure (incl. `SET` failures from `setConfig`). |
+| `InvalidResourceError` | `INVALID_RESOURCE` | Access to a closed / invalid resource.                                   |
+| `ValidationError`      | `VALIDATION_ERROR` | Invalid input (unknown config keys, empty SQL, etc.).                    |
 
 ## Permissions
 
-Typical dev/test usage requires:
+Typical dev/test usage requires `--allow-ffi`, `--allow-read`, `--allow-env`.
+If the native library must be auto-downloaded, also `--allow-net` and
+`--allow-write`.
 
-- `--allow-ffi`
-- `--allow-read`
-- `--allow-env`
+## Links
 
-If the native DuckDB library is not already present, the low-level loader may
-auto-download it. In that case you may also need:
-
-- `--allow-net`
-- `--allow-write`
+- [GitHub repo](https://github.com/ggpwnkthx/deno-duckdb)
+- [JSR package](https://jsr.io/@ggpwnkthx/duckdb)
+- [Wiki — full API reference, configuration catalog, value-decoding details, examples index](https://github.com/ggpwnkthx/deno-duckdb/wiki)
+- [Examples](./examples/) — getting-started, configuration, analytics, data-types, cloud
+- [Benchmarks](./benchmarks/) — run with `deno task bench`
+- [CHANGELOG.md](./CHANGELOG.md)
+- [LICENSE](./LICENSE) (MIT)

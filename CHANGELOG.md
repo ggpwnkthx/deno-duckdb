@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0]
+
+### Added
+
+- `Connection.setConfig()` and functional `applySessionConfig()` for applying
+  `SessionConfig` (local DuckDB settings) to an open connection via SQL
+  `SET` statements. Per-connection settings are not exposed in DuckDB's
+  C API; SQL is the supported runtime mechanism. Unknown keys and value-type
+  mismatches throw `ValidationError`; underlying `SET` failures throw
+  `QueryError`.
+
+### Changed
+
+- Re-exported `SessionConfig`, `DatabaseOpenConfig`, `validateDatabaseOpenConfig`,
+  `validateSessionConfig`, `configToFFI`, `serializeConfigValue`,
+  `escapeSqlStringLiteral`, and `resolveConfigAlias` from the package root
+  for advanced usage.
+- Extracted shared serialization helpers (`serializeConfigValue`,
+  `escapeSqlStringLiteral`, `resolveConfigAlias`) from `configToFFI` so
+  the open-time and session-time paths share the same string-formatting logic.
+
 ## [1.1.18]
 
 ### Changed

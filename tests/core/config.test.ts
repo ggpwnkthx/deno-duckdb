@@ -1,12 +1,12 @@
 import { assertEquals, assertThrows } from "@std/assert";
-import { configToFFI, getConfigDefinition } from "../../src/core/config/mod.ts";
+import { configToFFI, getConfigDefinition } from "../../core/config/mod.ts";
 import {
   getGlobalConfigDefinition,
   getLocalConfigDefinition,
   isKnownConfigKey,
   isKnownGlobalConfigKey,
   isKnownLocalConfigKey,
-} from "../../src/core/config/schema/mod.ts";
+} from "../../core/config/schema/mod.ts";
 import {
   getConfigDefault,
   getConfigEnumValues,
@@ -17,7 +17,7 @@ import {
   validateDatabaseConfig,
   validateDatabaseOpenConfig,
   validateSessionConfig,
-} from "../../src/core/config/validate.ts";
+} from "../../core/config/validate.ts";
 
 // === configToFFI Tests ===
 

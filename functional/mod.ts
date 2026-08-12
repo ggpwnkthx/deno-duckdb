@@ -516,6 +516,9 @@ export const destroyPrepared = destroyPreparedStatement;
 // Result aliases - use native functions which handle ResultHandle
 export { columnCount, columnInfos, columnName, columnType, destroy, rowCount };
 
+// Session
+export { applySessionConfig } from "./session.ts";
+
 /**
  * Execute a query and return an array of rows.
  *

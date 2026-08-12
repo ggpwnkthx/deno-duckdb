@@ -7,7 +7,7 @@
  * access for high-performance result decoding and makes assumptions about DuckDB's internal
  * ABI/layout that are only guaranteed for:
  *
- * - DuckDB: **1.5.0** (via `@ggpwnkthx/libduckdb@1.0.15`)
+ * - DuckDB: **1.5.5** (via `@ggpwnkthx/libduckdb@1.0.17`)
  * - Deno: **2.0+** (requires FFI support)
  *
  * Do NOT upgrade DuckDB or Deno without thorough testing. Even minor version upgrades may
@@ -31,10 +31,12 @@ export * from "./errors.ts";
 // Re-export config schema and utilities for advanced usage
 export {
   configSchema,
+  type DatabaseOpenConfig,
   globalConfigSchema,
   isKnownConfigKey,
   type KnownConfigKey,
   localConfigSchema,
+  type SessionConfig,
 } from "./core/config/schema/mod.ts";
 export {
   getConfigDefault,
@@ -43,8 +45,16 @@ export {
   isValidConfigKey,
   validateConfigValue,
   validateDatabaseConfig,
+  validateDatabaseOpenConfig,
+  validateSessionConfig,
 } from "./core/config/validate.ts";
 export { type DatabaseConfig } from "./core/config/schema/mod.ts";
-export { type ConfigOption } from "./core/config/mod.ts";
+export {
+  type ConfigOption,
+  configToFFI,
+  escapeSqlStringLiteral,
+  resolveConfigAlias,
+  serializeConfigValue,
+} from "./core/config/mod.ts";
 
 // Runtime configuration

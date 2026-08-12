@@ -4,8 +4,8 @@ import {
   assertIntegerIndex,
   assertNonEmptyString,
   assertSafeInteger,
-} from "../../src/core/validate.ts";
-import { ValidationError } from "../../src/errors.ts";
+} from "../../core/validate.ts";
+import { ValidationError } from "../../errors.ts";
 
 Deno.test("core: assertNonEmptyString returns trimmed string", () => {
   assertEquals(assertNonEmptyString("  hello  ", "test"), "hello");

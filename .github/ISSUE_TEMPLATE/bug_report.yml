@@ -11,8 +11,8 @@ body:
     id: version
     attributes:
       label: Library Version
-      description: Run `deno run -A https://jsr.io/@ggpwnkthx/duckdb/1.1.15/src/mod.ts --version` to get the version
-      placeholder: "1.1.15"
+      description: Run `deno run -A https://jsr.io/@ggpwnkthx/duckdb/1.2.0/src/mod.ts --version` to get the version
+      placeholder: "1.2.0"
     validations:
       required: true
 
@@ -30,7 +30,7 @@ body:
     attributes:
       label: libduckdb Version
       description: Check in deno.json or run the query `SELECT duckdb_version()`
-      placeholder: "1.0.15"
+      placeholder: "1.0.17"
     validations:
       required: true
 

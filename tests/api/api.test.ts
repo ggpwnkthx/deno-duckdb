@@ -31,6 +31,7 @@ function testBothApis(
       reset: () => unknown;
       close: () => void;
     };
+    setConfig: (config: Record<string, unknown>) => void;
     rawConnection: unknown;
   }) => void | Promise<void>,
 ) {
@@ -68,6 +69,11 @@ function testBothApis(
             close: () => functional.destroyPrepared(stmt),
           };
         },
+        setConfig: (config) =>
+          functional.applySessionConfig(
+            conn,
+            config as Parameters<typeof functional.applySessionConfig>[1],
+          ),
         rawConnection: conn,
       });
     }));
@@ -100,6 +106,10 @@ function testBothApis(
             close: () => stmt.close(),
           };
         },
+        setConfig: (config) =>
+          conn.setConfig(
+            config as Parameters<typeof conn.setConfig>[0],
+          ),
         rawConnection: conn,
       });
     }));
@@ -122,6 +132,27 @@ test("handles are valid after open", async () => {
   assertEquals(functional.isValidConnection(connection), false);
   assertEquals(functional.isValidDatabase(database), false);
 });
+
+// ============================================
+// Session config (setConfig / applySessionConfig)
+// ============================================
+
+testBothApis("setConfig applies a local option via SQL", (c) => {
+  c.setConfig({ home_directory: "/tmp/duckdb-parity" });
+  const rows = c.query("SELECT current_setting('home_directory') AS v");
+  if (!rows) throw new Error("query returned null");
+  assertEquals((rows[0] as unknown[])[0], "/tmp/duckdb-parity");
+});
+
+testBothApis(
+  "setConfig joins string arrays with commas",
+  (c) => {
+    c.setConfig({ search_path: ["main", "pg_catalog"] });
+    const rows = c.query("SELECT current_setting('search_path') AS v");
+    if (!rows) throw new Error("query returned null");
+    assertEquals((rows[0] as unknown[])[0], "main,pg_catalog");
+  },
+);
 
 test("Database.connect opens lazily", async () => {
   const database = new Database();

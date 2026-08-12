@@ -60,3 +60,5 @@ export { PreparedStatement } from "./prepared.ts";
  * @see {@link ./query.ts}
  */
 export { QueryResult } from "./query.ts";
+
+export type { SessionConfig } from "../core/config/schema/mod.ts";

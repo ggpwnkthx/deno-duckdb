@@ -14,9 +14,9 @@ This project is tightly coupled to specific versions:
 
 | Dependency           | Version |
 | -------------------- | ------- |
-| DuckDB               | 1.5.0   |
+| DuckDB               | 1.5.5   |
 | Deno                 | 2.0+    |
-| @ggpwnkthx/libduckdb | 1.0.15  |
+| @ggpwnkthx/libduckdb | 1.0.17  |
 
 Do not update DuckDB, Deno, or `@ggpwnkthx/libduckdb` casually. Version changes may
 require substantial compatibility testing.

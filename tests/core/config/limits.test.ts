@@ -6,8 +6,8 @@ import {
   DEFAULT_MAX_ROWS,
   getEffectiveLimits,
   validateMaterializationLimits,
-} from "../../../src/core/config/limits.ts";
-import { ValidationError } from "../../../src/errors.ts";
+} from "../../../core/config/limits.ts";
+import { ValidationError } from "../../../errors.ts";
 
 Deno.test("core: validateMaterializationLimits accepts valid limits", () => {
   validateMaterializationLimits({});

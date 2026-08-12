@@ -1,5 +1,5 @@
 import { assertEquals } from "@std/assert";
-import { stringToCStringPointer } from "../../src/core/strings.ts";
+import { stringToCStringPointer } from "../../core/strings.ts";
 
 Deno.test("core: stringToCStringPointer returns stable pointer", () => {
   const ptr1 = stringToCStringPointer("test");

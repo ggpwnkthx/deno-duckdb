@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.1]
+
+### Added
+
+- Re-exported the runtime `DUCKDB_TYPE` enum from the package root so
+  consumers can compare `ColumnInfo.type` against concrete values
+  (e.g. `DUCKDB_TYPE.DUCKDB_TYPE_INTEGER`) without taking a direct
+  dependency on `@ggpwnkthx/libduckdb`. The `DUCKDB_TYPE` type was
+  already exported as part of the public type surface.
+
 ## [1.2.0]
 
 ### Added

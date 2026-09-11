@@ -19,6 +19,7 @@
  *
  * - {@link types} - Shared types (DatabaseHandle, ConnectionHandle, etc.)
  * - {@link errors} - Error hierarchy (DuckDBError, QueryError, etc.)
+ * - {@link DUCKDB_TYPE} - Runtime DuckDB type enum (re-exported from `@ggpwnkthx/libduckdb`)
  *
  * Choose the functional API for explicit control or the objective API for convenience.
  *
@@ -27,6 +28,11 @@
 
 export * from "./types.ts";
 export * from "./errors.ts";
+
+// Re-export the runtime DuckDB type enum so consumers can compare
+// `ColumnInfo.type` against concrete values (e.g. DUCKDB_TYPE.DUCKDB_TYPE_INTEGER)
+// without taking a direct dependency on `@ggpwnkthx/libduckdb`.
+export { DUCKDB_TYPE } from "@ggpwnkthx/libduckdb/enums";
 
 // Re-export config schema and utilities for advanced usage
 export {
